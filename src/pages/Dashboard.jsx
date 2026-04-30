@@ -335,13 +335,13 @@ export default function Dashboard() {
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[75px] scrollbar-hide pt-1">
+                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[100px] pr-0.5 custom-scrollbar pt-1">
                           {dayObj.events.map((event, idx) => {
                             const isHebCal = event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
                             return (
                               <div 
                                 key={idx} 
-                                className={`text-[10px] p-2 rounded-lg truncate font-bold shadow-sm ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600 dark:text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}
+                                className={`text-[9px] leading-tight p-1.5 rounded-md truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
                                 title={event.summary}
                               >
                                 {event.summary}
