@@ -1,6 +1,5 @@
-// The Client ID will need to be provided by the user in production.
-// For now, we use a placeholder or empty string to be filled later.
-export const GOOGLE_CLIENT_ID = '199697397572-lhi5p3n99ttiak8jver8a9trblb0n4f7.apps.googleusercontent.com';
+// The Client ID is retrieved from environment variables
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 
 /**
@@ -84,7 +83,7 @@ export async function fetchAllCalendars() {
   const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  
+
   if (!response.ok) throw new Error("Failed to fetch calendars");
   const data = await response.json();
   const items = data.items || [];
@@ -104,16 +103,16 @@ export async function createNewCalendar(summary) {
 
   const response = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
     method: 'POST',
-    headers: { 
+    headers: {
       'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json' 
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ 
-      summary: summary, 
-      description: 'יומן זה נוצר על ידי אפליקציית HebCal-Sync. [ID:hebcal-sync-app]' 
+    body: JSON.stringify({
+      summary: summary,
+      description: 'יומן זה נוצר על ידי אפליקציית HebCal-Sync. [ID:hebcal-sync-app]'
     })
   });
-  
+
   if (!response.ok) throw new Error("Failed to create calendar");
   return await response.json();
 }
@@ -124,7 +123,7 @@ export async function createNewCalendar(summary) {
  */
 export async function fetchMyAppEvents(calendarIds = []) {
   if (calendarIds.length === 0) return [];
-  
+
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
@@ -198,15 +197,15 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
   // The start date of the event is the first date in the series.
   // To avoid double instances on the first day, we must EXCLUDE the first date from the RDATE list.
   const rdates = rdateString.split(',');
-  const firstDateStr = rdates[0].replace('VALUE=DATE:', ''); 
+  const firstDateStr = rdates[0].replace('VALUE=DATE:', '');
   const remainingRdates = rdates.slice(1); // All dates EXCEPT the first one
 
   const startY = firstDateStr.substring(0, 4);
   const startM = firstDateStr.substring(4, 6);
   const startD = firstDateStr.substring(6, 8);
-  const startDateFormatted = `${startY}-${startM}-${startD}`; 
+  const startDateFormatted = `${startY}-${startM}-${startD}`;
 
-  const finalDescription = userDescription 
+  const finalDescription = userDescription
     ? `${userDescription}\n\n---\nשנת מקור: ${originalHebrewYear}\nנוצר באמצעות My Hebrew Calendar`
     : `שנת מקור: ${originalHebrewYear}\n\nנוצר באמצעות My Hebrew Calendar`;
 
@@ -214,10 +213,10 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
     summary: title,
     description: finalDescription,
     start: {
-      date: startDateFormatted, 
+      date: startDateFormatted,
     },
     end: {
-      date: startDateFormatted, 
+      date: startDateFormatted,
     },
     // Only add recurrence if there are remaining dates
     recurrence: remainingRdates.length > 0 ? chunkRdates(remainingRdates) : [],
@@ -298,12 +297,12 @@ export async function deleteEvent(calendarId, googleEventId) {
 function chunkRdates(rdates) {
   const CHUNK_SIZE = 80; // Number of dates per line
   const recurrenceLines = [];
-  
+
   for (let i = 0; i < rdates.length; i += CHUNK_SIZE) {
     const chunk = rdates.slice(i, i + CHUNK_SIZE);
     const cleanChunk = chunk.map(r => r.replace('VALUE=DATE:', ''));
     recurrenceLines.push(`RDATE;VALUE=DATE:${cleanChunk.join(',')}`);
   }
-  
+
   return recurrenceLines;
 }
