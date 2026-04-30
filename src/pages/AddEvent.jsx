@@ -263,7 +263,7 @@ export default function AddEvent() {
                               className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
                             >
                               {yearOptions.map(y => (
-                                <option key={y} value={y}>{gematriya(y)} (ה׳{gematriya(y)})</option>
+                                <option key={y} value={y}>ה׳{gematriya(y)}</option>
                               ))}
                             </select>
                           </div>
