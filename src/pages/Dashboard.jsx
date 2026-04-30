@@ -59,7 +59,7 @@ export default function Dashboard() {
           id: item.id,
           eventID: props.eventID,
           title: item.summary,
-          age: age > 0 ? age : 'ראשון',
+          age: age >= 0 ? age : 0,
           category: props.category,
           date: item.start?.date || 'תאריך כלשהו'
         };
@@ -157,7 +157,8 @@ export default function Dashboard() {
         hDayGematriya: gematriya(d),
         gDay: gDate.getDate(),
         gMonthLabel: gDate.toLocaleString('he-IL', { month: 'short' }),
-        events: dayEvents
+        events: dayEvents,
+        hYear: hDate.getFullYear()
       });
     }
     return days;
@@ -335,16 +336,22 @@ export default function Dashboard() {
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[100px] pr-0.5 custom-scrollbar pt-1">
+                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[90px] pr-1 custom-scrollbar pt-1">
                           {dayObj.events.map((event, idx) => {
-                            const isHebCal = event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
+                            const props = event.extendedProperties?.private || {};
+                            const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+                            
+                            const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
+                            const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
+                            const ageSuffix = isHebCal ? ` (${age})` : '';
+
                             return (
-                              <div
-                                key={idx}
-                                className={`text-[9px] leading-tight p-1.5 rounded-md truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
-                                title={event.summary}
+                              <div 
+                                key={idx} 
+                                className={`text-[10px] leading-tight px-2 py-1.5 rounded-lg truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
+                                title={event.summary + ageSuffix}
                               >
-                                {event.summary}
+                                {event.summary}{ageSuffix}
                               </div>
                             );
                           })}
