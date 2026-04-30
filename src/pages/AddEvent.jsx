@@ -25,6 +25,7 @@ export default function AddEvent() {
   const [day, setDay] = useState(currentHDate.getDate());
   const [daysInMonth, setDaysInMonth] = useState(30);
   const [syncSpan, setSyncSpan] = useState(121);
+  const [notes, setNotes] = useState('');
   const [availableMonths, setAvailableMonths] = useState(() => getMonthsForYear(year));
   
   // Preview State
@@ -174,7 +175,7 @@ export default function AddEvent() {
 
       // Create event in all selected calendars
       await Promise.all(selectedCalendarIds.map(calendarId => 
-        createHebcalEvent(title, category, targetYear, rdateString, calendarId)
+        createHebcalEvent(title, category, targetYear, rdateString, calendarId, notes)
       ));
 
       alert(`האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!`);
@@ -293,6 +294,17 @@ export default function AddEvent() {
                           <option value="other">אחר</option>
                         </select>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">תיאור / הערות (אופציונלי)</label>
+                      <textarea 
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="הוסף פרטים נוספים שיופיעו ביומן..." 
+                        rows="2"
+                        className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 transition-all outline-none dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8] resize-none"
+                      />
                     </div>
 
                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-6 dark:bg-slate-900/50 dark:border-slate-700">

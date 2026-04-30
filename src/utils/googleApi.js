@@ -186,7 +186,7 @@ export async function fetchEventsInRange(timeMin, timeMax, calendarIds = []) {
 /**
  * Creates a recurring event using RDATE strings.
  */
-export async function createHebcalEvent(title, category, originalHebrewYear, rdateString, calendarId) {
+export async function createHebcalEvent(title, category, originalHebrewYear, rdateString, calendarId, userDescription = '') {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
   if (!calendarId) throw new Error("No calendar selected");
@@ -206,9 +206,13 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
   const startD = firstDateStr.substring(6, 8);
   const startDateFormatted = `${startY}-${startM}-${startD}`; 
 
+  const finalDescription = userDescription 
+    ? `${userDescription}\n\n---\nשנת מקור: ${originalHebrewYear}\nנוצר באמצעות My Hebrew Calendar`
+    : `שנת מקור: ${originalHebrewYear}\n\nנוצר באמצעות My Hebrew Calendar`;
+
   const eventPayload = {
     summary: title,
-    description: `שנת מקור: ${originalHebrewYear}\n\nנוצר באמצעות My Hebrew Calendar`,
+    description: finalDescription,
     start: {
       date: startDateFormatted, 
     },
