@@ -312,14 +312,14 @@ export default function Dashboard() {
                 </label>
 
                 <div className="flex bg-white rounded-xl shadow-sm border border-slate-100 p-1 dark:bg-slate-800 dark:border-slate-700">
-                  <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 rounded-lg transition-colors dark:hover:bg-slate-700">
-                    <ChevronRight className="w-5 h-5 rtl:rotate-180" />
+                  <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 rounded-lg transition-colors dark:hover:bg-slate-700" title="חודש קודם">
+                    <ChevronRight className="w-5 h-5" />
                   </button>
                   <button onClick={() => setViewHDate(new HDate())} className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-[#0038A8] dark:text-slate-300">
                     היום
                   </button>
-                  <button onClick={handleNextMonth} className="p-2 hover:bg-slate-50 rounded-lg transition-colors dark:hover:bg-slate-700">
-                    <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
+                  <button onClick={handleNextMonth} className="p-2 hover:bg-slate-50 rounded-lg transition-colors dark:hover:bg-slate-700" title="חודש הבא">
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
                 </div>
               </div>
