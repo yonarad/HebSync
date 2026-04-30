@@ -172,9 +172,25 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col text-right" dir="rtl">
       <header className="bg-white border-b border-slate-200 px-6 py-4 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <Logo className="w-10 h-10" />
-          <h1 className="text-xl font-bold text-[#0038A8] dark:text-blue-400">לוח הבקרה</h1>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
+            <Logo className="w-10 h-10" />
+            <h1 className="text-xl font-bold text-[#0038A8] dark:text-blue-400">היומן העברי שלי</h1>
+          </div>
+          <nav className="hidden md:flex items-center gap-2 border-r border-slate-200 pr-6 mr-2 dark:border-slate-700">
+            <button 
+              onClick={() => navigate('/')} 
+              className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+            >
+              דף הבית
+            </button>
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300"
+            >
+              לוח בקרה
+            </button>
+          </nav>
         </div>
         <div className="flex items-center gap-4">
           {!isAuthenticated ? (
@@ -187,7 +203,7 @@ export default function Dashboard() {
             </button>
           ) : (
             <button 
-              onClick={() => navigate('/add')}
+              onClick={() => navigate('/add-event')}
               className="px-4 py-2 bg-[#0038A8] text-white hover:bg-blue-800 rounded-lg font-bold transition-all shadow-md shadow-blue-900/20"
             >
               + הוספת אירוע חדש
