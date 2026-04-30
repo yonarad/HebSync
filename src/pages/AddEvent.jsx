@@ -20,7 +20,7 @@ export default function AddEvent() {
   const [month, setMonth] = useState(currentHDate.getMonthName());
   const [day, setDay] = useState(currentHDate.getDate());
   const [daysInMonth, setDaysInMonth] = useState(30);
-  const [syncSpan, setSyncSpan] = useState(120);
+  const [syncSpan, setSyncSpan] = useState(121);
   const [availableMonths, setAvailableMonths] = useState(() => getMonthsForYear(year));
   
   // Preview State
@@ -356,17 +356,17 @@ export default function AddEvent() {
                       )}
                       
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">לכמה שנים קדימה לסנכרן?</label>
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">כמה מופעים לייצר לאירוע?</label>
                         <div className="flex items-center gap-3">
                           <input 
                             type="number"
                             min="1"
-                            max="120"
+                            max="121"
                             value={syncSpan}
-                            onChange={(e) => setSyncSpan(Math.min(120, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                            onChange={(e) => setSyncSpan(Math.min(121, Math.max(1, parseInt(e.target.value, 10) || 1)))}
                             className="w-24 p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] outline-none bg-white dark:bg-slate-800 dark:border-slate-600 font-bold text-center"
                           />
-                          <span className="text-slate-600 dark:text-slate-400 font-medium">שנים</span>
+                          <span className="text-slate-600 dark:text-slate-400 font-medium">מופעים</span>
                         </div>
                       </div>
                     </div>
@@ -399,7 +399,7 @@ export default function AddEvent() {
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">סנכרון ל-{syncSpan} שנים קדימה</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">ייצור של {syncSpan} מופעים</p>
                 </div>
                 <div className="text-left">
                   <span className="text-xs font-bold text-[#0038A8] bg-white px-2 py-1 rounded dark:bg-slate-700 dark:text-blue-300">

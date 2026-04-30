@@ -72,14 +72,14 @@ export function gregorianToHebrew(date, afterSunset = false) {
  * @param {string} fallback30th - Logic for 30th of month if it doesn't exist: '29th', '1st', or 'skip'.
  * @returns {string} The RDATE string format for Google Calendar.
  */
-export function generateRdates(startHebrewYear, monthName, day, spanYears = 120, fallback30th = 'skip') {
+export function generateRdates(startHebrewYear, monthName, day, maxOccurrences = 121, fallback30th = 'skip') {
   const rdates = [];
   const currentHebrewYear = new HDate().getFullYear();
   
-  const startGeneratingYear = Math.min(startHebrewYear, currentHebrewYear);
-  const endYear = currentHebrewYear + spanYears;
+  let year = Math.min(startHebrewYear, currentHebrewYear);
+  const maxSearchYear = currentHebrewYear + maxOccurrences + 20; 
 
-  for (let year = startGeneratingYear; year <= endYear; year++) {
+  while (rdates.length < maxOccurrences && year <= maxSearchYear) {
     let targetMonth = monthName;
     let targetDay = day;
     
@@ -94,32 +94,35 @@ export function generateRdates(startHebrewYear, monthName, day, spanYears = 120,
     // 2. The 30th Day logic
     const monthNum = HDate.monthFromName(targetMonth);
     const daysInMonth = HDate.daysInMonth(monthNum, year);
+    
+    let createdThisYear = false;
     if (targetDay === 30 && daysInMonth === 29) {
-      if (fallback30th === 'skip') {
-        continue;
-      } else if (fallback30th === '29th') {
+      if (fallback30th === '29th') {
         targetDay = 29;
       } else if (fallback30th === '1st') {
         const tempDate = new HDate(29, targetMonth, year);
         const nextDay = tempDate.next();
-        targetDay = nextDay.getDate();
-        targetMonth = nextDay.getMonthName();
         try {
-          const eventHDate = new HDate(targetDay, targetMonth, nextDay.getFullYear());
+          const eventHDate = new HDate(nextDay.getDate(), nextDay.getMonthName(), nextDay.getFullYear());
           const formatted = formatToRdateUTC(eventHDate.greg());
-          if (!rdates.includes(formatted)) rdates.push(formatted);
+          if (!rdates.includes(formatted)) {
+            rdates.push(formatted);
+            createdThisYear = true;
+          }
         } catch (e) {}
-        continue;
       }
+      // if 'skip', createdThisYear remains false
+    } else {
+      try {
+        const eventHDate = new HDate(targetDay, targetMonth, year);
+        const formatted = formatToRdateUTC(eventHDate.greg());
+        if (!rdates.includes(formatted)) {
+          rdates.push(formatted);
+          createdThisYear = true;
+        }
+      } catch (e) {}
     }
-
-    try {
-      const eventHDate = new HDate(targetDay, targetMonth, year);
-      const formatted = formatToRdateUTC(eventHDate.greg());
-      if (!rdates.includes(formatted)) {
-        rdates.push(formatted);
-      }
-    } catch (e) {}
+    year++;
   }
 
   return rdates.join(',');
@@ -143,15 +146,14 @@ function formatToRdateUTC(date) {
 /**
  * Generates preview occurrences for a given Hebrew date.
  */
-export function getPreviewDates(startHebrewYear, monthName, day, spanYears = 10, fallback30th = 'skip') {
+export function getPreviewDates(startHebrewYear, monthName, day, maxOccurrences = 10, fallback30th = 'skip') {
   const occurrences = [];
   const currentHebrewYear = new HDate().getFullYear();
   
-  // For preview, we show from current year onwards
-  const startYear = Math.max(startHebrewYear, currentHebrewYear);
-  const endYear = startYear + spanYears;
+  let year = Math.max(startHebrewYear, currentHebrewYear);
+  const maxSearchYear = year + maxOccurrences + 20;
 
-  for (let year = startYear; year <= endYear; year++) {
+  while (occurrences.length < maxOccurrences && year <= maxSearchYear) {
     let targetMonth = monthName;
     let targetDay = day;
     let note = "";
@@ -169,30 +171,34 @@ export function getPreviewDates(startHebrewYear, monthName, day, spanYears = 10,
     // 2. The 30th Day logic
     const monthNum = HDate.monthFromName(targetMonth);
     const daysInMonth = HDate.daysInMonth(monthNum, year);
+    
+    let hDateToRender = null;
     if (targetDay === 30 && daysInMonth === 29) {
-      if (fallback30th === 'skip') {
-        continue; 
-      } else if (fallback30th === '29th') {
+      if (fallback30th === '29th') {
         targetDay = 29;
         note = "הוקדם ל-כ״ט (חודש חסר)";
+        hDateToRender = new HDate(targetDay, targetMonth, year);
       } else if (fallback30th === '1st') {
         const tempDate = new HDate(29, targetMonth, year);
         const nextDay = tempDate.next();
-        targetDay = nextDay.getDate();
-        targetMonth = nextDay.getMonthName();
         note = "נדחה ל-א׳ (חודש חסר)";
+        hDateToRender = new HDate(nextDay.getDate(), nextDay.getMonthName(), nextDay.getFullYear());
       }
+    } else {
+      try {
+        hDateToRender = new HDate(targetDay, targetMonth, year);
+      } catch (e) {}
     }
 
-    try {
-      const eventHDate = new HDate(targetDay, targetMonth, year);
+    if (hDateToRender) {
       occurrences.push({
-        hebrewYear: year,
-        hebrewDate: eventHDate.renderGematriya(),
-        gregorianDate: eventHDate.greg().toLocaleDateString('he-IL'),
+        hebrewYear: hDateToRender.getFullYear(),
+        hebrewDate: hDateToRender.renderGematriya(),
+        gregorianDate: hDateToRender.greg().toLocaleDateString('he-IL'),
         note: note
       });
-    } catch (e) {}
+    }
+    year++;
   }
   return occurrences;
 }
