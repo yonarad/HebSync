@@ -98,7 +98,7 @@ export default function Dashboard() {
     setViewHDate(prev => {
       let m = prev.getMonth();
       let y = prev.getFullYear();
-      const monthsInYear = prev.monthsInYear();
+      const monthsInYear = HDate.monthsInYear(y);
       
       if (m === 6) { // Elul
         m = 7; // Tishrei
@@ -121,7 +121,7 @@ export default function Dashboard() {
         m = 6; // Elul
         y--;
       } else if (m === 1) { // Nisan
-        m = prev.monthsInYear(); // Go to last month of same year
+        m = HDate.monthsInYear(y); // Go to last month of same year
       } else {
         m--;
       }
