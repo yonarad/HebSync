@@ -28,7 +28,7 @@ export default function AddEvent() {
   const [previewData, setPreviewData] = useState([]);
   
   // State for 30th day fallback
-  const [fallback30th, setFallback30th] = useState('skip'); // '29th', '1st', 'skip'
+  const [fallback30th, setFallback30th] = useState('29th'); // '29th', '1st', 'skip'
   
   // State for Gregorian conversion
   const [isGregorianEntry, setIsGregorianEntry] = useState(false);
@@ -326,20 +326,26 @@ export default function AddEvent() {
                       )}
 
                       {show30thFallback && (
-                        <div className="mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-                          <h4 className="font-bold text-amber-800 mb-2 dark:text-amber-400">שים לב: בחרת ביום ה-30 בחודש (ל׳)</h4>
-                          <div className="flex flex-col gap-2">
-                            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-                              <input type="radio" name="fallback" checked={fallback30th === '29th'} onChange={() => setFallback30th('29th')} className="text-[#0038A8]" />
-                              הקדמה ל-כ״ט
+                        <div className="mt-4 p-5 bg-amber-50 rounded-2xl border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 shadow-sm">
+                          <h4 className="font-bold text-amber-800 mb-2 flex items-center gap-2 dark:text-amber-400">
+                            <Info className="w-4 h-4" />
+                            שים לב: בחרת ביום ה-30 בחודש (ל׳)
+                          </h4>
+                          <p className="text-sm text-amber-700 mb-4 leading-relaxed dark:text-amber-300/80">
+                            בחלק מהשנים העבריות חודש זה הוא "חסר" (בן 29 ימים בלבד), ולכן התאריך ל׳ לא קיים בהן. בחר כיצד תרצה לנהוג בשנים אלו:
+                          </p>
+                          <div className="grid grid-cols-1 gap-3">
+                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
+                              <input type="radio" name="fallback" checked={fallback30th === '29th'} onChange={() => setFallback30th('29th')} className="w-4 h-4 text-[#0038A8]" />
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">הקדמה ל-כ״ט באותו חודש</span>
                             </label>
-                            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-                              <input type="radio" name="fallback" checked={fallback30th === '1st'} onChange={() => setFallback30th('1st')} className="text-[#0038A8]" />
-                              דחייה ל-א׳ בחודש הבא
+                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
+                              <input type="radio" name="fallback" checked={fallback30th === '1st'} onChange={() => setFallback30th('1st')} className="w-4 h-4 text-[#0038A8]" />
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">דחייה ל-א׳ בחודש הבא</span>
                             </label>
-                            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-                              <input type="radio" name="fallback" checked={fallback30th === 'skip'} onChange={() => setFallback30th('skip')} className="text-[#0038A8]" />
-                              דלג בשנים חסרות
+                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
+                              <input type="radio" name="fallback" checked={fallback30th === 'skip'} onChange={() => setFallback30th('skip')} className="w-4 h-4 text-[#0038A8]" />
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">דילוג על השנה (לא ליצור אירוע)</span>
                             </label>
                           </div>
                         </div>
