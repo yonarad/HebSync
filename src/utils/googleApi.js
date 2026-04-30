@@ -195,25 +195,28 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
   // but RDATE is a single event anyway.
   const eventId = crypto.randomUUID();
 
-  // Create the event payload
+  // The start date of the event is the first date in the series.
+  // To avoid double instances on the first day, we must EXCLUDE the first date from the RDATE list.
   const rdates = rdateString.split(',');
-  let firstDateStr = rdates[0].replace('VALUE=DATE:', ''); // "YYYYMMDD"
+  const firstDateStr = rdates[0].replace('VALUE=DATE:', ''); 
+  const remainingRdates = rdates.slice(1); // All dates EXCEPT the first one
 
   const startY = firstDateStr.substring(0, 4);
   const startM = firstDateStr.substring(4, 6);
   const startD = firstDateStr.substring(6, 8);
-  const startDateFormatted = `${startY}-${startM}-${startD}`; // "YYYY-MM-DD"
+  const startDateFormatted = `${startY}-${startM}-${startD}`; 
 
   const eventPayload = {
     summary: title,
     description: `שנת מקור: ${originalHebrewYear}\n\nנוצר באמצעות My Hebrew Calendar`,
     start: {
-      date: startDateFormatted, // All day event
+      date: startDateFormatted, 
     },
     end: {
-      date: startDateFormatted, // All day event
+      date: startDateFormatted, 
     },
-    recurrence: chunkRdates(rdates),
+    // Only add recurrence if there are remaining dates
+    recurrence: remainingRdates.length > 0 ? chunkRdates(remainingRdates) : [],
     extendedProperties: {
       private: {
         appIdentifier: 'MyHebrewCalendar',
