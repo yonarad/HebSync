@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, revokeAccess } from '../utils/googleApi';
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [scopeMode, setScopeMode] = useState(sessionStorage.getItem('gcal_scope_mode'));
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
 
@@ -127,9 +128,26 @@ export default function Dashboard() {
     setShowLoginModal(false);
     authenticateWithGoogle(scopeMode, (token) => {
       setIsAuthenticated(true);
+      setScopeMode(scopeMode);
+      loadCalendars();
     }, (err) => {
       alert("שגיאה בהתחברות: " + err.message);
     });
+  };
+
+  const handleChangePermissions = async () => {
+    // If moving from high access to low, we recommend revoking
+    if (scopeMode === 'all_events') {
+      if (window.confirm("כדי לעבור לרמת פרטיות גבוהה יותר, עלינו לבטל את ההרשאות הרחבות הקיימות. האם לבצע ניתוק והתחברות מחדש?")) {
+        setIsLoading(true);
+        await revokeAccess();
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        setShowLoginModal(true);
+        return;
+      }
+    }
+    setShowLoginModal(true);
   };
 
   const handleRevoke = async () => {
@@ -293,13 +311,45 @@ export default function Dashboard() {
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-80 bg-white border-l border-slate-200 hidden md:flex flex-col dark:bg-slate-900 dark:border-slate-800">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">רמת הרשאה</span>
+                <button 
+                  onClick={handleChangePermissions}
+                  className="text-[10px] font-bold text-[#0038A8] hover:underline dark:text-blue-400"
+                >
+                  שינוי
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                {scopeMode === 'app_created' ? (
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
+                    <Shield className="w-4 h-4" />
+                    פרטיות מקסימלית
+                  </div>
+                ) : scopeMode === 'read_only' ? (
+                  <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm">
+                    <Eye className="w-4 h-4" />
+                    צפייה בלבד
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm">
+                    <Unlock className="w-4 h-4" />
+                    גישה מלאה
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="p-4 border-b border-slate-100 dark:border-slate-800">
             <div className="flex justify-between items-center mb-3">
               <h2 className="font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
                 <CalendarIcon className="w-4 h-4 text-[#0038A8]" />
                 היומנים שלי
               </h2>
-              {isAuthenticated && sessionStorage.getItem('gcal_scope_mode') !== 'read_only' && (
+              {isAuthenticated && scopeMode !== 'read_only' && (
                 <button onClick={handleCreateCalendar} className="text-xs bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold hover:bg-blue-100 transition-colors dark:bg-blue-900/30 dark:text-blue-300">
                   + יומן חדש
                 </button>
