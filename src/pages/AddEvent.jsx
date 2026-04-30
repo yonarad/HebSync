@@ -91,10 +91,18 @@ export default function AddEvent() {
     if (e) e.preventDefault();
     
     if (!getAccessToken()) {
-      authenticateWithGoogle(() => submitEvent(), (err) => alert("שגיאה בהתחברות לגוגל"));
+      handleLoginAndSubmit();
     } else {
       submitEvent();
     }
+  };
+
+  const handleLoginAndSubmit = () => {
+    authenticateWithGoogle(() => {
+      submitEvent();
+    }, (err) => {
+      alert("שגיאה בהתחברות: " + err.message);
+    });
   };
 
   const submitEvent = async () => {
@@ -123,7 +131,15 @@ export default function AddEvent() {
       alert("האירוע נוצר בהצלחה וסונכרן ליומן גוגל שלך!");
       navigate('/dashboard');
     } catch (e) {
-      alert("שגיאה בשמירת האירוע: " + e.message);
+      console.error("Submission error:", e);
+      if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
+        sessionStorage.removeItem('gcal_token');
+        if (window.confirm("פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?")) {
+          handleLoginAndSubmit();
+        }
+      } else {
+        alert("שגיאה בשמירת האירוע: " + e.message);
+      }
     } finally {
       setIsLoading(false);
     }

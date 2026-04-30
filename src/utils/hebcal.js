@@ -76,8 +76,6 @@ export function generateRdates(startHebrewYear, monthName, day, spanYears = 120,
   const rdates = [];
   const currentHebrewYear = new HDate().getFullYear();
   
-  // We want to generate from the current year to current + spanYears
-  // But also include the original date if it's in the future or for completeness
   const startGeneratingYear = Math.min(startHebrewYear, currentHebrewYear);
   const endYear = currentHebrewYear + spanYears;
 
@@ -88,54 +86,40 @@ export function generateRdates(startHebrewYear, monthName, day, spanYears = 120,
     // 1. Leap year Adar logic
     const isLeapYear = HDate.isLeapYear(year);
     if (isLeapYear && monthName === 'Adar') {
-      // Event happened in Adar (non-leap), in leap year it goes to Adar II
       targetMonth = 'Adar II';
     } else if (!isLeapYear && (monthName === 'Adar I' || monthName === 'Adar II')) {
-      // Event happened in Adar I/II (leap), in normal year it goes to Adar
       targetMonth = 'Adar';
     }
 
     // 2. The 30th Day logic
-    // Some months can have 29 or 30 days depending on the year (Cheshvan, Kislev).
-    // Adar I always has 30, Adar II always 29. Regular Adar has 29.
-    // If user selected 30th but the month only has 29 days this year:
-    let isValidDay = true;
     const monthNum = HDate.monthFromName(targetMonth);
-    try {
-      const daysInMonth = HDate.daysInMonth(monthNum, year);
-      if (targetDay === 30 && daysInMonth === 29) {
-        if (fallback30th === 'skip') {
-          continue; // Skip this year entirely
-        } else if (fallback30th === '29th') {
-          targetDay = 29;
-        } else if (fallback30th === '1st') {
-          // Move to 1st of the next month
-          // We create a temp HDate of 29th, and do next()
-          const tempDate = new HDate(29, targetMonth, year);
-          const nextDay = tempDate.next();
-          targetDay = nextDay.getDate();
-          targetMonth = nextDay.getMonthName();
-          year = nextDay.getFullYear(); // In case the next month is in the next year (e.g. Elul -> Tishrei)
-        }
+    const daysInMonth = HDate.daysInMonth(monthNum, year);
+    if (targetDay === 30 && daysInMonth === 29) {
+      if (fallback30th === 'skip') {
+        continue;
+      } else if (fallback30th === '29th') {
+        targetDay = 29;
+      } else if (fallback30th === '1st') {
+        const tempDate = new HDate(29, targetMonth, year);
+        const nextDay = tempDate.next();
+        targetDay = nextDay.getDate();
+        targetMonth = nextDay.getMonthName();
+        try {
+          const eventHDate = new HDate(targetDay, targetMonth, nextDay.getFullYear());
+          const formatted = formatToRdateUTC(eventHDate.greg());
+          if (!rdates.includes(formatted)) rdates.push(formatted);
+        } catch (e) {}
+        continue;
       }
-    } catch (e) {
-      console.warn("Invalid date configuration", year, targetMonth);
-      continue;
     }
 
     try {
       const eventHDate = new HDate(targetDay, targetMonth, year);
-      const gregorianDate = eventHDate.greg();
-      
-      // Format to YYYYMMDDThhmmssZ (e.g., 20261109T000000Z)
-      const formatted = formatToRdateUTC(gregorianDate);
-      // Ensure no duplicates
+      const formatted = formatToRdateUTC(eventHDate.greg());
       if (!rdates.includes(formatted)) {
         rdates.push(formatted);
       }
-    } catch (e) {
-      console.warn("Could not generate date for", targetDay, targetMonth, year, e);
-    }
+    } catch (e) {}
   }
 
   return rdates.join(',');

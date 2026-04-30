@@ -285,7 +285,7 @@ export default function Dashboard() {
                     onChange={(e) => setShowGregorian(e.target.checked)}
                     className="w-4 h-4 text-[#0038A8] rounded border-slate-300"
                   />
-                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">תאריך לועזי</span>
+                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">הצג גם תאריך לועזי</span>
                 </label>
 
                 <div className="flex bg-white rounded-xl shadow-sm border border-slate-100 p-1 dark:bg-slate-800 dark:border-slate-700">

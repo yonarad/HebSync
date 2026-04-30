@@ -134,9 +134,7 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
     end: {
       date: startDateFormatted, // All day event
     },
-    recurrence: [
-      `RDATE;VALUE=DATE:${rdates.map(r => r.replace('VALUE=DATE:', '')).join(',')}`
-    ],
+    recurrence: chunkRdates(rdates),
     extendedProperties: {
       private: {
         appIdentifier: 'MyHebrewCalendar',
@@ -158,8 +156,9 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error("API Error:", errorData);
-    throw new Error("Failed to create event");
+    console.error("API Error Detail:", JSON.stringify(errorData, null, 2));
+    const errorMsg = errorData.error?.message || response.statusText;
+    throw new Error(`שגיאת גוגל: ${errorMsg}`);
   }
 
   return await response.json();
@@ -183,4 +182,20 @@ export async function deleteEvent(googleEventId) {
     throw new Error("Failed to delete event");
   }
   return true;
+}
+
+/**
+ * Helper to chunk RDATE strings to stay within Google's length limits.
+ */
+function chunkRdates(rdates) {
+  const CHUNK_SIZE = 80; // Number of dates per line
+  const recurrenceLines = [];
+  
+  for (let i = 0; i < rdates.length; i += CHUNK_SIZE) {
+    const chunk = rdates.slice(i, i + CHUNK_SIZE);
+    const cleanChunk = chunk.map(r => r.replace('VALUE=DATE:', ''));
+    recurrenceLines.push(`RDATE;VALUE=DATE:${cleanChunk.join(',')}`);
+  }
+  
+  return recurrenceLines;
 }
