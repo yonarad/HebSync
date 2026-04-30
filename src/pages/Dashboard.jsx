@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info } from 'lucide-react';
 import Logo from '../components/Logo';
 import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange } from '../utils/googleApi';
 import { HEBREW_MONTHS } from '../utils/hebcal';
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [viewHDate, setViewHDate] = useState(new HDate());
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [showGregorian, setShowGregorian] = useState(true);
+  const [showAllEvents, setShowAllEvents] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -147,9 +148,16 @@ export default function Dashboard() {
         const start = event.start?.date || event.start?.dateTime;
         if (!start) return false;
         const eDate = new Date(start);
-        return eDate.getFullYear() === gDate.getFullYear() &&
+        const isSameDay = eDate.getFullYear() === gDate.getFullYear() &&
           eDate.getMonth() === gDate.getMonth() &&
           eDate.getDate() === gDate.getDate();
+        
+        if (!isSameDay) return false;
+        
+        if (!showAllEvents) {
+          return event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
+        }
+        return true;
       });
 
       days.push({
@@ -280,13 +288,27 @@ export default function Dashboard() {
 
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
-                  <input
-                    type="checkbox"
+                  <input 
+                    type="checkbox" 
                     checked={showGregorian}
                     onChange={(e) => setShowGregorian(e.target.checked)}
                     className="w-4 h-4 text-[#0038A8] rounded border-slate-300"
                   />
                   <span className="text-sm font-bold text-slate-600 dark:text-slate-400">הצג גם תאריך לועזי</span>
+                </label>
+
+                <label 
+                  className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700"
+                  title="בברירת מחדל אנחנו מציגים רק אירועים שהאפליקציה יצרה, אך אם ברצונך לראות את כלל האירועים מהיומן שלך, תוכל לסמן תיבה זו."
+                >
+                  <input 
+                    type="checkbox" 
+                    checked={showAllEvents}
+                    onChange={(e) => setShowAllEvents(e.target.checked)}
+                    className="w-4 h-4 text-[#0038A8] rounded border-slate-300"
+                  />
+                  <span className="text-sm font-bold text-slate-600 dark:text-slate-400">הצג גם אירועים חיצוניים</span>
+                  <Info className="w-3.5 h-3.5 text-slate-400" />
                 </label>
 
                 <div className="flex bg-white rounded-xl shadow-sm border border-slate-100 p-1 dark:bg-slate-800 dark:border-slate-700">
