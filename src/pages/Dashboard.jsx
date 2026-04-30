@@ -12,7 +12,7 @@ export default function Dashboard() {
   const [myEvents, setMyEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
-  
+
   // Calendar View State
   const [viewHDate, setViewHDate] = useState(new HDate());
   const [calendarEvents, setCalendarEvents] = useState([]);
@@ -30,13 +30,13 @@ export default function Dashboard() {
     try {
       const hMonth = viewHDate.getMonthName();
       const hYear = viewHDate.getFullYear();
-      
+
       const firstDayH = new HDate(1, hMonth, hYear);
       const lastDayH = new HDate(HDate.daysInMonth(HDate.monthFromName(hMonth), hYear), hMonth, hYear);
-      
+
       const timeMin = firstDayH.greg().toISOString();
       const timeMax = lastDayH.greg().toISOString();
-      
+
       const events = await fetchEventsInRange(timeMin, timeMax);
       setCalendarEvents(events);
     } catch (e) {
@@ -99,7 +99,7 @@ export default function Dashboard() {
       let m = prev.getMonth();
       let y = prev.getFullYear();
       const monthsInYear = HDate.monthsInYear(y);
-      
+
       if (m === 6) { // Elul
         m = 7; // Tishrei
         y++;
@@ -116,7 +116,7 @@ export default function Dashboard() {
     setViewHDate(prev => {
       let m = prev.getMonth();
       let y = prev.getFullYear();
-      
+
       if (m === 7) { // Tishrei
         m = 6; // Elul
         y--;
@@ -135,21 +135,21 @@ export default function Dashboard() {
     const firstDayH = new HDate(1, hMonth, hYear);
     const daysInMonth = HDate.daysInMonth(HDate.monthFromName(hMonth), hYear);
     const firstDayOfWeek = firstDayH.getDay();
-    
+
     const days = [];
     for (let i = 0; i < firstDayOfWeek; i++) days.push(null);
-    
+
     for (let d = 1; d <= daysInMonth; d++) {
       const hDate = new HDate(d, hMonth, hYear);
       const gDate = hDate.greg();
-      
+
       const dayEvents = calendarEvents.filter(event => {
         const start = event.start?.date || event.start?.dateTime;
         if (!start) return false;
         const eDate = new Date(start);
-        return eDate.getFullYear() === gDate.getFullYear() && 
-               eDate.getMonth() === gDate.getMonth() && 
-               eDate.getDate() === gDate.getDate();
+        return eDate.getFullYear() === gDate.getFullYear() &&
+          eDate.getMonth() === gDate.getMonth() &&
+          eDate.getDate() === gDate.getDate();
       });
 
       days.push({
@@ -178,14 +178,14 @@ export default function Dashboard() {
             <h1 className="text-xl font-bold text-[#0038A8] dark:text-blue-400">היומן העברי שלי</h1>
           </div>
           <nav className="hidden md:flex items-center gap-2 border-r border-slate-200 pr-6 mr-2 dark:border-slate-700">
-            <button 
-              onClick={() => navigate('/')} 
+            <button
+              onClick={() => navigate('/')}
               className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
             >
               דף הבית
             </button>
-            <button 
-              onClick={() => navigate('/dashboard')} 
+            <button
+              onClick={() => navigate('/dashboard')}
               className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300"
             >
               לוח בקרה
@@ -194,7 +194,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-4">
           {!isAuthenticated ? (
-            <button 
+            <button
               onClick={handleLogin}
               className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#0038A8] hover:bg-blue-100 rounded-lg font-bold transition-colors dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
             >
@@ -202,7 +202,7 @@ export default function Dashboard() {
               התחבר לגוגל
             </button>
           ) : (
-            <button 
+            <button
               onClick={() => navigate('/add-event')}
               className="px-4 py-2 bg-[#0038A8] text-white hover:bg-blue-800 rounded-lg font-bold transition-all shadow-md shadow-blue-900/20"
             >
@@ -223,7 +223,7 @@ export default function Dashboard() {
               {isAuthenticated ? myEvents.length : 0}
             </span>
           </div>
-          
+
           <div className="p-4 flex-1 overflow-auto">
             {!isAuthenticated ? (
               <div className="text-center py-10 text-slate-500 dark:text-slate-400">
@@ -276,11 +276,11 @@ export default function Dashboard() {
                   {gMonthRange} {viewHDate.greg().getFullYear()}
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={showGregorian}
                     onChange={(e) => setShowGregorian(e.target.checked)}
                     className="w-4 h-4 text-[#0038A8] rounded border-slate-300"
@@ -308,7 +308,7 @@ export default function Dashboard() {
                   <RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" />
                 </div>
               )}
-              
+
               <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 {['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'].map(day => (
                   <div key={day} className="p-4 text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
@@ -316,32 +316,32 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              
+
               <div className="flex-1 grid grid-cols-7 auto-rows-fr">
                 {days.map((dayObj, i) => (
-                  <div 
-                    key={i} 
-                    className={`min-h-[140px] p-2 border-b border-l border-slate-50 dark:border-slate-700/50 flex flex-col gap-2 ${!dayObj ? 'bg-slate-50/50 dark:bg-slate-900/20' : 'hover:bg-blue-50/30 transition-colors dark:hover:bg-blue-900/10'}`}
+                  <div
+                    key={i}
+                    className={`min-h-[110px] p-3 border-b border-l border-slate-50 dark:border-slate-700/50 flex flex-col gap-2 ${!dayObj ? 'bg-slate-50/50 dark:bg-slate-900/20' : 'hover:bg-blue-50/30 transition-colors dark:hover:bg-blue-900/10'}`}
                   >
                     {dayObj && (
                       <>
                         <div className="flex justify-between items-start">
                           <div className="flex flex-col">
-                            <span className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-none">{dayObj.hDayGematriya}</span>
+                            <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{dayObj.hDayGematriya}</span>
                             {showGregorian && (
-                              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                                 {dayObj.gDay} {dayObj.hDay === 1 || dayObj.gDay === 1 ? dayObj.gMonthLabel : ''}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[90px] pr-1 custom-scrollbar pt-1">
+                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[100px] pr-0.5 custom-scrollbar pt-1">
                           {dayObj.events.map((event, idx) => {
                             const isHebCal = event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
                             return (
-                              <div 
-                                key={idx} 
-                                className={`text-[10px] leading-tight px-2 py-1.5 rounded-lg truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
+                              <div
+                                key={idx}
+                                className={`text-[9px] leading-tight p-1.5 rounded-md truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
                                 title={event.summary}
                               >
                                 {event.summary}

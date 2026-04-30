@@ -286,7 +286,11 @@ export default function AddEvent() {
                               onChange={(e) => setDay(parseInt(e.target.value, 10))}
                               className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
                             >
-                              {Array.from({length: daysInMonth}).map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}
+                              {Array.from({length: daysInMonth}).map((_, i) => (
+                                <option key={i+1} value={i+1}>
+                                  {gematriya(i+1)}
+                                </option>
+                              ))}
                             </select>
                           </div>
                         </div>
