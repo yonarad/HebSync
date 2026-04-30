@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar } from '../utils/googleApi';
+import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, revokeAccess } from '../utils/googleApi';
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
@@ -130,6 +130,15 @@ export default function Dashboard() {
     }, (err) => {
       alert("שגיאה בהתחברות: " + err.message);
     });
+  };
+
+  const handleRevoke = async () => {
+    if (!window.confirm("פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?")) return;
+    setIsLoading(true);
+    await revokeAccess();
+    setIsAuthenticated(false);
+    setIsLoading(false);
+    navigate('/');
   };
 
   const handleDelete = async (googleEventId) => {
@@ -262,12 +271,22 @@ export default function Dashboard() {
               התחבר לגוגל
             </button>
           ) : (
-            <button
-              onClick={() => navigate('/add-event')}
-              className="px-4 py-2 bg-[#0038A8] text-white hover:bg-blue-800 rounded-lg font-bold transition-all shadow-md shadow-blue-900/20"
-            >
-              + הוספת אירוע חדש
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleRevoke}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20"
+                title="ביטול הרשאות וניתוק מלא מגוגל"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">ניתוק חשבון</span>
+              </button>
+              <button
+                onClick={() => navigate('/add-event')}
+                className="px-4 py-2 bg-[#0038A8] text-white hover:bg-blue-800 rounded-lg font-bold transition-all shadow-md shadow-blue-900/20"
+              >
+                + הוספת אירוע
+              </button>
+            </div>
           )}
         </div>
       </header>

@@ -12,11 +12,14 @@ export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
     return;
   }
 
-  let scope = 'https://www.googleapis.com/auth/calendar.events';
-  if (scopeMode === 'app_created') {
-    scope = 'https://www.googleapis.com/auth/calendar.app.created';
+  let scope = '';
+  if (scopeMode === 'all_events') {
+    scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
   } else if (scopeMode === 'read_only') {
     scope = 'https://www.googleapis.com/auth/calendar.readonly';
+  } else if (scopeMode === 'app_created') {
+    // We add calendar.calendarlist.readonly to be able to list calendars in a stateless way
+    scope = 'https://www.googleapis.com/auth/calendar.app.created https://www.googleapis.com/auth/calendar.calendarlist.readonly';
   }
 
   const client = window.google.accounts.oauth2.initTokenClient({
@@ -45,12 +48,33 @@ export function getAccessToken() {
 }
 
 /**
- * Logout
+ * Logout - clears local session only
  */
 export function logout() {
   sessionStorage.removeItem('gcal_token');
   sessionStorage.removeItem('gcal_scope_mode');
   sessionStorage.removeItem('gcal_app_calendar_id');
+}
+
+/**
+ * Revoke Access - tells Google to invalidate the token and remove app permissions
+ */
+export async function revokeAccess() {
+  const token = getAccessToken();
+  if (!token) return;
+
+  try {
+    // Google's revoke endpoint
+    await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+  } catch (e) {
+    console.error("Failed to revoke token:", e);
+  } finally {
+    // Always clear local data
+    logout();
+  }
 }
 
 export async function fetchAllCalendars() {
@@ -63,7 +87,15 @@ export async function fetchAllCalendars() {
   
   if (!response.ok) throw new Error("Failed to fetch calendars");
   const data = await response.json();
-  return data.items || [];
+  const items = data.items || [];
+
+  const mode = sessionStorage.getItem('gcal_scope_mode');
+  if (mode === 'app_created') {
+    // Filter to show only calendars created by this app (using our signature in description)
+    return items.filter(cal => cal.description && cal.description.includes('ID:hebcal-sync-app'));
+  }
+
+  return items;
 }
 
 export async function createNewCalendar(summary) {
@@ -78,7 +110,7 @@ export async function createNewCalendar(summary) {
     },
     body: JSON.stringify({ 
       summary: summary, 
-      description: 'יומן זה נוצר על ידי אפליקציית HebCal-Sync' 
+      description: 'יומן זה נוצר על ידי אפליקציית HebCal-Sync. [ID:hebcal-sync-app]' 
     })
   });
   
@@ -140,7 +172,9 @@ export async function fetchEventsInRange(timeMin, timeMax, calendarIds = []) {
       }
     });
 
-    if (!response.ok) return [];
+    if (!response.ok) {
+      return [];
+    }
     const data = await response.json();
     return (data.items || []).map(event => ({ ...event, calendarId }));
   });

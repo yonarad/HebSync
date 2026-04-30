@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, getAccessToken, createHebcalEvent, fetchAllCalendars } from '../utils/googleApi';
+import { authenticateWithGoogle, getAccessToken, createHebcalEvent, fetchAllCalendars, revokeAccess } from '../utils/googleApi';
 
 export default function AddEvent() {
   const navigate = useNavigate();
@@ -131,6 +131,14 @@ export default function AddEvent() {
     });
   };
 
+  const handleRevoke = async () => {
+    if (!window.confirm("פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?")) return;
+    setIsLoading(true);
+    await revokeAccess();
+    setIsLoading(false);
+    navigate('/');
+  };
+
   const submitEvent = async () => {
     setIsLoading(true);
     try {
@@ -195,6 +203,16 @@ export default function AddEvent() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
+          {getAccessToken() && (
+            <button
+              onClick={handleRevoke}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20"
+              title="ביטול הרשאות וניתוק מלא מגוגל"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">ניתוק חשבון</span>
+            </button>
+          )}
           <button 
             onClick={() => showPreview ? setShowPreview(false) : navigate('/dashboard')}
             className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition-colors dark:text-slate-300 dark:hover:bg-slate-800"
