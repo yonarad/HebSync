@@ -321,27 +321,27 @@ export default function Dashboard() {
                 {days.map((dayObj, i) => (
                   <div 
                     key={i} 
-                    className={`min-h-[110px] p-3 border-b border-l border-slate-50 dark:border-slate-700/50 flex flex-col gap-2 ${!dayObj ? 'bg-slate-50/50 dark:bg-slate-900/20' : 'hover:bg-blue-50/30 transition-colors dark:hover:bg-blue-900/10'}`}
+                    className={`min-h-[140px] p-2 border-b border-l border-slate-50 dark:border-slate-700/50 flex flex-col gap-2 ${!dayObj ? 'bg-slate-50/50 dark:bg-slate-900/20' : 'hover:bg-blue-50/30 transition-colors dark:hover:bg-blue-900/10'}`}
                   >
                     {dayObj && (
                       <>
                         <div className="flex justify-between items-start">
                           <div className="flex flex-col">
-                            <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{dayObj.hDayGematriya}</span>
+                            <span className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-none">{dayObj.hDayGematriya}</span>
                             {showGregorian && (
-                              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-1">
                                 {dayObj.gDay} {dayObj.hDay === 1 || dayObj.gDay === 1 ? dayObj.gMonthLabel : ''}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[100px] pr-0.5 custom-scrollbar pt-1">
+                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[90px] pr-1 custom-scrollbar pt-1">
                           {dayObj.events.map((event, idx) => {
                             const isHebCal = event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
                             return (
                               <div 
                                 key={idx} 
-                                className={`text-[9px] leading-tight p-1.5 rounded-md truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
+                                className={`text-[10px] leading-tight px-2 py-1.5 rounded-lg truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
                                 title={event.summary}
                               >
                                 {event.summary}
