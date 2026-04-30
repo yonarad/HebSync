@@ -1,4 +1,4 @@
-import { HDate, HebrewCalendar, Location } from '@hebcal/core';
+import { HDate, HebrewCalendar, Location, gematriya } from '@hebcal/core';
 
 // Mapping user-facing Hebrew month names to HebCal month names
 export const HEBREW_MONTHS = [
@@ -191,9 +191,10 @@ export function getPreviewDates(startHebrewYear, monthName, day, maxOccurrences 
     }
 
     if (hDateToRender) {
+      const monthLabel = HEBREW_MONTHS.find(m => m.id === hDateToRender.getMonthName())?.label || hDateToRender.getMonthName();
       occurrences.push({
         hebrewYear: hDateToRender.getFullYear(),
-        hebrewDate: hDateToRender.renderGematriya(),
+        hebrewDate: `${gematriya(hDateToRender.getDate())} ב${monthLabel} ה׳${gematriya(hDateToRender.getFullYear())}`,
         gregorianDate: hDateToRender.greg().toLocaleDateString('he-IL'),
         note: note
       });
