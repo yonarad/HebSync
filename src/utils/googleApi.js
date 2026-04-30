@@ -53,133 +53,115 @@ export function logout() {
   sessionStorage.removeItem('gcal_app_calendar_id');
 }
 
-/**
- * Get active calendar ID based on scope mode
- */
-export async function getCalendarId() {
-  const mode = sessionStorage.getItem('gcal_scope_mode');
-  if (mode === 'all_events' || mode === 'read_only' || !mode) {
-    return 'primary';
-  }
-
-  // mode === 'app_created'
-  const cachedId = sessionStorage.getItem('gcal_app_calendar_id');
-  if (cachedId) return cachedId;
-
+export async function fetchAllCalendars() {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  // Fetch calendars list
   const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   
   if (!response.ok) throw new Error("Failed to fetch calendars");
   const data = await response.json();
+  return data.items || [];
+}
 
-  const myCal = data.items?.find(c => c.summary === 'היומן העברי שלי (HebCal-Sync)');
-  if (myCal) {
-    sessionStorage.setItem('gcal_app_calendar_id', myCal.id);
-    return myCal.id;
-  }
+export async function createNewCalendar(summary) {
+  const token = getAccessToken();
+  if (!token) throw new Error("Not authenticated");
 
-  // Create it if not found
-  const createRes = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
+  const response = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
     method: 'POST',
     headers: { 
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json' 
     },
     body: JSON.stringify({ 
-      summary: 'היומן העברי שלי (HebCal-Sync)', 
+      summary: summary, 
       description: 'יומן זה נוצר על ידי אפליקציית HebCal-Sync' 
     })
   });
   
-  if (!createRes.ok) throw new Error("Failed to create app calendar");
-  const createData = await createRes.json();
-  sessionStorage.setItem('gcal_app_calendar_id', createData.id);
-  return createData.id;
+  if (!response.ok) throw new Error("Failed to create calendar");
+  return await response.json();
 }
 
 /**
  * Fetch events created by this app.
  * We use the privateExtendedProperty filter to only get our events.
  */
-export async function fetchMyAppEvents() {
+export async function fetchMyAppEvents(calendarIds = []) {
+  if (calendarIds.length === 0) return [];
+  
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  const calendarId = await getCalendarId();
+  const promises = calendarIds.map(async (calendarId) => {
+    const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
+    url.searchParams.append('privateExtendedProperty', 'appIdentifier=MyHebrewCalendar');
+    url.searchParams.append('maxResults', '100');
+    url.searchParams.append('showDeleted', 'false');
 
-  // Fetch events from the calendar that have our appIdentifier
-  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
-  url.searchParams.append('privateExtendedProperty', 'appIdentifier=MyHebrewCalendar');
-  url.searchParams.append('maxResults', '100');
-  url.searchParams.append('showDeleted', 'false');
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.items || []).map(event => ({ ...event, calendarId }));
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch events: " + response.statusText);
-  }
-
-  const data = await response.json();
-  return data.items || [];
+  const results = await Promise.all(promises);
+  return results.flat();
 }
 
 /**
  * Fetch all events for a specific time range.
  */
-export async function fetchEventsInRange(timeMin, timeMax) {
+export async function fetchEventsInRange(timeMin, timeMax, calendarIds = []) {
+  if (calendarIds.length === 0) return [];
+
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  const calendarId = await getCalendarId();
+  const promises = calendarIds.map(async (calendarId) => {
+    const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
+    url.searchParams.append('timeMin', timeMin);
+    url.searchParams.append('timeMax', timeMax);
+    url.searchParams.append('singleEvents', 'true'); // Expand recurrences
+    url.searchParams.append('orderBy', 'startTime');
 
-  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
-  url.searchParams.append('timeMin', timeMin);
-  url.searchParams.append('timeMax', timeMax);
-  url.searchParams.append('singleEvents', 'true'); // Expand recurrences
-  url.searchParams.append('orderBy', 'startTime');
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.items || []).map(event => ({ ...event, calendarId }));
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch events in range");
-  }
-
-  const data = await response.json();
-  return data.items || [];
+  const results = await Promise.all(promises);
+  return results.flat();
 }
 
 /**
  * Creates a recurring event using RDATE strings.
  */
-export async function createHebcalEvent(title, category, originalHebrewYear, rdateString) {
+export async function createHebcalEvent(title, category, originalHebrewYear, rdateString, calendarId) {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
+  if (!calendarId) throw new Error("No calendar selected");
 
   // Generate a unique ID to group these if needed, 
   // but RDATE is a single event anyway.
   const eventId = crypto.randomUUID();
 
   // Create the event payload
-  // RDATE requires the start and end dates to be the first occurrence usually,
-  // or just use recurrence array.
-  // Actually, for Google Calendar, to use RDATE, we put it in the `recurrence` array.
-  // The event's `start` and `end` should be the very first date in the RDATE list, or a dummy initial date.
-
-  // Let's extract the first date from the RDATE string (VALUE=DATE:YYYYMMDD) to set as start.
   const rdates = rdateString.split(',');
   let firstDateStr = rdates[0].replace('VALUE=DATE:', ''); // "YYYYMMDD"
 
@@ -208,8 +190,6 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
     }
   };
 
-  const calendarId = await getCalendarId();
-
   const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
     method: 'POST',
     headers: {
@@ -232,11 +212,9 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
 /**
  * Deletes an event by Google Calendar ID
  */
-export async function deleteEvent(googleEventId) {
+export async function deleteEvent(calendarId, googleEventId) {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
-
-  const calendarId = await getCalendarId();
 
   const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`, {
     method: 'DELETE',

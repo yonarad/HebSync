@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange } from '../utils/googleApi';
+import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar } from '../utils/googleApi';
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
@@ -14,6 +14,8 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [calendars, setCalendars] = useState([]);
+  const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
 
   // Calendar View State
   const [viewHDate, setViewHDate] = useState(new HDate());
@@ -23,10 +25,48 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadCalendarData();
-      loadEvents();
+      loadCalendars();
     }
-  }, [isAuthenticated, viewHDate]);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (selectedCalendarIds.length > 0) {
+        loadCalendarData();
+        loadEvents();
+      } else {
+        setCalendarEvents([]);
+        setMyEvents([]);
+      }
+    }
+  }, [isAuthenticated, viewHDate, selectedCalendarIds]);
+
+  const loadCalendars = async () => {
+    try {
+      const cals = await fetchAllCalendars();
+      setCalendars(cals);
+      setSelectedCalendarIds(cals.map(c => c.id));
+    } catch (e) {
+      console.error("Failed to load calendars", e);
+    }
+  };
+
+  const handleCreateCalendar = async () => {
+    const name = window.prompt("הזן שם ליומן החדש:");
+    if (!name) return;
+    try {
+      await createNewCalendar(name);
+      await loadCalendars();
+    } catch (e) {
+      alert("שגיאה ביצירת יומן");
+    }
+  };
+
+  const toggleCalendar = (id) => {
+    setSelectedCalendarIds(prev => 
+      prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
+    );
+  };
 
   const loadCalendarData = async () => {
     setIsCalendarLoading(true);
@@ -40,7 +80,7 @@ export default function Dashboard() {
       const timeMin = firstDayH.greg().toISOString();
       const timeMax = lastDayH.greg().toISOString();
 
-      const events = await fetchEventsInRange(timeMin, timeMax);
+      const events = await fetchEventsInRange(timeMin, timeMax, selectedCalendarIds);
       setCalendarEvents(events);
     } catch (e) {
       console.error(e);
@@ -52,7 +92,7 @@ export default function Dashboard() {
   const loadEvents = async () => {
     setIsLoading(true);
     try {
-      const items = await fetchMyAppEvents();
+      const items = await fetchMyAppEvents(selectedCalendarIds);
       const currentHebrewYear = new HDate().getFullYear();
       const formattedEvents = items.map(item => {
         const props = item.extendedProperties?.private || {};
@@ -60,6 +100,7 @@ export default function Dashboard() {
         const age = originalYear ? (currentHebrewYear - originalYear) : 0;
         return {
           id: item.id,
+          calendarId: item.calendarId,
           eventID: props.eventID,
           title: item.summary,
           age: age >= 0 ? age : 0,
@@ -94,7 +135,10 @@ export default function Dashboard() {
   const handleDelete = async (googleEventId) => {
     if (!window.confirm("האם אתה בטוח שברצונך למחוק אירוע זה (ואת כל המופעים שלו) מהיומן?")) return;
     try {
-      await deleteEvent(googleEventId);
+      const eventObj = myEvents.find(e => e.id === googleEventId);
+      if (eventObj) {
+        await deleteEvent(eventObj.calendarId, googleEventId);
+      }
       setMyEvents(myEvents.filter(e => e.id !== googleEventId));
       loadCalendarData();
     } catch (e) {
@@ -230,6 +274,37 @@ export default function Dashboard() {
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-80 bg-white border-l border-slate-200 hidden md:flex flex-col dark:bg-slate-900 dark:border-slate-800">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
+                <CalendarIcon className="w-4 h-4 text-[#0038A8]" />
+                היומנים שלי
+              </h2>
+              {isAuthenticated && sessionStorage.getItem('gcal_scope_mode') !== 'read_only' && (
+                <button onClick={handleCreateCalendar} className="text-xs bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold hover:bg-blue-100 transition-colors dark:bg-blue-900/30 dark:text-blue-300">
+                  + יומן חדש
+                </button>
+              )}
+            </div>
+            {isAuthenticated ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                {calendars.map(cal => (
+                  <label key={cal.id} className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg transition-colors dark:hover:bg-slate-800">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedCalendarIds.includes(cal.id)} 
+                      onChange={() => toggleCalendar(cal.id)} 
+                      className="w-4 h-4 rounded border-slate-300 text-[#0038A8]" 
+                    />
+                    <span className="truncate" title={cal.summary}>{cal.summary}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">התחבר כדי לראות יומנים</p>
+            )}
+          </div>
+
           <div className="p-4 border-b border-slate-100 flex justify-between items-center dark:border-slate-800">
             <h2 className="font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
               <CalendarIcon className="w-4 h-4 text-[#0038A8]" />

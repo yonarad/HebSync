@@ -5,13 +5,15 @@ import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, getAccessToken, createHebcalEvent } from '../utils/googleApi';
+import { authenticateWithGoogle, getAccessToken, createHebcalEvent, fetchAllCalendars } from '../utils/googleApi';
 
 export default function AddEvent() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('manual');
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [calendars, setCalendars] = useState([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState('');
   const currentHDate = new HDate();
   const currentHebrewYear = currentHDate.getFullYear();
   
@@ -61,6 +63,26 @@ export default function AddEvent() {
     if (day > num) setDay(num);
   }, [year, month]);
 
+  useEffect(() => {
+    if (getAccessToken()) {
+      loadCalendars();
+    }
+  }, []);
+
+  const loadCalendars = async () => {
+    try {
+      const cals = await fetchAllCalendars();
+      // Filter to only calendars where the user has write access
+      const writableCals = cals.filter(c => c.accessRole === 'owner' || c.accessRole === 'writer');
+      setCalendars(writableCals);
+      if (writableCals.length > 0) {
+        setSelectedCalendarId(writableCals[0].id);
+      }
+    } catch (e) {
+      console.error("Failed to load calendars", e);
+    }
+  };
+
   const show30thFallback = !isGregorianEntry && day === 30 && ['Cheshvan', 'Kislev', 'Adar I'].includes(month);
 
   // Generate list of years for the dropdown
@@ -101,7 +123,8 @@ export default function AddEvent() {
 
   const onLoginSelect = (scopeMode) => {
     setShowLoginModal(false);
-    authenticateWithGoogle(scopeMode, () => {
+    authenticateWithGoogle(scopeMode, async () => {
+      await loadCalendars();
       submitEvent();
     }, (err) => {
       alert("שגיאה בהתחברות: " + err.message);
@@ -130,7 +153,7 @@ export default function AddEvent() {
         throw new Error("לא ניתן היה לחשב תאריכים עבור האירוע");
       }
 
-      await createHebcalEvent(title, category, targetYear, rdateString);
+      await createHebcalEvent(title, category, targetYear, rdateString, selectedCalendarId);
       alert("האירוע נוצר בהצלחה וסונכרן ליומן גוגל שלך!");
       navigate('/dashboard');
     } catch (e) {
@@ -372,6 +395,21 @@ export default function AddEvent() {
                           <span className="text-slate-600 dark:text-slate-400 font-medium">מופעים</span>
                         </div>
                       </div>
+
+                      {calendars.length > 0 && (
+                        <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">בחר יומן יעד</label>
+                          <select 
+                            value={selectedCalendarId}
+                            onChange={(e) => setSelectedCalendarId(e.target.value)}
+                            className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] transition-all outline-none bg-white dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8] font-medium"
+                          >
+                            {calendars.map(cal => (
+                              <option key={cal.id} value={cal.id}>{cal.summary}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-2 flex justify-end">
