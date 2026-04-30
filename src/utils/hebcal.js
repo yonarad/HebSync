@@ -150,7 +150,7 @@ export function getPreviewDates(startHebrewYear, monthName, day, maxOccurrences 
   const occurrences = [];
   const currentHebrewYear = new HDate().getFullYear();
   
-  let year = Math.max(startHebrewYear, currentHebrewYear);
+  let year = startHebrewYear;
   const maxSearchYear = year + maxOccurrences + 20;
 
   while (occurrences.length < maxOccurrences && year <= maxSearchYear) {
