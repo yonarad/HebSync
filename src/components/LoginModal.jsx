@@ -24,16 +24,16 @@ export default function LoginModal({ isOpen, onClose, onSelect }) {
       icon: <Shield className="w-6 h-6 text-green-500" />
     },
     {
-      id: SCOPE_MODES.ALL_EVENTS,
-      title: 'גישה מלאה ליומנים',
-      description: 'האפליקציה תוכל לקרוא ולערוך אירועים בכל היומנים שלך (כדי להציג אירועים חיצוניים ולהוסיף ליומן הראשי).',
-      icon: <Unlock className="w-6 h-6 text-blue-500" />
-    },
-    {
       id: SCOPE_MODES.READ_ONLY,
       title: 'צפייה בלבד',
       description: 'האפליקציה תוכל רק לקרוא אירועים כדי להציג אותם בלוח השנה, ללא אפשרות עריכה או הוספה.',
       icon: <Eye className="w-6 h-6 text-purple-500" />
+    },
+    {
+      id: SCOPE_MODES.ALL_EVENTS,
+      title: 'גישה מלאה ליומנים',
+      description: 'האפליקציה תוכל לקרוא ולערוך אירועים בכל היומנים שלך (כדי להציג אירועים חיצוניים ולהוסיף ליומן הראשי).',
+      icon: <Unlock className="w-6 h-6 text-blue-500" />
     }
   ];
 
