@@ -251,6 +251,28 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
 }
 
 /**
+ * Updates an existing event's summary and description
+ */
+export async function updateEvent(calendarId, googleEventId, updates) {
+  const token = getAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updates)
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update event");
+  }
+  return await response.json();
+}
+
+/**
  * Deletes an event by Google Calendar ID
  */
 export async function deleteEvent(calendarId, googleEventId) {

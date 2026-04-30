@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye, X } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, revokeAccess } from '../utils/googleApi';
+import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, revokeAccess, updateEvent } from '../utils/googleApi';
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
@@ -17,6 +17,10 @@ export default function Dashboard() {
   const [scopeMode, setScopeMode] = useState(sessionStorage.getItem('gcal_scope_mode'));
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
 
   // Calendar View State
   const [viewHDate, setViewHDate] = useState(new HDate());
@@ -159,18 +163,40 @@ export default function Dashboard() {
     navigate('/');
   };
 
-  const handleDelete = async (googleEventId) => {
+  const handleDelete = async (calendarId, googleEventId) => {
     if (!window.confirm("האם אתה בטוח שברצונך למחוק אירוע זה (ואת כל המופעים שלו) מהיומן?")) return;
     try {
-      const eventObj = myEvents.find(e => e.id === googleEventId);
-      if (eventObj) {
-        await deleteEvent(eventObj.calendarId, googleEventId);
-      }
-      setMyEvents(myEvents.filter(e => e.id !== googleEventId));
+      await deleteEvent(calendarId, googleEventId);
+      setSelectedEvent(null);
       loadCalendarData();
+      loadEvents();
     } catch (e) {
       alert("שגיאה במחיקה");
     }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      await updateEvent(selectedEvent.calendarId, selectedEvent.id, {
+        summary: editTitle,
+        description: editDesc
+      });
+      setIsEditing(false);
+      setSelectedEvent(null);
+      loadCalendarData();
+    } catch (e) {
+      alert("שגיאה בעדכון");
+    }
+  };
+
+  const handleEventClick = (event) => {
+    const isHebCal = event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
+    if (!isHebCal) return; // Only open modal for our events
+
+    setSelectedEvent(event);
+    setEditTitle(event.summary);
+    setEditDesc(event.description || '');
+    setIsEditing(false);
   };
 
   const handleNextMonth = () => {
@@ -312,6 +338,7 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-80 bg-white border-l border-slate-200 hidden md:flex flex-col dark:bg-slate-900 dark:border-slate-800">
           <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+            {/* ... (Permission Status code stays the same) ... */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">רמת הרשאה</span>
@@ -356,7 +383,7 @@ export default function Dashboard() {
               )}
             </div>
             {isAuthenticated ? (
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                 {calendars.map(cal => (
                   <label key={cal.id} className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg transition-colors dark:hover:bg-slate-800">
                     <input 
@@ -373,55 +400,15 @@ export default function Dashboard() {
               <p className="text-xs text-slate-500 dark:text-slate-400">התחבר כדי לראות יומנים</p>
             )}
           </div>
-
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center dark:border-slate-800">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2 dark:text-slate-100">
-              <CalendarIcon className="w-4 h-4 text-[#0038A8]" />
-              האירועים שלי
-            </h2>
-            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full font-bold dark:bg-slate-700 dark:text-slate-300">
-              {isAuthenticated ? myEvents.length : 0}
-            </span>
-          </div>
-
-          <div className="p-4 flex-1 overflow-auto">
-            {!isAuthenticated ? (
-              <div className="text-center py-10 text-slate-500 dark:text-slate-400">
-                <p className="text-sm">טרם התחברת לחשבון.</p>
-                <p className="text-xs mt-1">התחבר כדי לנהל את האירועים החוזרים שלך.</p>
-              </div>
-            ) : isLoading ? (
-              <div className="flex justify-center py-10">
-                <RefreshCw className="w-6 h-6 animate-spin text-[#0038A8]" />
-              </div>
-            ) : myEvents.length === 0 ? (
-              <div className="text-center py-10 text-slate-500 dark:text-slate-400">
-                <p className="text-sm">אין אירועים להצגה.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {myEvents.map(event => (
-                  <div key={event.id} className="p-3 border border-slate-100 rounded-xl bg-slate-50 hover:border-blue-200 hover:bg-blue-50/50 transition-colors group dark:bg-slate-900/50 dark:border-slate-700 dark:hover:border-[#0038A8]/50">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-slate-900 text-sm dark:text-slate-100">
-                        {event.title} <span className="text-[#0038A8] dark:text-blue-400">({event.age})</span>
-                      </h3>
-                      <button onClick={() => handleDelete(event.id)} className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="מחיקת סדרה">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-500 bg-white px-1.5 py-0.5 rounded dark:bg-slate-800 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
-                        {event.category === 'birthday' ? 'יום הולדת' : event.category === 'memorial' ? 'אזכרה' : 'אחר'}
-                      </span>
-                      <span className="text-[10px] font-bold text-[#0038A8] dark:text-blue-300">
-                        {event.date}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          
+          <div className="p-6 flex-1 bg-slate-50/30 dark:bg-slate-900/10 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="w-16 h-16 bg-blue-50 text-[#0038A8] rounded-full flex items-center justify-center dark:bg-blue-900/20 dark:text-blue-400">
+              <CalendarIcon className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">ניהול אירועים ישיר</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">לחץ על אירוע בלוח השנה כדי לערוך או למחוק אותו</p>
+            </div>
           </div>
         </aside>
 
@@ -521,7 +508,11 @@ export default function Dashboard() {
                             return (
                               <div 
                                 key={idx} 
-                                className={`text-[10px] leading-tight px-2 py-1.5 rounded-lg truncate font-bold shadow-sm flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEventClick(event);
+                                }}
+                                className={`text-[10px] leading-tight px-2 py-1.5 rounded-lg truncate font-bold shadow-sm flex-shrink-0 cursor-pointer hover:brightness-95 transition-all ${isHebCal ? 'bg-[#0038A8] text-white dark:bg-blue-600' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}`}
                                 title={event.summary + ageSuffix}
                               >
                                 {event.summary}{ageSuffix}
@@ -543,6 +534,98 @@ export default function Dashboard() {
         onClose={() => setShowLoginModal(false)}
         onSelect={onLoginSelect} 
       />
+
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir="rtl">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">פרטי אירוע</h2>
+              <button onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500">שם האירוע</label>
+                    <input 
+                      type="text" 
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-[#0038A8]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500">תיאור</label>
+                    <textarea 
+                      value={editDesc}
+                      onChange={(e) => setEditDesc(e.target.value)}
+                      rows="4"
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-[#0038A8] resize-none text-sm"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#0038A8] dark:text-blue-400">{selectedEvent.summary}</h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs bg-blue-50 text-[#0038A8] px-2 py-1 rounded-full font-bold dark:bg-blue-900/30 dark:text-blue-300">
+                        {selectedEvent.extendedProperties?.private?.category === 'birthday' ? 'יום הולדת' : 'אזכרה'}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">שנת מקור: {selectedEvent.extendedProperties?.private?.originalHebrewYear}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px]">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      {selectedEvent.description || 'אין תיאור'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
+              <button 
+                onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                <Trash2 className="w-4 h-4" />
+                מחק
+              </button>
+              
+              <div className="flex gap-2">
+                {isEditing ? (
+                  <>
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-xl font-bold transition-colors dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      ביטול
+                    </button>
+                    <button 
+                      onClick={handleUpdate}
+                      className="px-6 py-2 bg-[#0038A8] text-white rounded-xl font-bold hover:bg-blue-800 transition-all shadow-md shadow-blue-900/20"
+                    >
+                      שמור שינויים
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 transition-all dark:bg-slate-800 dark:text-white dark:border-slate-700"
+                  >
+                    ערוך אירוע
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
