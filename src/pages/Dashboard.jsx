@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info } from 'lucide-react';
 import Logo from '../components/Logo';
+import LoginModal from '../components/LoginModal';
 import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange } from '../utils/googleApi';
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [myEvents, setMyEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Calendar View State
   const [viewHDate, setViewHDate] = useState(new HDate());
@@ -77,7 +79,12 @@ export default function Dashboard() {
   };
 
   const handleLogin = () => {
-    authenticateWithGoogle((token) => {
+    setShowLoginModal(true);
+  };
+
+  const onLoginSelect = (scopeMode) => {
+    setShowLoginModal(false);
+    authenticateWithGoogle(scopeMode, (token) => {
       setIsAuthenticated(true);
     }, (err) => {
       alert("שגיאה בהתחברות: " + err.message);
@@ -387,6 +394,11 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onSelect={onLoginSelect} 
+      />
     </div>
   );
 }

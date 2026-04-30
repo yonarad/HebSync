@@ -6,21 +6,29 @@ const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 /**
  * Initialize Google Identity Services for OAuth token.
  */
-export function authenticateWithGoogle(onSuccess, onError) {
+export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
   if (!window.google) {
     onError(new Error("Google Identity Services not loaded"));
     return;
   }
 
+  let scope = 'https://www.googleapis.com/auth/calendar.events';
+  if (scopeMode === 'app_created') {
+    scope = 'https://www.googleapis.com/auth/calendar.app.created';
+  } else if (scopeMode === 'read_only') {
+    scope = 'https://www.googleapis.com/auth/calendar.readonly';
+  }
+
   const client = window.google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
-    scope: SCOPES,
+    scope: scope,
     callback: (response) => {
       if (response.error) {
         onError(response);
       } else {
         // Save the access token to session storage
         sessionStorage.setItem('gcal_token', response.access_token);
+        sessionStorage.setItem('gcal_scope_mode', scopeMode);
         onSuccess(response.access_token);
       }
     },
@@ -41,6 +49,57 @@ export function getAccessToken() {
  */
 export function logout() {
   sessionStorage.removeItem('gcal_token');
+  sessionStorage.removeItem('gcal_scope_mode');
+  sessionStorage.removeItem('gcal_app_calendar_id');
+}
+
+/**
+ * Get active calendar ID based on scope mode
+ */
+export async function getCalendarId() {
+  const mode = sessionStorage.getItem('gcal_scope_mode');
+  if (mode === 'all_events' || mode === 'read_only' || !mode) {
+    return 'primary';
+  }
+
+  // mode === 'app_created'
+  const cachedId = sessionStorage.getItem('gcal_app_calendar_id');
+  if (cachedId) return cachedId;
+
+  const token = getAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  // Fetch calendars list
+  const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  if (!response.ok) throw new Error("Failed to fetch calendars");
+  const data = await response.json();
+
+  const myCal = data.items?.find(c => c.summary === 'היומן העברי שלי (HebCal-Sync)');
+  if (myCal) {
+    sessionStorage.setItem('gcal_app_calendar_id', myCal.id);
+    return myCal.id;
+  }
+
+  // Create it if not found
+  const createRes = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ 
+      summary: 'היומן העברי שלי (HebCal-Sync)', 
+      description: 'יומן זה נוצר על ידי אפליקציית HebCal-Sync' 
+    })
+  });
+  
+  if (!createRes.ok) throw new Error("Failed to create app calendar");
+  const createData = await createRes.json();
+  sessionStorage.setItem('gcal_app_calendar_id', createData.id);
+  return createData.id;
 }
 
 /**
@@ -51,8 +110,10 @@ export async function fetchMyAppEvents() {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  // Fetch events from the primary calendar that have our appIdentifier
-  const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
+  const calendarId = await getCalendarId();
+
+  // Fetch events from the calendar that have our appIdentifier
+  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
   url.searchParams.append('privateExtendedProperty', 'appIdentifier=MyHebrewCalendar');
   url.searchParams.append('maxResults', '100');
   url.searchParams.append('showDeleted', 'false');
@@ -79,7 +140,9 @@ export async function fetchEventsInRange(timeMin, timeMax) {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
+  const calendarId = await getCalendarId();
+
+  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
   url.searchParams.append('timeMin', timeMin);
   url.searchParams.append('timeMax', timeMax);
   url.searchParams.append('singleEvents', 'true'); // Expand recurrences
@@ -145,7 +208,9 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
     }
   };
 
-  const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+  const calendarId = await getCalendarId();
+
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -171,7 +236,9 @@ export async function deleteEvent(googleEventId) {
   const token = getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId}`, {
+  const calendarId = await getCalendarId();
+
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`

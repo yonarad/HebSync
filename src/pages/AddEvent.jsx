@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle } from 'lucide-react';
 import Logo from '../components/Logo';
+import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 import { authenticateWithGoogle, getAccessToken, createHebcalEvent } from '../utils/googleApi';
@@ -10,6 +11,7 @@ export default function AddEvent() {
   const navigate = useNavigate();
   const [tab, setTab] = useState('manual');
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const currentHDate = new HDate();
   const currentHebrewYear = currentHDate.getFullYear();
   
@@ -91,14 +93,15 @@ export default function AddEvent() {
     if (e) e.preventDefault();
     
     if (!getAccessToken()) {
-      handleLoginAndSubmit();
+      setShowLoginModal(true);
     } else {
       submitEvent();
     }
   };
 
-  const handleLoginAndSubmit = () => {
-    authenticateWithGoogle(() => {
+  const onLoginSelect = (scopeMode) => {
+    setShowLoginModal(false);
+    authenticateWithGoogle(scopeMode, () => {
       submitEvent();
     }, (err) => {
       alert("שגיאה בהתחברות: " + err.message);
@@ -135,7 +138,7 @@ export default function AddEvent() {
       if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
         sessionStorage.removeItem('gcal_token');
         if (window.confirm("פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?")) {
-          handleLoginAndSubmit();
+          setShowLoginModal(true);
         }
       } else {
         alert("שגיאה בשמירת האירוע: " + e.message);
@@ -438,20 +441,32 @@ export default function AddEvent() {
                 >
                   חזרה לעריכה
                 </button>
-                <button 
-                  onClick={() => handleSubmit()}
-                  disabled={isLoading}
-                  className="flex-1 px-8 py-4 bg-[#0038A8] hover:bg-blue-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-                  {isLoading ? 'מסנכרן...' : 'אישור וסנכרון ליומן'}
-                </button>
+                {sessionStorage.getItem('gcal_scope_mode') === 'read_only' ? (
+                  <div className="flex-1 px-8 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold flex flex-col items-center justify-center gap-1 text-center cursor-not-allowed dark:bg-slate-800 dark:text-slate-400">
+                    <span className="flex items-center gap-2"><Info className="w-5 h-5" /> מצב קריאה בלבד</span>
+                    <span className="text-xs font-normal">התחבר מחדש עם הרשאות עריכה כדי לשמור</span>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => handleSubmit()}
+                    disabled={isLoading}
+                    className="flex-1 px-8 py-4 bg-[#0038A8] hover:bg-blue-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 disabled:opacity-70"
+                  >
+                    {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+                    {isLoading ? 'מסנכרן...' : 'אישור וסנכרון ליומן'}
+                  </button>
+                )}
               </div>
             </div>
           )}
           </div>
         </div>
       </main>
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onSelect={onLoginSelect} 
+      />
     </div>
   );
 }
