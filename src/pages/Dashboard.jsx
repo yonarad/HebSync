@@ -73,6 +73,14 @@ export default function Dashboard() {
     );
   };
 
+  const selectAllCalendars = () => {
+    setSelectedCalendarIds(calendars.map(c => c.id));
+  };
+
+  const deselectAllCalendars = () => {
+    setSelectedCalendarIds([]);
+  };
+
   const loadCalendarData = async () => {
     setIsCalendarLoading(true);
     try {
@@ -382,6 +390,25 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
+            
+            {isAuthenticated && calendars.length > 0 && (
+              <div className="flex gap-2 mb-3">
+                <button 
+                  onClick={selectAllCalendars}
+                  className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors"
+                >
+                  בחר הכל
+                </button>
+                <span className="text-slate-300">|</span>
+                <button 
+                  onClick={deselectAllCalendars}
+                  className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors"
+                >
+                  נקה הכל
+                </button>
+              </div>
+            )}
+
             {isAuthenticated ? (
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                 {calendars.map(cal => (
