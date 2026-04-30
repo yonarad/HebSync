@@ -82,7 +82,7 @@ export default function AddEvent() {
       targetDay = day;
     }
 
-    const data = getPreviewDates(targetYear, targetMonth, targetDay, 15, fallback30th);
+    const data = getPreviewDates(targetYear, targetMonth, targetDay, syncSpan, fallback30th);
     setPreviewData(data);
     setShowPreview(true);
   };
