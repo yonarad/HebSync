@@ -291,12 +291,12 @@ export default function Dashboard() {
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col text-right" dir="rtl">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10">
+    <div className="h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col text-right overflow-hidden" dir="rtl">
+      <header className="h-14 bg-white border-b border-slate-200 px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
-            <Logo className="w-10 h-10" />
-            <h1 className="text-xl font-bold text-[#0038A8] dark:text-blue-400">היומן העברי שלי</h1>
+            <Logo className="w-8 h-8" />
+            <h1 className="text-xl font-black text-[#0038A8] dark:text-blue-400 tracking-tight">היומן העברי שלי</h1>
           </div>
           <nav className="hidden md:flex items-center gap-2 border-r border-slate-200 pr-6 mr-2 dark:border-slate-700">
             <button
@@ -345,9 +345,8 @@ export default function Dashboard() {
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-80 bg-white border-l border-slate-200 hidden md:flex flex-col dark:bg-slate-900 dark:border-slate-800">
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-            {/* ... (Permission Status code stays the same) ... */}
-            <div className="flex flex-col gap-3">
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+            <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">רמת הרשאה</span>
                 <button 
@@ -359,18 +358,18 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center gap-2">
                 {scopeMode === 'app_created' ? (
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
-                    <Shield className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-xs">
+                    <Shield className="w-3 h-3" />
                     פרטיות מקסימלית
                   </div>
                 ) : scopeMode === 'read_only' ? (
-                  <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm">
-                    <Eye className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-xs">
+                    <Eye className="w-3 h-3" />
                     צפייה בלבד
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-sm">
-                    <Unlock className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xs">
+                    <Unlock className="w-3 h-3" />
                     גישה מלאה
                   </div>
                 )}
@@ -410,14 +409,14 @@ export default function Dashboard() {
             )}
 
             {isAuthenticated ? (
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-1 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                 {calendars.map(cal => (
-                  <label key={cal.id} className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg transition-colors dark:hover:bg-slate-800">
+                  <label key={cal.id} className="flex items-center gap-2 text-xs cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1 rounded-lg transition-colors dark:hover:bg-slate-800">
                     <input 
                       type="checkbox" 
                       checked={selectedCalendarIds.includes(cal.id)} 
                       onChange={() => toggleCalendar(cal.id)} 
-                      className="w-4 h-4 rounded border-slate-300 text-[#0038A8]" 
+                      className="w-3 h-3 rounded border-slate-300 text-[#0038A8]" 
                     />
                     <span className="truncate" title={cal.summary}>{cal.summary}</span>
                   </label>
@@ -428,23 +427,27 @@ export default function Dashboard() {
             )}
           </div>
           
-          <div className="p-6 flex-1 bg-slate-50/30 dark:bg-slate-900/10 flex flex-col items-center justify-center text-center space-y-4">
-            <div className="w-16 h-16 bg-blue-50 text-[#0038A8] rounded-full flex items-center justify-center dark:bg-blue-900/20 dark:text-blue-400">
-              <CalendarIcon className="w-8 h-8" />
+          <div className="p-4 flex-1 bg-slate-50/30 dark:bg-slate-900/10 flex flex-col items-center justify-center text-center space-y-2">
+            <div className="w-10 h-10 bg-blue-50 text-[#0038A8] rounded-full flex items-center justify-center dark:bg-blue-900/20 dark:text-blue-400">
+              <CalendarIcon className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">ניהול אירועים ישיר</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">לחץ על אירוע בלוח השנה כדי לערוך או למחוק אותו</p>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-200">ניהול אירועים ישיר</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">לחץ על אירוע בלוח השנה כדי לערוך או למחוק אותו</p>
             </div>
           </div>
 
-          <div className="p-4 mt-auto border-t border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10">
+          <div className="p-4 mt-auto border-t border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10 space-y-3">
             <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
               <Upload className="w-5 h-5 opacity-50" />
               <div>
                 <p className="text-xs font-bold">ייבוא מרוכז מ-CSV</p>
                 <p className="text-[10px] opacity-80">יכולת זו תתווסף בקרוב!</p>
               </div>
+            </div>
+            
+            <div className="pt-2 border-t border-blue-100/30 text-[9px] text-slate-400 font-medium leading-tight">
+              תודה לקהילת הקוד הפתוח ולספריית <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="hover:text-[#0038A8] dark:hover:text-blue-300 transition-colors">Hebcal</a> על המנוע החישובי
             </div>
           </div>
         </aside>
@@ -500,7 +503,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 flex-1 overflow-hidden dark:bg-slate-800 dark:border-slate-700 flex flex-col relative min-h-[600px]">
+            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 flex-1 overflow-hidden dark:bg-slate-800 dark:border-slate-700 flex flex-col relative">
               {isCalendarLoading && (
                 <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
                   <RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" />
@@ -519,7 +522,7 @@ export default function Dashboard() {
                 {days.map((dayObj, i) => (
                   <div
                     key={i}
-                    className={`h-[140px] p-2 border-b border-l border-slate-50 dark:border-slate-700/50 flex flex-col gap-2 ${!dayObj ? 'bg-slate-50/50 dark:bg-slate-900/20' : 'hover:bg-blue-50/30 transition-colors dark:hover:bg-blue-900/10'}`}
+                    className={`min-h-[100px] flex-1 p-2 border-b border-l border-slate-50 dark:border-slate-700/50 flex flex-col gap-1 ${!dayObj ? 'bg-slate-50/50 dark:bg-slate-900/20' : 'hover:bg-blue-50/30 transition-colors dark:hover:bg-blue-900/10'}`}
                   >
                     {dayObj && (
                       <>
@@ -564,9 +567,6 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <footer className="mt-6 py-4 text-center text-[10px] text-slate-400 font-medium border-t border-slate-50 dark:border-slate-800">
-            תודה לקהילת הקוד הפתוח ולספריית <a href="https://www.hebcal.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#0038A8] transition-colors">Hebcal</a> על המנוע החישובי
-          </footer>
         </div>
       </div>
       <LoginModal 

@@ -40,9 +40,9 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 dark:bg-slate-900 font-sans">
-      <div className="max-w-4xl text-center space-y-8 flex flex-col items-center">
-        <Logo className="w-24 h-24 mb-4 drop-shadow-xl" />
+    <div className="h-screen bg-slate-50 flex flex-col items-center justify-center p-6 dark:bg-slate-900 font-sans overflow-hidden">
+      <div className="max-w-4xl w-full text-center space-y-4 flex flex-col items-center">
+        <Logo className="w-20 h-20 mb-2 drop-shadow-xl" />
         
         <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           היומן העברי שלי <br />
@@ -50,20 +50,19 @@ export default function Home() {
         </h1>
         
         <p className="text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium">
-          סנכרון חכם ופרטי לחלוטין של אירועים עבריים ליומן Google שלך. 
-          תצוגת גיל אוטומטית, ניהול מרוכז ומעקב היסטורי.
+          סנכרון חכם ופרטי של אירועים עבריים ליומן Google שלך.
         </p>
 
-        <div className="pt-8 text-slate-800 dark:text-slate-200 font-bold text-lg">
-          מכיוון שהפרטיות שלך חשובה לנו, בחר את רמת הגישה המתאימה לך:
+        <div className="pt-2 text-slate-800 dark:text-slate-200 font-bold text-lg">
+          בחר את רמת הגישה המתאימה לך:
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2 w-full">
           {loginOptions.map((opt) => (
             <div 
               key={opt.id}
               onClick={() => handleLogin(opt.id)}
-              className={`group cursor-pointer p-6 rounded-3xl border-2 transition-all duration-300 text-right flex flex-col gap-4 dark:bg-slate-800/50 dark:border-slate-700 ${opt.color} hover:shadow-xl hover:-translate-y-1`}
+              className={`group cursor-pointer p-6 rounded-[2.5rem] border-2 transition-all duration-300 text-right flex flex-col gap-4 dark:bg-slate-800/50 dark:border-slate-700 ${opt.color} hover:shadow-2xl hover:-translate-y-1`}
             >
               <div className="flex justify-between items-start">
                 <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
@@ -76,37 +75,21 @@ export default function Home() {
                   {opt.description}
                 </p>
               </div>
-              <div className="mt-auto pt-4 flex items-center gap-2 text-[#0038A8] dark:text-blue-400 font-bold text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                התחבר עכשיו <ArrowRight className="w-4 h-4 rtl:rotate-180" />
-              </div>
             </div>
           ))}
         </div>
 
-        <div className="pt-12 flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-          {getAccessToken() && (
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-xl font-bold text-lg transition-all shadow-lg w-full sm:w-auto"
-            >
-              <CalendarDays className="w-5 h-5" />
-              חזרה ללוח הבקרה שלי
-            </button>
-          )}
-        </div>
-
-        <div className="pt-16 text-sm text-slate-500 dark:text-slate-400 flex flex-wrap items-center justify-center gap-3 font-medium">
-          <span className="bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-700 dark:text-slate-300">Privacy-First No-DB</span>
-          <ArrowRight className="w-4 h-4 rtl:rotate-180 text-slate-400" />
-          <span className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full text-[#0038A8] dark:text-blue-300">שמירה ישירה ל-Google Calendar</span>
+        <div className="pt-6 flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-500">
+          <span className="bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-sm">Privacy-First Architecture</span>
+          <span className="bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-sm">No Database</span>
+          <span className="bg-[#0038A8]/10 text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300 px-4 py-2 rounded-full">Google OAuth</span>
         </div>
       </div>
       
-      <footer className="mt-auto py-8 text-slate-400 text-sm font-medium flex flex-col items-center gap-2">
+      <footer className="mt-8 py-4 text-slate-400 text-[10px] font-medium flex flex-col items-center gap-1">
         <p>היומן העברי שלי © {new Date().getFullYear()}</p>
         <p className="flex items-center gap-1">
-          נוצר באהבה ❤️ תוך שימוש בספריית הקוד הפתוח של 
-          <a href="https://www.hebcal.com" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a>
+          תודה לקהילת הקוד הפתוח ולספריית <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a> על המנוע החישובי
         </p>
       </footer>
     </div>
