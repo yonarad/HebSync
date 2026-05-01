@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, Shield, Unlock, Eye } from 'lucide-react';
+import { CalendarDays, PlusCircle, ArrowRight, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
 import { authenticateWithGoogle, getAccessToken } from '../utils/googleApi';
 
@@ -40,7 +40,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 dark:bg-slate-900 font-sans">
+    <div className="h-screen bg-slate-50 flex flex-col items-center justify-center p-6 dark:bg-slate-900 font-sans overflow-hidden">
       <div className="max-w-4xl w-full text-center space-y-4 flex flex-col items-center">
         <Logo className="w-20 h-20 mb-2 drop-shadow-xl" />
         
@@ -78,18 +78,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-
-        {getAccessToken() && (
-          <div className="pt-4 w-full flex justify-center">
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="group flex items-center gap-3 px-8 py-4 bg-[#0038A8] text-white rounded-3xl font-bold text-lg transition-all hover:bg-blue-800 hover:shadow-xl hover:-translate-y-1 active:scale-95 shadow-lg shadow-blue-900/20"
-            >
-              <CalendarDays className="w-5 h-5 transition-transform group-hover:scale-110" />
-              חזרה ללוח הבקרה שלך
-            </button>
-          </div>
-        )}
 
         <div className="pt-6 flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-slate-500">
           <span className="bg-white dark:bg-slate-800 px-4 py-2 rounded-full shadow-sm">Privacy-First Architecture</span>
