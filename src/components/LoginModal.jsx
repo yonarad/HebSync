@@ -19,20 +19,20 @@ export default function LoginModal({ isOpen, onClose, onSelect }) {
   const options = [
     {
       id: SCOPE_MODES.APP_CREATED,
-      title: 'מקסימום פרטיות (מומלץ)',
-      description: 'האפליקציה תוכל לראות ולערוך אך ורק יומנים שהיא יצרה בעצמה. לא תהיה גישה ליומן האישי שלך.',
+      title: 'פרטיות מקסימלית',
+      description: 'ניהול של יומני האפליקציה הזו בלבד. האפליקציה לא תוכל לגשת לאירועים ביומנים האחרים שלך.',
       icon: <Shield className="w-6 h-6 text-green-500" />
     },
     {
       id: SCOPE_MODES.READ_ONLY,
       title: 'צפייה בלבד',
-      description: 'האפליקציה תוכל רק לקרוא אירועים כדי להציג אותם בלוח השנה, ללא אפשרות עריכה או הוספה.',
+      description: 'הצגת כל האירועים הקיימים ביומנים שלך בתצוגת לוח שנה עברי, ללא אפשרות עריכה.',
       icon: <Eye className="w-6 h-6 text-purple-500" />
     },
     {
       id: SCOPE_MODES.ALL_EVENTS,
-      title: 'גישה מלאה ליומנים',
-      description: 'האפליקציה תוכל לקרוא ולערוך אירועים בכל היומנים שלך (כדי להציג אירועים חיצוניים ולהוסיף ליומן הראשי).',
+      title: 'גישה מלאה',
+      description: 'צפייה ועריכה של אירועים בכל היומנים שלך. מאפשר הוספת אירועים עבריים לכל יומני המשתמש.',
       icon: <Unlock className="w-6 h-6 text-blue-500" />
     }
   ];

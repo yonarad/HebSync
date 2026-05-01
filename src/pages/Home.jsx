@@ -19,24 +19,21 @@ export default function Home() {
     {
       id: 'app_created',
       title: 'פרטיות מקסימלית',
-      subtitle: 'מומלץ למשתמשי קצה',
-      description: 'ניהול אירועים ביומן ייעודי בלבד. האפליקציה לא רואה את האירועים הפרטיים שלך.',
+      description: 'ניהול של יומני האפליקציה הזו בלבד. האפליקציה לא תוכל לגשת לאירועים ביומנים האחרים שלך.',
       icon: <Shield className="w-8 h-8 text-green-500" />,
       color: 'border-green-100 hover:border-green-500 bg-green-50/30'
     },
     {
       id: 'read_only',
       title: 'צפייה בלבד',
-      subtitle: 'למעקב וצפייה',
-      description: 'הצגת כל האירועים הקיימים ביומנים שלך בלוח השנה העברי, ללא אפשרות עריכה.',
+      description: 'הצגת כל האירועים הקיימים ביומנים שלך בתצוגת לוח שנה עברי, ללא אפשרות עריכה.',
       icon: <Eye className="w-8 h-8 text-purple-500" />,
       color: 'border-purple-100 hover:border-purple-500 bg-purple-50/30'
     },
     {
       id: 'all_events',
       title: 'גישה מלאה',
-      subtitle: 'למשתמשים מתקדמים',
-      description: 'צפייה ועריכה של אירועים בכל היומנים שלך. מאפשר הוספת אירועים עבריים ליומן הראשי.',
+      description: 'צפייה ועריכה של אירועים בכל היומנים שלך. מאפשר הוספת אירועים עבריים לכל יומני המשתמש.',
       icon: <Unlock className="w-8 h-8 text-blue-500" />,
       color: 'border-blue-100 hover:border-blue-500 bg-blue-50/30'
     }
@@ -44,7 +41,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 dark:bg-slate-900 font-sans">
-      <div className="max-w-3xl text-center space-y-8 flex flex-col items-center">
+      <div className="max-w-4xl text-center space-y-8 flex flex-col items-center">
         <Logo className="w-24 h-24 mb-4 drop-shadow-xl" />
         
         <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight">
@@ -54,10 +51,14 @@ export default function Home() {
         
         <p className="text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium">
           סנכרון חכם ופרטי לחלוטין של אירועים עבריים ליומן Google שלך. 
-          תצוגת גיל אוטומטית, ניהול מרוכז ומעקב היסטורי מדויק ל-120 שנים קדימה.
+          תצוגת גיל אוטומטית, ניהול מרוכז ומעקב היסטורי.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 w-full">
+        <div className="pt-8 text-slate-800 dark:text-slate-200 font-bold text-lg">
+          מכיוון שהפרטיות שלך חשובה לנו, בחר את רמת הגישה המתאימה לך:
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 w-full">
           {loginOptions.map((opt) => (
             <div 
               key={opt.id}
@@ -67,9 +68,6 @@ export default function Home() {
               <div className="flex justify-between items-start">
                 <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
                   {opt.icon}
-                </div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {opt.subtitle}
                 </div>
               </div>
               <div>
