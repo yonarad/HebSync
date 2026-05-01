@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye, X } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye, X, Upload } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, revokeAccess, updateEvent } from '../utils/googleApi';
@@ -437,6 +437,16 @@ export default function Dashboard() {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">לחץ על אירוע בלוח השנה כדי לערוך או למחוק אותו</p>
             </div>
           </div>
+
+          <div className="p-4 mt-auto border-t border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-900/10">
+            <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
+              <Upload className="w-5 h-5 opacity-50" />
+              <div>
+                <p className="text-xs font-bold">ייבוא מרוכז מ-CSV</p>
+                <p className="text-[10px] opacity-80">יכולת זו תתווסף בקרוב!</p>
+              </div>
+            </div>
+          </div>
         </aside>
 
         <div className="flex-1 p-6 overflow-auto">
@@ -554,6 +564,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          <footer className="mt-6 py-4 text-center text-[10px] text-slate-400 font-medium border-t border-slate-50 dark:border-slate-800">
+            תודה לקהילת הקוד הפתוח ולספריית <a href="https://www.hebcal.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#0038A8] transition-colors">Hebcal</a> על המנוע החישובי
+          </footer>
         </div>
       </div>
       <LoginModal 

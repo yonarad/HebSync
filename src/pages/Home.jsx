@@ -101,6 +101,14 @@ export default function Home() {
           <span className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full text-[#0038A8] dark:text-blue-300">שמירה ישירה ל-Google Calendar</span>
         </div>
       </div>
+      
+      <footer className="mt-auto py-8 text-slate-400 text-sm font-medium flex flex-col items-center gap-2">
+        <p>היומן העברי שלי © {new Date().getFullYear()}</p>
+        <p className="flex items-center gap-1">
+          נוצר באהבה ❤️ תוך שימוש בספריית הקוד הפתוח של 
+          <a href="https://www.hebcal.com" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a>
+        </p>
+      </footer>
     </div>
   );
 }

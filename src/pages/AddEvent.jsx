@@ -481,14 +481,16 @@ export default function AddEvent() {
                     </div>
                   </form>
                 ) : (
-                  <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 dark:bg-slate-900/30 dark:border-slate-700">
-                    <div className="w-16 h-16 bg-blue-100 text-[#0038A8] rounded-full flex items-center justify-center mb-2 dark:bg-[#0038A8]/30 dark:text-blue-400">
-                      <Upload className="w-8 h-8" />
+                  <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 dark:bg-slate-900/30 dark:border-slate-700">
+                    <div className="w-20 h-20 bg-blue-50 text-[#0038A8] rounded-full flex items-center justify-center mb-2 dark:bg-[#0038A8]/20 dark:text-blue-400">
+                      <Upload className="w-10 h-10 opacity-50" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">העלה קובץ CSV</h3>
-                    <button className="px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 shadow-sm transition-all dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">
-                      בחירת קובץ
-                    </button>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">ייבוא מרוכז מ-CSV</h3>
+                    <p className="text-slate-500 max-w-xs mx-auto dark:text-slate-400">
+                      אנחנו עובדים על אפשרות לייבוא של מאות אירועים בבת אחת מקובץ אקסל או CSV. 
+                      <br />
+                      <span className="font-bold text-[#0038A8] dark:text-blue-400 mt-2 block">יכולת זו תהיה זמינה בקרוב!</span>
+                    </p>
                   </div>
                 )}
               </div>
