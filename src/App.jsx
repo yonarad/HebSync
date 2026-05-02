@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
+import MyCalendar from './pages/MyCalendar';
 import AddEvent from './pages/AddEvent';
 
 function App() {
@@ -10,7 +10,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<MyCalendar />} />
           <Route path="/add-event" element={<AddEvent />} />
         </Routes>
       </Router>

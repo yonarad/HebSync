@@ -60,7 +60,7 @@ export default function Home() {
                 onClick={() => navigate('/dashboard')}
                 className="group flex items-center gap-3 px-8 py-4 bg-[#0038A8] text-white rounded-2xl font-black text-xl hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
               >
-                כניסה ללוח הבקרה
+                כניסה ליומן שלי
                 <ArrowLeft className="w-6 h-6 group-hover:translate-x-[-4px] transition-transform" />
               </button>
               <p className="text-sm font-bold text-slate-400">או בחר רמת גישה אחרת להתחברות מחדש:</p>

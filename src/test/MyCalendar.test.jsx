@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import Dashboard from '../pages/Dashboard';
+import MyCalendar from '../pages/MyCalendar';
 
 // Mock the API utilities
 vi.mock('../utils/googleApi', () => ({
@@ -23,12 +23,12 @@ vi.mock('../components/Logo', () => ({
 const renderDashboard = () => {
   return render(
     <BrowserRouter>
-      <Dashboard />
+      <MyCalendar />
     </BrowserRouter>
   );
 };
 
-describe('Dashboard Component', () => {
+describe('My Calendar Component', () => {
   it('should render the dashboard header and logo', () => {
     renderDashboard();
     // Using a more specific selector or getting the first one

@@ -7,7 +7,7 @@ import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, 
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
-export default function Dashboard() {
+export default function MyCalendar() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
   const [myEvents, setMyEvents] = useState([]);
@@ -285,7 +285,7 @@ export default function Dashboard() {
           </div>
           <nav className="hidden md:flex items-center gap-2 border-r border-slate-200 pr-6 mr-2 dark:border-slate-700">
             <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg dark:text-slate-400">דף הבית</button>
-            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">לוח בקרה</button>
+            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">היומן שלי</button>
           </nav>
         </div>
         <div className="flex items-center gap-4">
