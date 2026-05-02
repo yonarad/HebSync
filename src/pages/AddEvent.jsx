@@ -90,6 +90,14 @@ export default function AddEvent() {
     );
   };
 
+  const selectAllCalendars = () => {
+    setSelectedCalendarIds(calendars.map(c => c.id));
+  };
+
+  const deselectAllCalendars = () => {
+    setSelectedCalendarIds([]);
+  };
+
   const show30thFallback = !isGregorianEntry && day === 30 && ['Cheshvan', 'Kislev', 'Adar I'].includes(month);
 
   // Generate list of years for the dropdown
@@ -436,7 +444,14 @@ export default function AddEvent() {
 
                       {calendars.length > 0 && (
                         <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-                          <label className="text-sm font-bold text-slate-700 dark:text-slate-300">בחר יומני יעד (ניתן לבחור יותר מאחד)</label>
+                          <div className="flex justify-between items-center">
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">בחר יומני יעד</label>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={selectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">בחר הכל</button>
+                              <span className="text-slate-300 text-[10px]">|</span>
+                              <button type="button" onClick={deselectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">נקה הכל</button>
+                            </div>
+                          </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {calendars.map(cal => (
                               <label 
@@ -502,22 +517,22 @@ export default function AddEvent() {
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-                <table className="w-full text-right border-collapse">
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                <table className="w-full text-right border-collapse min-w-[500px]">
                   <thead>
                     <tr className="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm font-bold">
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700">שנה עברית</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700">תאריך עברי</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700">תאריך לועזי</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700">הערות</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">שנה עברית</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">תאריך עברי</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">תאריך לועזי</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">הערות</th>
                     </tr>
                   </thead>
                   <tbody>
                     {previewData.map((occ, idx) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800">
-                        <td className="p-4 font-medium text-slate-900 dark:text-white">ה׳{gematriya(occ.hebrewYear)}</td>
-                        <td className="p-4 text-slate-700 dark:text-slate-300 font-bold">{occ.hebrewDate}</td>
-                        <td className="p-4 text-slate-600 dark:text-slate-400">{occ.gregorianDate}</td>
+                        <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">ה׳{gematriya(occ.hebrewYear)}</td>
+                        <td className="p-4 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{occ.hebrewDate}</td>
+                        <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{occ.gregorianDate}</td>
                         <td className="p-4 text-xs font-medium text-amber-600 dark:text-amber-400">{occ.note}</td>
                       </tr>
                     ))}
@@ -539,7 +554,7 @@ export default function AddEvent() {
                   </div>
                 ) : (
                   <button 
-                    onClick={() => handleSubmit()}
+                    onClick={() => submitEvent()}
                     disabled={isLoading}
                     className="flex-1 px-8 py-4 bg-[#0038A8] hover:bg-blue-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 disabled:opacity-70"
                   >

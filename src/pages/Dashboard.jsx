@@ -322,6 +322,25 @@ export default function Dashboard() {
                 <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> היומנים שלי</h2>
                 {isAuthenticated && scopeMode !== 'read_only' && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ חדש</button>}
               </div>
+              
+              {isAuthenticated && calendars.length > 0 && (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={selectAllCalendars}
+                    className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors"
+                  >
+                    בחר הכל
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button 
+                    onClick={deselectAllCalendars}
+                    className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors"
+                  >
+                    נקה הכל
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                 {calendars.map(cal => (
                   <label key={cal.id} className="flex items-center gap-2 text-xs cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg dark:hover:bg-slate-800 transition-colors">
