@@ -1,4 +1,6 @@
-import { HDate, HebrewCalendar, Location, gematriya } from '@hebcal/core';
+import { HDate, HebrewCalendar, Location, gematriya as hGematriya } from '@hebcal/core';
+
+export const gematriya = hGematriya;
 
 // Mapping user-facing Hebrew month names to HebCal month names
 export const HEBREW_MONTHS = [
