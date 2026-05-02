@@ -76,9 +76,6 @@ export default function AddEvent() {
       // Filter to only calendars where the user has write access
       const writableCals = cals.filter(c => c.accessRole === 'owner' || c.accessRole === 'writer');
       setCalendars(writableCals);
-      if (writableCals.length > 0 && selectedCalendarIds.length === 0) {
-        setSelectedCalendarIds([writableCals[0].id]);
-      }
     } catch (e) {
       console.error("Failed to load calendars", e);
     }

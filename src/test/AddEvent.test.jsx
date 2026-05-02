@@ -28,10 +28,18 @@ describe('AddEvent Component', () => {
     expect(screen.getByText('שם האירוע')).toBeInTheDocument();
   });
 
-  it('should show Select All and Clear All for calendars', async () => {
+  it('should not have any calendar selected by default', async () => {
     renderAddEvent();
     const selectAllBtn = await screen.findByText('בחר הכל');
     expect(selectAllBtn).toBeInTheDocument();
+    // Check that no checkbox is checked
+    const checkboxes = screen.getAllByRole('checkbox');
+    const calendarCheckboxes = checkboxes.filter(cb => !cb.name || cb.name === 'calendar-selection'); // filters out the gregorian toggle
+    calendarCheckboxes.forEach(cb => {
+      if (cb.id !== 'gregorian-toggle') { // simple check to avoid the toggle
+        expect(cb.checked).toBe(false);
+      }
+    });
   });
 
   it('should show Hebrew/Gregorian toggle option', () => {
