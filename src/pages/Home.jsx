@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, PlusCircle, ArrowRight, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, PlusCircle, ArrowLeft, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
 import { authenticateWithGoogle, getAccessToken } from '../utils/googleApi';
 
@@ -54,7 +54,20 @@ export default function Home() {
         </p>
 
         <div className="pt-4 text-slate-800 dark:text-slate-200 font-bold text-base md:text-lg">
-          בחר את רמת הגישה המתאימה לך:
+          {getAccessToken() ? (
+            <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="group flex items-center gap-3 px-8 py-4 bg-[#0038A8] text-white rounded-2xl font-black text-xl hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
+              >
+                כניסה ללוח הבקרה
+                <ArrowLeft className="w-6 h-6 group-hover:translate-x-[-4px] transition-transform" />
+              </button>
+              <p className="text-sm font-bold text-slate-400">או בחר רמת גישה אחרת להתחברות מחדש:</p>
+            </div>
+          ) : (
+            "בחר את רמת הגישה המתאימה לך:"
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pt-2 w-full max-w-lg md:max-w-none">
