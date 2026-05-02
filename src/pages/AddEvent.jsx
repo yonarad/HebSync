@@ -197,55 +197,48 @@ export default function AddEvent() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col text-right" dir="rtl">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/')}>
-            <Logo className="w-10 h-10" />
-            <h1 className="text-xl font-bold text-[#0038A8] dark:text-blue-400">היומן העברי שלי</h1>
+      <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30 sticky top-0">
+        <div className="flex items-center gap-4 md:gap-6">
+          <button 
+            onClick={() => showPreview ? setShowPreview(false) : navigate('/dashboard')}
+            className="p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+            <Logo className="w-8 h-8" />
+            <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight dark:text-white">
+              <span className="text-[#0038A8] dark:text-blue-400">Heb</span>Cal
+            </h1>
           </div>
+
           <nav className="hidden md:flex items-center gap-2 border-r border-slate-200 pr-6 mr-2 dark:border-slate-700">
-            <button 
-              onClick={() => navigate('/')} 
-              className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
-            >
-              דף הבית
-            </button>
-            <button 
-              onClick={() => navigate('/dashboard')} 
-              className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-300"
-            >
-              לוח בקרה
-            </button>
+            <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">דף הבית</button>
+            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">לוח בקרה</button>
           </nav>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-2">
           {getAccessToken() && (
             <button
               onClick={handleRevoke}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20"
-              title="ביטול הרשאות וניתוק מלא מגוגל"
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20"
+              title="ניתוק חשבון"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">ניתוק חשבון</span>
+              <LogOut className="w-5 h-5" />
             </button>
           )}
-          <button 
-            onClick={() => showPreview ? setShowPreview(false) : navigate('/dashboard')}
-            className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition-colors dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-            {showPreview ? 'חזרה לעריכה' : 'חזרה ללוח הבקרה'}
-          </button>
         </div>
       </header>
 
-      <main className="p-6 overflow-auto flex-1">
+      <main className="p-4 md:p-8 overflow-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex flex-col gap-1 mb-2">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
               {showPreview ? 'תצוגה מקדימה' : 'הוספת אירוע'}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400">
+            <p className="text-sm md:text-base text-slate-500 dark:text-slate-400">
               {showPreview ? 'בדוק את מועדי האירוע בשנים הקרובות' : 'הזן אירוע בודד או העלה קובץ מרוכז'}
             </p>
           </div>
