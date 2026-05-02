@@ -7,9 +7,16 @@ import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdat
 import { HDate, gematriya } from '@hebcal/core';
 import { authenticateWithGoogle, getAccessToken, createHebcalEvent, fetchAllCalendars, revokeAccess } from '../utils/googleApi';
 
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+
 export default function AddEvent() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'he';
+
   const [tab, setTab] = useState('manual');
+  // ... rest of the code remains same but strings replaced
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [calendars, setCalendars] = useState([]);
@@ -139,12 +146,12 @@ export default function AddEvent() {
       await loadCalendars();
       submitEvent();
     }, (err) => {
-      alert("שגיאה בהתחברות: " + err.message);
+      alert(t('errorSyncFailed') + ": " + err.message);
     });
   };
 
   const handleRevoke = async () => {
-    if (!window.confirm("פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?")) return;
+    if (!window.confirm(isRtl ? "פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?" : "This will disconnect the app from your Google account and revoke all permissions. Continue?")) return;
     setIsLoading(true);
     await revokeAccess();
     setIsLoading(false);
@@ -183,7 +190,7 @@ export default function AddEvent() {
         createHebcalEvent(title, category, targetYear, rdateString, calendarId, notes)
       ));
 
-      alert(`האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!`);
+      alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
       navigate('/dashboard');
     } catch (e) {
       console.error("Submission error:", e);
@@ -201,14 +208,14 @@ export default function AddEvent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col text-right" dir="rtl">
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30 sticky top-0">
         <div className="flex items-center gap-4 md:gap-6">
           <button 
             onClick={() => showPreview ? setShowPreview(false) : navigate('/dashboard')}
             className="p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className={`w-5 h-5 ${isRtl ? '' : 'rotate-180'}`} />
           </button>
           
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
@@ -218,18 +225,19 @@ export default function AddEvent() {
             </h1>
           </div>
 
-          <nav className="hidden md:flex items-center gap-2 border-r border-slate-200 pr-6 mr-2 dark:border-slate-700">
-            <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">דף הבית</button>
-            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">היומן שלי</button>
+          <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
+            <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('home')}</button>
+            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('myCalendar')}</button>
           </nav>
         </div>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           {getAccessToken() && (
             <button
               onClick={handleRevoke}
               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20"
-              title="ניתוק חשבון"
+              title={t('disconnect')}
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -241,10 +249,10 @@ export default function AddEvent() {
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex flex-col gap-1 mb-2">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-              {showPreview ? 'תצוגה מקדימה' : 'הוספת אירוע'}
+              {showPreview ? t('preview') : t('addEventTitle')}
             </h2>
             <p className="text-sm md:text-base text-slate-500 dark:text-slate-400">
-              {showPreview ? 'בדוק את מועדי האירוע בשנים הקרובות' : 'הזן אירוע בודד או העלה קובץ מרוכז'}
+              {showPreview ? t('checkUpcomingDates') : t('addEventSubtitle')}
             </p>
           </div>
 
@@ -256,13 +264,13 @@ export default function AddEvent() {
                   className={`flex-1 py-4 text-center font-medium transition-colors ${tab === 'manual' ? 'text-[#0038A8] border-b-2 border-[#0038A8] bg-blue-50/50 dark:bg-[#0038A8]/20 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setTab('manual')}
                 >
-                  הזנה ידנית
+                  {t('manualEntry')}
                 </button>
                 <button 
                   className={`flex-1 py-4 text-center font-medium transition-colors ${tab === 'csv' ? 'text-[#0038A8] border-b-2 border-[#0038A8] bg-blue-50/50 dark:bg-[#0038A8]/20 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setTab('csv')}
                 >
-                  העלאת קובץ CSV
+                  {t('uploadCsv')}
                 </button>
               </div>
 
@@ -271,35 +279,35 @@ export default function AddEvent() {
                   <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePreview(); }}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">שם האירוע</label>
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('eventName')}</label>
                         <input 
                           type="text" 
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          placeholder="לדוגמה: יום הולדת של דוד" 
+                          placeholder={isRtl ? "לדוגמה: יום הולדת של דוד" : "e.g. David's Birthday"} 
                           className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 transition-all outline-none dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8]"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">קטגוריה</label>
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('category')}</label>
                         <select 
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
                           className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8]">
-                          <option value="birthday">יום הולדת</option>
-                          <option value="anniversary">יום נישואין</option>
-                          <option value="memorial">אזכרה</option>
-                          <option value="other">אחר</option>
+                          <option value="birthday">{t('birthday')}</option>
+                          <option value="anniversary">{t('anniversary')}</option>
+                          <option value="memorial">{t('memorial')}</option>
+                          <option value="other">{t('other')}</option>
                         </select>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">תיאור / הערות (אופציונלי)</label>
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('description')}</label>
                       <textarea 
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="הוסף פרטים נוספים שיופיעו ביומן..." 
+                        placeholder={isRtl ? "הוסף פרטים נוספים שיופיעו ביומן..." : "Add more details for the calendar..."} 
                         rows="2"
                         className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 transition-all outline-none dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8] resize-none"
                       />
@@ -309,7 +317,7 @@ export default function AddEvent() {
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg dark:text-slate-200">
                           <CalendarIcon className="w-5 h-5 text-[#0038A8]" />
-                          תאריך האירוע המקורי
+                          {t('originalEventDate')}
                         </h3>
                         <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-400">
                           <input 
@@ -318,38 +326,38 @@ export default function AddEvent() {
                             onChange={(e) => setIsGregorianEntry(e.target.checked)}
                             className="w-4 h-4 text-[#0038A8] rounded" 
                           />
-                          הזן תאריך לועזי במקום
+                          {t('enterGregorian')}
                         </label>
                       </div>
                       
                       {!isGregorianEntry ? (
                         <div className="grid grid-cols-3 gap-4">
                           <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">שנת מקור (עברית)</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('sourceYear')}</label>
                             <select 
                               value={year}
                               onChange={(e) => setYear(e.target.value)}
                               className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
                             >
                               {yearOptions.map(y => (
-                                <option key={y} value={y}>ה׳{gematriya(y)}</option>
+                                <option key={y} value={y}>{isRtl ? 'ה׳' : ''}{gematriya(y)}</option>
                               ))}
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">חודש</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('month')}</label>
                             <select 
                               value={month}
                               onChange={(e) => setMonth(e.target.value)}
                               className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
                             >
                               {availableMonths.map(m => (
-                                <option key={m.id} value={m.id}>{m.label}</option>
+                                <option key={m.id} value={m.id}>{isRtl ? m.label : m.id}</option>
                               ))}
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">יום</label>
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('day')}</label>
                             <select 
                               value={day}
                               onChange={(e) => setDay(parseInt(e.target.value, 10))}
@@ -357,7 +365,7 @@ export default function AddEvent() {
                             >
                               {Array.from({length: daysInMonth}).map((_, i) => (
                                 <option key={i+1} value={i+1}>
-                                  {gematriya(i+1)}
+                                  {isRtl ? gematriya(i+1) : i+1}
                                 </option>
                               ))}
                             </select>
@@ -367,7 +375,7 @@ export default function AddEvent() {
                         <div className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">תאריך לועזי מקורי</label>
+                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('gregorianDate')}</label>
                               <input 
                                 type="date" 
                                 value={gregDate}
@@ -382,7 +390,7 @@ export default function AddEvent() {
                                 className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${afterSunset ? 'bg-[#0038A8]/10 border-[#0038A8] text-[#0038A8]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                               >
                                 {afterSunset ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-                                {afterSunset ? 'אחרי השקיעה' : 'לפני השקיעה'}
+                                {afterSunset ? t('afterSunset') : (isRtl ? 'לפני השקיעה' : 'Before Sunset')}
                               </button>
                             </div>
                           </div>
@@ -390,8 +398,8 @@ export default function AddEvent() {
                           {convertedHDate && (
                             <div className="mt-4 p-4 bg-cyan-50 text-cyan-900 rounded-lg border border-cyan-100 flex items-center justify-between dark:bg-cyan-900/20 dark:text-cyan-100 dark:border-cyan-800">
                               <div>
-                                <span className="block text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 mb-1">התאריך העברי המחושב</span>
-                                <span className="text-xl font-bold">{convertedHDate.renderGematriya()}</span>
+                                <span className="block text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 mb-1">{isRtl ? 'התאריך העברי המחושב' : 'Calculated Hebrew Date'}</span>
+                                <span className="text-xl font-bold">{isRtl ? convertedHDate.renderGematriya() : convertedHDate.toString()}</span>
                               </div>
                             </div>
                           )}
@@ -402,30 +410,30 @@ export default function AddEvent() {
                         <div className="mt-4 p-5 bg-amber-50 rounded-2xl border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 shadow-sm">
                           <h4 className="font-bold text-amber-800 mb-2 flex items-center gap-2 dark:text-amber-400">
                             <Info className="w-4 h-4" />
-                            שים לב: בחרת ביום ה-30 בחודש (ל׳)
+                            {isRtl ? 'שים לב: בחרת ביום ה-30 בחודש (ל׳)' : 'Note: You selected the 30th day of the month'}
                           </h4>
                           <p className="text-sm text-amber-700 mb-4 leading-relaxed dark:text-amber-300/80">
-                            בחלק מהשנים העבריות חודש זה הוא "חסר" (בן 29 ימים בלבד), ולכן התאריך ל׳ לא קיים בהן. בחר כיצד תרצה לנהוג בשנים אלו:
+                            {isRtl ? 'בחלק מהשנים העבריות חודש זה הוא "חסר" (בן 29 ימים בלבד), ולכן התאריך ל׳ לא קיים בהן. בחר כיצד תרצה לנהוג בשנים אלו:' : 'In some Hebrew years, this month is "short" (only 29 days), so the 30th doesn\'t exist. Choose how to handle these years:'}
                           </p>
                           <div className="grid grid-cols-1 gap-3">
                             <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
                               <input type="radio" name="fallback" checked={fallback30th === '29th'} onChange={() => setFallback30th('29th')} className="w-4 h-4 text-[#0038A8]" />
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">הקדמה ל-כ״ט באותו חודש</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'הקדמה ל-כ״ט באותו חודש' : 'Move to 29th of the same month'}</span>
                             </label>
                             <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
                               <input type="radio" name="fallback" checked={fallback30th === '1st'} onChange={() => setFallback30th('1st')} className="w-4 h-4 text-[#0038A8]" />
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">דחייה ל-א׳ בחודש הבא</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דחייה ל-א׳ בחודש הבא' : 'Move to 1st of the next month'}</span>
                             </label>
                             <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
                               <input type="radio" name="fallback" checked={fallback30th === 'skip'} onChange={() => setFallback30th('skip')} className="w-4 h-4 text-[#0038A8]" />
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">דילוג על השנה (לא ליצור אירוע)</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דילוג על השנה (לא ליצור אירוע)' : 'Skip the year (don\'t create event)'}</span>
                             </label>
                           </div>
                         </div>
                       )}
                       
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">כמה מופעים לייצר לאירוע?</label>
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('howManyOccurrences')}</label>
                         <div className="flex items-center gap-3">
                           <input 
                             type="number"
@@ -435,18 +443,18 @@ export default function AddEvent() {
                             onChange={(e) => setSyncSpan(Math.min(121, Math.max(1, parseInt(e.target.value, 10) || 1)))}
                             className="w-24 p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] outline-none bg-white dark:bg-slate-800 dark:border-slate-600 font-bold text-center"
                           />
-                          <span className="text-slate-600 dark:text-slate-400 font-medium">מופעים</span>
+                          <span className="text-slate-600 dark:text-slate-400 font-medium">{t('occurrences')}</span>
                         </div>
                       </div>
 
                       {calendars.length > 0 && (
                         <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                           <div className="flex justify-between items-center">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">בחר יומני יעד</label>
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('selectTargetCalendars')}</label>
                             <div className="flex gap-2">
-                              <button type="button" onClick={selectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">בחר הכל</button>
+                              <button type="button" onClick={selectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('selectAll')}</button>
                               <span className="text-slate-300 text-[10px]">|</span>
-                              <button type="button" onClick={deselectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">נקה הכל</button>
+                              <button type="button" onClick={deselectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('clearAll')}</button>
                             </div>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -481,7 +489,7 @@ export default function AddEvent() {
                         className="px-8 py-4 bg-[#0038A8] hover:bg-blue-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 text-lg w-full md:w-auto flex items-center justify-center gap-2"
                       >
                         <Eye className="w-5 h-5" />
-                        הצג תצוגה מקדימה
+                        {t('showPreview')}
                       </button>
                     </div>
                   </form>
@@ -505,29 +513,29 @@ export default function AddEvent() {
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">ייצור של {syncSpan} מופעים</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('occurrences')}: {syncSpan}</p>
                 </div>
-                <div className="text-left">
+                <div className={isRtl ? 'text-left' : 'text-right'}>
                   <span className="text-xs font-bold text-[#0038A8] bg-white px-2 py-1 rounded dark:bg-slate-700 dark:text-blue-300">
-                    {category === 'birthday' ? 'יום הולדת' : category === 'anniversary' ? 'יום נישואין' : category === 'memorial' ? 'אזכרה' : 'אחר'}
+                    {t(category)}
                   </span>
                 </div>
               </div>
 
               <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                <table className="w-full text-right border-collapse min-w-[500px]">
+                <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} border-collapse min-w-[500px]`}>
                   <thead>
                     <tr className="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm font-bold">
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">שנה עברית</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">תאריך עברי</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">תאריך לועזי</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">הערות</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewYear')}</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewDate')}</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('gregorianDate')}</th>
+                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('notes')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {previewData.map((occ, idx) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800">
-                        <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">ה׳{gematriya(occ.hebrewYear)}</td>
+                        <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{isRtl ? 'ה׳' : ''}{gematriya(occ.hebrewYear)}</td>
                         <td className="p-4 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{occ.hebrewDate}</td>
                         <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{occ.gregorianDate}</td>
                         <td className="p-4 text-xs font-medium text-amber-600 dark:text-amber-400">{occ.note}</td>
@@ -542,12 +550,12 @@ export default function AddEvent() {
                   onClick={() => setShowPreview(false)}
                   className="flex-1 px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 >
-                  חזרה לעריכה
+                  {t('backToEdit')}
                 </button>
                 {sessionStorage.getItem('gcal_scope_mode') === 'read_only' ? (
                   <div className="flex-1 px-8 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold flex flex-col items-center justify-center gap-1 text-center cursor-not-allowed dark:bg-slate-800 dark:text-slate-400">
-                    <span className="flex items-center gap-2"><Info className="w-5 h-5" /> מצב קריאה בלבד</span>
-                    <span className="text-xs font-normal">התחבר מחדש עם הרשאות עריכה כדי לשמור</span>
+                    <span className="flex items-center gap-2"><Info className="w-5 h-5" /> {t('readOnlyMode')}</span>
+                    <span className="text-xs font-normal">{t('reloginForEdit')}</span>
                   </div>
                 ) : (
                   <button 
@@ -556,7 +564,7 @@ export default function AddEvent() {
                     className="flex-1 px-8 py-4 bg-[#0038A8] hover:bg-blue-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 disabled:opacity-70"
                   >
                     {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-                    {isLoading ? 'מסנכרן...' : 'אישור וסנכרון ליומן'}
+                    {isLoading ? t('syncing') : t('confirmAndSync')}
                   </button>
                 )}
               </div>

@@ -2,55 +2,64 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, PlusCircle, ArrowLeft, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { authenticateWithGoogle, getAccessToken } from '../utils/googleApi';
+import { useTranslation } from 'react-i18next';
 
 export default function Home() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const handleLogin = (mode) => {
     authenticateWithGoogle(mode, () => {
       navigate('/dashboard');
     }, (err) => {
-      alert("שגיאה בהתחברות: " + (err.message || "נסה שנית"));
+      alert(t('errorSyncFailed') + ": " + (err.message || ""));
     });
   };
 
   const loginOptions = [
     {
       id: 'app_created',
-      title: 'פרטיות מקסימלית',
-      description: 'ניהול של יומני האפליקציה הזו בלבד. האפליקציה לא תוכל לגשת לאירועים ביומנים האחרים שלך.',
+      title: t('maxPrivacy'),
+      description: t('maxPrivacyDesc'),
       icon: <Shield className="w-8 h-8 text-green-500" />,
       color: 'border-green-100 hover:border-green-500 bg-green-50/30'
     },
     {
       id: 'read_only',
-      title: 'צפייה בלבד',
-      description: 'הצגת כל האירועים הקיימים ביומנים שלך בתצוגת לוח שנה עברי, ללא אפשרות עריכה.',
+      title: t('readOnly'),
+      description: t('readOnlyDesc'),
       icon: <Eye className="w-8 h-8 text-purple-500" />,
       color: 'border-purple-100 hover:border-purple-500 bg-purple-50/30'
     },
     {
       id: 'all_events',
-      title: 'גישה מלאה',
-      description: 'צפייה ועריכה של אירועים בכל היומנים שלך. מאפשר הוספת אירועים עבריים לכל יומני המשתמש.',
+      title: t('fullAccess'),
+      description: t('fullAccessDesc'),
       icon: <Unlock className="w-8 h-8 text-blue-500" />,
       color: 'border-blue-100 hover:border-blue-500 bg-blue-50/30'
     }
   ];
 
+  const isRtl = i18n.language === 'he';
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 md:px-6 dark:bg-slate-900 font-sans">
+      <div className="absolute top-4 right-4 md:top-8 md:right-8">
+        <LanguageSwitcher />
+      </div>
+
       <div className="max-w-4xl w-full text-center space-y-6 flex flex-col items-center flex-1 justify-center">
         <Logo className="w-16 h-16 md:w-20 md:h-20 mb-2 drop-shadow-xl" />
         
         <h1 className="text-3xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          היומן העברי שלי <br />
+          {t('homeTitle')} <br />
           <span className="text-[#0038A8] dark:text-blue-400">HebCal-Sync</span>
         </h1>
         
         <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium px-2">
-          סנכרון חכם ופרטי של אירועים עבריים ליומן Google שלך.
+          {t('homeSubtitle')}
         </p>
 
         <div className="pt-4 text-slate-800 dark:text-slate-200 font-bold text-base md:text-lg">
@@ -60,13 +69,13 @@ export default function Home() {
                 onClick={() => navigate('/dashboard')}
                 className="group flex items-center gap-3 px-8 py-4 bg-[#0038A8] text-white rounded-2xl font-black text-xl hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
               >
-                כניסה ליומן שלי
-                <ArrowLeft className="w-6 h-6 group-hover:translate-x-[-4px] transition-transform" />
+                {t('enterCalendar')}
+                <ArrowLeft className={`w-6 h-6 transition-transform ${isRtl ? 'group-hover:translate-x-[-4px]' : 'group-hover:translate-x-[4px] rotate-180'}`} />
               </button>
-              <p className="text-sm font-bold text-slate-400">או בחר רמת גישה אחרת להתחברות מחדש:</p>
+              <p className="text-sm font-bold text-slate-400">{t('orSelectOther')}</p>
             </div>
           ) : (
-            "בחר את רמת הגישה המתאימה לך:"
+            t('selectAccess')
           )}
         </div>
 
@@ -75,7 +84,7 @@ export default function Home() {
             <div 
               key={opt.id}
               onClick={() => handleLogin(opt.id)}
-              className={`group cursor-pointer p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-2 transition-all duration-300 text-right flex flex-col gap-4 dark:bg-slate-800/50 dark:border-slate-700 ${opt.color} hover:shadow-2xl hover:-translate-y-1 active:scale-95`}
+              className={`group cursor-pointer p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-2 transition-all duration-300 ${isRtl ? 'text-right' : 'text-left'} flex flex-col gap-4 dark:bg-slate-800/50 dark:border-slate-700 ${opt.color} hover:shadow-2xl hover:-translate-y-1 active:scale-95`}
             >
               <div className="flex justify-between items-start">
                 <div className="p-2.5 md:p-3 bg-white dark:bg-slate-800 rounded-xl md:rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
@@ -100,11 +109,10 @@ export default function Home() {
       </div>
       
       <footer className="mt-12 py-4 text-slate-400 text-[10px] font-medium flex flex-col items-center gap-1 text-center">
-        <p>היומן העברי שלי © {new Date().getFullYear()}</p>
+        <p>{t('copyright', { year: new Date().getFullYear() })}</p>
         <p className="flex flex-col md:flex-row items-center gap-1">
-          <span>תודה לקהילת הקוד הפתוח ולספריית</span>
+          <span>{t('thanksTo')}</span>
           <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a>
-          <span>על המנוע החישובי</span>
         </p>
       </footer>
     </div>

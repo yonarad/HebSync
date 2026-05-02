@@ -7,9 +7,16 @@ import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, 
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+
 export default function MyCalendar() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'he';
+
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
+  // ... rest of state remain same
   const [myEvents, setMyEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -271,7 +278,7 @@ export default function MyCalendar() {
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col text-right overflow-hidden" dir="rtl">
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-4 md:gap-6">
           <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
@@ -283,61 +290,52 @@ export default function MyCalendar() {
               <span className="text-[#0038A8] dark:text-blue-400">Heb</span>Cal
             </h1>
           </div>
-          <nav className="hidden md:flex items-center gap-2 border-r border-slate-200 pr-6 mr-2 dark:border-slate-700">
-            <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg dark:text-slate-400">דף הבית</button>
-            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">היומן שלי</button>
+          <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
+            <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg dark:text-slate-400">{t('home')}</button>
+            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">{t('myCalendar')}</button>
           </nav>
         </div>
         <div className="flex items-center gap-4">
+          <LanguageSwitcher />
           {!isAuthenticated ? (
-            <button onClick={handleLogin} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#0038A8] rounded-lg font-bold dark:bg-blue-900/30 dark:text-blue-300"><LogIn className="w-4 h-4" />התחבר</button>
+            <button onClick={handleLogin} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#0038A8] rounded-lg font-bold dark:bg-blue-900/30 dark:text-blue-300"><LogIn className="w-4 h-4" />{t('login')}</button>
           ) : (
             <div className="flex items-center gap-2 md:gap-4">
-              <button onClick={handleRevoke} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20" title="ניתוק חשבון"><LogOut className="w-5 h-5" /></button>
-              <button onClick={() => navigate('/add-event')} className="px-3 md:px-4 py-2 bg-[#0038A8] text-white rounded-lg font-bold text-sm md:text-base">+ הוספה</button>
+              <button onClick={handleRevoke} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20" title={t('disconnect')}><LogOut className="w-5 h-5" /></button>
+              <button onClick={() => navigate('/add-event')} className="px-3 md:px-4 py-2 bg-[#0038A8] text-white rounded-lg font-bold text-sm md:text-base">+ {t('addEvent')}</button>
             </div>
           )}
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden relative">
-        <aside className={`fixed inset-y-0 right-0 z-40 w-72 bg-white border-l border-slate-200 flex flex-col dark:bg-slate-900 dark:border-slate-800 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <aside className={`fixed inset-y-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} z-40 w-72 bg-white border-slate-200 flex flex-col dark:bg-slate-900 dark:border-slate-800 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}`}>
           <div className="flex items-center justify-between p-4 border-b md:hidden dark:border-slate-800">
-            <span className="font-bold dark:text-white">תפריט ניהול</span>
+            <span className="font-bold dark:text-white">{isRtl ? 'תפריט ניהול' : 'Menu'}</span>
             <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg dark:hover:bg-slate-800"><X className="w-5 h-5 dark:text-slate-400" /></button>
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <span>רמת הרשאה</span>
-                <button onClick={handleChangePermissions} className="text-[#0038A8] dark:text-blue-400 underline">שינוי</button>
+                <span>{isRtl ? 'רמת הרשאה' : 'Access Level'}</span>
+                <button onClick={handleChangePermissions} className="text-[#0038A8] dark:text-blue-400 underline">{isRtl ? 'שינוי' : 'Change'}</button>
               </div>
               <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                {scopeMode === 'app_created' ? <><Shield className="w-3 h-3 text-green-500" /> פרטיות מקסימלית</> : scopeMode === 'read_only' ? <><Eye className="w-3 h-3 text-purple-500" /> צפייה בלבד</> : <><Unlock className="w-3 h-3 text-blue-500" /> גישה מלאה</>}
+                {scopeMode === 'app_created' ? <><Shield className="w-3 h-3 text-green-500" /> {t('maxPrivacy')}</> : scopeMode === 'read_only' ? <><Eye className="w-3 h-3 text-purple-500" /> {t('readOnly')}</> : <><Unlock className="w-3 h-3 text-blue-500" /> {t('fullAccess')}</>}
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> היומנים שלי</h2>
-                {isAuthenticated && scopeMode !== 'read_only' && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ חדש</button>}
+                <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
+                {isAuthenticated && scopeMode !== 'read_only' && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ {t('new')}</button>}
               </div>
               
               {isAuthenticated && calendars.length > 0 && (
                 <div className="flex gap-2">
-                  <button 
-                    onClick={selectAllCalendars}
-                    className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors"
-                  >
-                    בחר הכל
-                  </button>
+                  <button onClick={selectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('selectAll')}</button>
                   <span className="text-slate-300">|</span>
-                  <button 
-                    onClick={deselectAllCalendars}
-                    className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors"
-                  >
-                    נקה הכל
-                  </button>
+                  <button onClick={deselectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('clearAll')}</button>
                 </div>
               )}
 
@@ -356,13 +354,13 @@ export default function MyCalendar() {
                   <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
                     <Upload className="w-4 h-4 opacity-50" />
                     <div>
-                      <p className="text-[10px] font-bold">ייבוא מרוכז מ-CSV</p>
-                      <p className="text-[9px] opacity-70 italic">בקרוב!</p>
+                      <p className="text-[10px] font-bold">{t('importCsv')}</p>
+                      <p className="text-[9px] opacity-70 italic">{t('comingSoon')}</p>
                     </div>
                   </div>
                </div>
                <div className="text-[9px] text-slate-400 font-medium leading-tight">
-                תודה לקהילת הקוד הפתוח ולספריית <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a> על המנוע החישובי
+                {t('thanksTo')} <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a>
               </div>
             </div>
           </div>
@@ -381,17 +379,17 @@ export default function MyCalendar() {
               <div className="flex flex-wrap items-center gap-2 md:gap-4">
                 <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
                   <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
-                  <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">לועזי</span>
+                  <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">{t('gregorian')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
                   <input type="checkbox" checked={showAllEvents} onChange={(e) => setShowAllEvents(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
-                  <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">אירועים חיצוניים</span>
+                  <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">{t('externalEvents')}</span>
                   <Info className="w-3 h-3 text-slate-400" />
                 </label>
                 <div className="flex bg-white rounded-xl shadow-sm border border-slate-100 p-1 dark:bg-slate-800 dark:border-slate-700">
-                  <button onClick={handlePrevMonth} className="p-1.5 hover:bg-slate-50 rounded-lg dark:hover:bg-slate-700"><ChevronRight className="w-4 h-4" /></button>
-                  <button onClick={() => setViewHDate(new HDate())} className="px-3 py-1 text-xs font-bold text-slate-600 dark:text-slate-300">היום</button>
-                  <button onClick={handleNextMonth} className="p-1.5 hover:bg-slate-50 rounded-lg dark:hover:bg-slate-700"><ChevronLeft className="w-4 h-4" /></button>
+                  <button onClick={handlePrevMonth} className="p-1.5 hover:bg-slate-50 rounded-lg dark:hover:bg-slate-700">{isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}</button>
+                  <button onClick={() => setViewHDate(new HDate())} className="px-3 py-1 text-xs font-bold text-slate-600 dark:text-slate-300">{t('today')}</button>
+                  <button onClick={handleNextMonth} className="p-1.5 hover:bg-slate-50 rounded-lg dark:hover:bg-slate-700">{isRtl ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>
                 </div>
               </div>
             </div>
@@ -399,9 +397,10 @@ export default function MyCalendar() {
             <div className="bg-white rounded-3xl shadow-lg border border-slate-100 flex-1 overflow-hidden dark:bg-slate-800 dark:border-slate-700 flex flex-col relative">
               {isCalendarLoading && <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center"><RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" /></div>}
               <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-                {['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'].map((day, idx) => (
-                  <div key={day} className="p-2 md:p-4 text-center text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                    <span className="hidden md:inline">{day}</span><span className="md:hidden">{'אבגדהוש'[idx]}</span>
+                {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
+                  <div key={idx} className="p-2 md:p-4 text-center text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    <span className="hidden md:inline">{t(`days.${idx}`)}</span>
+                    <span className="md:hidden">{isRtl ? 'אבגדהוש'[idx] : t(`days.${idx}`).substring(0, 1)}</span>
                   </div>
                 ))}
               </div>
@@ -441,32 +440,32 @@ export default function MyCalendar() {
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onSelect={onLoginSelect} />
 
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir="rtl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white">פרטי אירוע</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
               <button onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
               {isEditing ? (
                 <div className="space-y-4">
-                  <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-[#0038A8]" placeholder="שם האירוע" />
-                  <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows="4" className="w-full p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-[#0038A8] resize-none text-sm" placeholder="תיאור" />
+                  <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-[#0038A8]" placeholder={t('eventName')} />
+                  <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows="4" className="w-full p-3 rounded-xl border border-slate-200 dark:bg-slate-800 dark:border-slate-700 outline-none focus:border-[#0038A8] resize-none text-sm" placeholder={t('description')} />
                 </div>
               ) : (
                 <div className="space-y-4">
                   <h3 className="text-2xl font-bold text-[#0038A8] dark:text-blue-400">{selectedEvent.summary}</h3>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || 'אין תיאור'}</div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || t('noDescription')}</div>
                 </div>
               )}
             </div>
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
-              <button onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)} className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20"><Trash2 className="w-4 h-4" /> מחק</button>
+              <button onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)} className={`flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20`}><Trash2 className="w-4 h-4" /> {t('delete')}</button>
               <div className="flex gap-2">
                 {isEditing ? (
-                  <><button onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-xl font-bold">ביטול</button><button onClick={handleUpdate} className="px-6 py-2 bg-[#0038A8] text-white rounded-xl font-bold hover:bg-blue-800 shadow-md">שמור</button></>
+                  <><button onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-xl font-bold">{t('cancel')}</button><button onClick={handleUpdate} className="px-6 py-2 bg-[#0038A8] text-white rounded-xl font-bold hover:bg-blue-800 shadow-md">{t('save')}</button></>
                 ) : (
-                  <button onClick={() => setIsEditing(true)} className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700">ערוך</button>
+                  <button onClick={() => setIsEditing(true)} className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700">{t('edit')}</button>
                 )}
               </div>
             </div>

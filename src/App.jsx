@@ -4,9 +4,14 @@ import Home from './pages/Home';
 import MyCalendar from './pages/MyCalendar';
 import AddEvent from './pages/AddEvent';
 
+import { useTranslation } from 'react-i18next';
+
 function App() {
+  const { i18n } = useTranslation();
+  const direction = i18n.language === 'he' ? 'rtl' : 'ltr';
+
   return (
-    <div dir="rtl" className="min-h-screen text-slate-900 font-sans antialiased">
+    <div dir={direction} className="min-h-screen text-slate-900 font-sans antialiased">
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />

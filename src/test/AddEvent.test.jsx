@@ -13,6 +13,25 @@ vi.mock('../utils/googleApi', () => ({
   createHebcalEvent: vi.fn()
 }));
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key) => key,
+    i18n: { language: 'he', changeLanguage: vi.fn() }
+  }),
+  initReactI18next: { type: '3rdParty', init: vi.fn() }
+}));
+
+// Mock LanguageSwitcher
+vi.mock('../components/LanguageSwitcher', () => ({
+  default: () => <div data-testid="language-switcher">Lang</div>
+}));
+
+// Mock Logo
+vi.mock('../components/Logo', () => ({
+  default: () => <div data-testid="logo">Logo</div>
+}));
+
 const renderAddEvent = () => {
   return render(
     <BrowserRouter>
@@ -24,13 +43,13 @@ const renderAddEvent = () => {
 describe('AddEvent Component', () => {
   it('should render the form headers', () => {
     renderAddEvent();
-    expect(screen.getByText('הוספת אירוע')).toBeInTheDocument();
-    expect(screen.getByText('שם האירוע')).toBeInTheDocument();
+    expect(screen.getByText('addEventTitle')).toBeInTheDocument();
+    expect(screen.getByText('eventName')).toBeInTheDocument();
   });
 
   it('should not have any calendar selected by default', async () => {
     renderAddEvent();
-    const selectAllBtn = await screen.findByText('בחר הכל');
+    const selectAllBtn = await screen.findByText('selectAll');
     expect(selectAllBtn).toBeInTheDocument();
     // Check that no checkbox is checked
     const checkboxes = screen.getAllByRole('checkbox');
@@ -44,6 +63,6 @@ describe('AddEvent Component', () => {
 
   it('should show Hebrew/Gregorian toggle option', () => {
     renderAddEvent();
-    expect(screen.getByText('הזן תאריך לועזי במקום')).toBeInTheDocument();
+    expect(screen.getByText('enterGregorian')).toBeInTheDocument();
   });
 });
