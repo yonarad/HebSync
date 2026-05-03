@@ -4,7 +4,7 @@ import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, 
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, isAuthError, revokeAccess, updateEvent } from '../utils/googleApi';
-import { HEBREW_MONTHS } from '../utils/hebcal';
+import { HEBREW_MONTHS, formatHebrewYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
 import { useTranslation } from 'react-i18next';
@@ -306,7 +306,7 @@ export default function MyCalendar() {
   const days = getDaysInHMonth();
   const hMonthNameEnglish = viewHDate.getMonthName();
   const hMonthNameHebrew = HEBREW_MONTHS.find(m => m.id === hMonthNameEnglish)?.label || hMonthNameEnglish;
-  const hYear = gematriya(viewHDate.getFullYear());
+  const hYear = formatHebrewYear(viewHDate.getFullYear());
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
 
   return (
@@ -324,7 +324,7 @@ export default function MyCalendar() {
           </div>
           <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
             <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg dark:text-slate-400">{t('home')}</button>
-            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">{t('myCalendar')}</button>
+            <button onClick={() => navigate('/calendar')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">{t('myCalendar')}</button>
           </nav>
         </div>
         <div className="flex items-center gap-4">
@@ -410,7 +410,7 @@ export default function MyCalendar() {
           <div className="w-full h-full flex flex-col">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">{hMonthNameHebrew} ה׳{hYear}</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">{hMonthNameHebrew} {hYear}</h2>
                 <p className="text-slate-400 font-medium text-xs mt-1">{gMonthRange} {viewHDate.greg().getFullYear()}</p>
               </div>
 

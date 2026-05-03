@@ -15,7 +15,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<MyCalendar />} />
+          <Route path="/calendar" element={<MyCalendar />} />
           <Route path="/add-event" element={<AddEvent />} />
         </Routes>
       </Router>

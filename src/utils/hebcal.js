@@ -2,6 +2,24 @@ import { HDate, HebrewCalendar, Location, gematriya as hGematriya } from '@hebca
 
 export const gematriya = hGematriya;
 
+export function formatHebrewYear(year) {
+  const yearNumber = Number(year);
+  if (!Number.isFinite(yearNumber) || yearNumber <= 0) {
+    return String(year);
+  }
+
+  const thousands = Math.floor(yearNumber / 1000);
+  const remainder = yearNumber % 1000;
+
+  if (thousands === 0) {
+    return hGematriya(yearNumber);
+  }
+
+  const thousandsPart = hGematriya(thousands);
+  const remainderPart = remainder > 0 ? hGematriya(remainder) : '';
+  return `${thousandsPart}${remainderPart}`;
+}
+
 // Mapping user-facing Hebrew month names to HebCal month names
 export const HEBREW_MONTHS = [
   { id: 'Tishrei', label: 'תשרי' },
@@ -196,7 +214,7 @@ export function getPreviewDates(startHebrewYear, monthName, day, maxOccurrences 
       const monthLabel = HEBREW_MONTHS.find(m => m.id === hDateToRender.getMonthName())?.label || hDateToRender.getMonthName();
       occurrences.push({
         hebrewYear: hDateToRender.getFullYear(),
-        hebrewDate: `${gematriya(hDateToRender.getDate())} ב${monthLabel} ה׳${gematriya(hDateToRender.getFullYear())}`,
+        hebrewDate: `${gematriya(hDateToRender.getDate())} ב${monthLabel} ${formatHebrewYear(hDateToRender.getFullYear())}`,
         gregorianDate: hDateToRender.greg().toLocaleDateString('he-IL'),
         note: note
       });

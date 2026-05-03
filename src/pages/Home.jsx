@@ -12,7 +12,7 @@ export default function Home() {
 
   const handleLogin = (mode) => {
     authenticateWithGoogle(mode, () => {
-      navigate('/dashboard');
+      navigate('/calendar');
     }, (err) => {
       alert(t('errorSyncFailed') + ": " + (err.message || ""));
     });
@@ -65,7 +65,7 @@ export default function Home() {
           {getAccessToken() ? (
             <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/calendar')}
                 className="group flex items-center gap-3 px-8 py-4 bg-[#0038A8] text-white rounded-2xl font-black text-xl hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
               >
                 {t('enterCalendar')}

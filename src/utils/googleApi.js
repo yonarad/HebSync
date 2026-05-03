@@ -1,4 +1,4 @@
-import { gematriya } from '@hebcal/core';
+import { formatHebrewYear } from './hebcal';
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
@@ -244,7 +244,7 @@ export async function createHebcalEvent(
 
   const originalYearNumber = Number(originalHebrewYear);
   const originalHebrewYearLabel = Number.isFinite(originalYearNumber)
-    ? `שנת מקור: ה׳${gematriya(originalYearNumber)} - ${originalHebrewYear}`
+    ? `שנת מקור: ${formatHebrewYear(originalYearNumber)} - ${originalHebrewYear}`
     : `שנת מקור: ${originalHebrewYear}`;
   const metadata = `${originalHebrewYearLabel}\nנוצר ע"י "עברי ליומן - HebSync"`;
   const finalDescription = userDescription

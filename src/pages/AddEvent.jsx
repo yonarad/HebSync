@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates } from '../utils/hebcal';
+import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, isAuthError, revokeAccess } from '../utils/googleApi';
 
@@ -213,7 +213,7 @@ export default function AddEvent() {
       ));
 
       alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
-      navigate('/dashboard');
+      navigate('/calendar');
     } catch (e) {
       console.error("Submission error:", e);
       if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
@@ -235,7 +235,7 @@ export default function AddEvent() {
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30 sticky top-0">
         <div className="flex items-center gap-4 md:gap-6">
           <button 
-            onClick={() => showPreview ? setShowPreview(false) : navigate('/dashboard')}
+            onClick={() => showPreview ? setShowPreview(false) : navigate('/calendar')}
             className="p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400"
           >
             <ArrowLeft className={`w-5 h-5 ${isRtl ? '' : 'rotate-180'}`} />
@@ -250,7 +250,7 @@ export default function AddEvent() {
 
           <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
             <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('home')}</button>
-            <button onClick={() => navigate('/dashboard')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('myCalendar')}</button>
+            <button onClick={() => navigate('/calendar')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('myCalendar')}</button>
           </nav>
         </div>
 
@@ -363,7 +363,7 @@ export default function AddEvent() {
                               className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
                             >
                               {yearOptions.map(y => (
-                                <option key={y} value={y}>{isRtl ? 'ה׳' : ''}{gematriya(y)}</option>
+                                <option key={y} value={y}>{isRtl ? formatHebrewYear(y) : y}</option>
                               ))}
                             </select>
                           </div>
@@ -563,7 +563,7 @@ export default function AddEvent() {
                   <tbody>
                     {previewData.map((occ, idx) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800">
-                        <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{isRtl ? 'ה׳' : ''}{gematriya(occ.hebrewYear)}</td>
+                        <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{isRtl ? formatHebrewYear(occ.hebrewYear) : occ.hebrewYear}</td>
                         <td className="p-4 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{occ.hebrewDate}</td>
                         <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{occ.gregorianDate}</td>
                         <td className="p-4 text-xs font-medium text-amber-600 dark:text-amber-400">{occ.note}</td>
