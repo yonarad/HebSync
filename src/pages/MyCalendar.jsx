@@ -368,8 +368,8 @@ export default function MyCalendar() {
 
         {isSidebarOpen && <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <div className="max-w-6xl mx-auto h-full flex flex-col">
+        <main className="flex-1 p-4 md:p-6 xl:p-8 overflow-auto">
+          <div className="w-full h-full flex flex-col">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">{hMonthNameHebrew} ה׳{hYear}</h2>
