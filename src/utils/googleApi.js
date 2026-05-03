@@ -1,3 +1,5 @@
+import { gematriya } from '@hebcal/core';
+
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
 
@@ -240,7 +242,11 @@ export async function createHebcalEvent(
 
   const startDateFormatted = `${firstDateStr.substring(0, 4)}-${firstDateStr.substring(4, 6)}-${firstDateStr.substring(6, 8)}`;
 
-  const metadata = `Original Hebrew year: ${originalHebrewYear}\nCreated by My Hebrew Calendar`;
+  const originalYearNumber = Number(originalHebrewYear);
+  const originalHebrewYearLabel = Number.isFinite(originalYearNumber)
+    ? `שנת מקור: ה׳${gematriya(originalYearNumber)} - ${originalHebrewYear}`
+    : `שנת מקור: ${originalHebrewYear}`;
+  const metadata = `${originalHebrewYearLabel}\nנוצר ע"י "עברי ליומן - HebSync"`;
   const finalDescription = userDescription
     ? `${userDescription}\n\n---\n${metadata}`
     : metadata;
