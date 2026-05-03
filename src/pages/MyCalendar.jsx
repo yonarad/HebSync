@@ -319,7 +319,7 @@ export default function MyCalendar() {
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
             <Logo className="w-8 h-8" />
             <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight dark:text-white">
-              <span className="text-[#0038A8] dark:text-blue-400">Heb</span>Sync
+              {t('appName')}
             </h1>
           </div>
           <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
