@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/(?!_next|[^/]*\\.[^/]*$)(.*)",
+      "source": "/(?!assets/)(.*)",
       "destination": "/index.html"
     }
   ]
