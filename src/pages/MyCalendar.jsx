@@ -310,7 +310,7 @@ export default function MyCalendar() {
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-4 md:gap-6">
           <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
@@ -340,13 +340,13 @@ export default function MyCalendar() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden relative">
-        <aside className={`fixed inset-y-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} z-40 w-72 bg-white border-slate-200 flex flex-col dark:bg-slate-900 dark:border-slate-800 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}`}>
+      <div className="flex flex-1 overflow-hidden relative min-h-0">
+        <aside className={`fixed inset-y-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} z-40 w-72 bg-white border-slate-200 flex flex-col min-h-0 h-full dark:bg-slate-900 dark:border-slate-800 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}`}>
           <div className="flex items-center justify-between p-4 border-b md:hidden dark:border-slate-800">
             <span className="font-bold dark:text-white">{isRtl ? 'תפריט ניהול' : 'Menu'}</span>
             <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg dark:hover:bg-slate-800"><X className="w-5 h-5 dark:text-slate-400" /></button>
           </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden p-4 space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <span>{isRtl ? 'רמת הרשאה' : 'Access Level'}</span>
@@ -357,7 +357,7 @@ export default function MyCalendar() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 flex flex-col flex-1 min-h-0">
               <div className="flex justify-between items-center gap-2">
                 <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
                 {isFetchingGoogle && (
@@ -377,7 +377,7 @@ export default function MyCalendar() {
                 </div>
               )}
 
-              <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-1 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
                 {calendars.map(cal => (
                   <label key={cal.id} className="flex items-center gap-2 text-xs cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg dark:hover:bg-slate-800 transition-colors">
                     <input type="checkbox" checked={selectedCalendarIds.includes(cal.id)} onChange={() => toggleCalendar(cal.id)} className="w-3 h-3 rounded border-slate-300 text-[#0038A8]" />
