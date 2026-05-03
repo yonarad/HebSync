@@ -244,7 +244,7 @@ export default function AddEvent() {
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
             <Logo className="w-8 h-8" />
             <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight dark:text-white">
-              <span className="text-[#0038A8] dark:text-blue-400">Heb</span>Cal
+              <span className="text-[#0038A8] dark:text-blue-400">Heb</span>Sync
             </h1>
           </div>
 

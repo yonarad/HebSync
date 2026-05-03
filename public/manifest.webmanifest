@@ -1,6 +1,6 @@
 {
-  "name": "HebCal Sync",
-  "short_name": "HebCal Sync",
+  "name": "HebSync",
+  "short_name": "HebSync",
   "description": "Sync Hebrew calendar events with Google Calendar.",
   "lang": "he",
   "dir": "rtl",

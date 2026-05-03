@@ -1,10 +1,10 @@
 {
   "translation": {
-    "appName": "Hebcal Sync",
+    "appName": "עברי ליומן",
     "home": "דף הבית",
     "myCalendar": "היומן שלי",
     "addEvent": "הוספת אירוע",
-    "homeTitle": "היומן העברי שלי",
+    "homeTitle": "עברי ליומן",
     "homeSubtitle": "סנכרון חכם ופרטי של אירועים עבריים ליומן Google שלך.",
     "selectAccess": "בחר את רמת הגישה המתאימה לך:",
     "maxPrivacy": "פרטיות מקסימלית",
@@ -15,7 +15,7 @@
     "fullAccessDesc": "צפייה ועריכה של אירועים בכל היומנים שלך. מאפשר הוספת אירועים עבריים לכל יומני המשתמש.",
     "enterCalendar": "כניסה ליומן שלי",
     "orSelectOther": "או בחר רמת גישה אחרת להתחברות מחדש:",
-    "copyright": "היומן העברי שלי © {{year}}",
+    "copyright": "עברי ליומן © {{year}}",
     "thanksTo": "תודה לקהילת הקוד הפתוח ולספריית Hebcal על המנוע החישובי",
     "login": "התחבר",
     "logout": "התנתק",

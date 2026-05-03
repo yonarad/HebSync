@@ -54,8 +54,7 @@ export default function Home() {
         <Logo className="w-16 h-16 md:w-20 md:h-20 mb-2 drop-shadow-xl" />
 
         <h1 className="text-3xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          {t('homeTitle')} <br />
-          <span className="text-[#0038A8] dark:text-blue-400">HebCal-Sync</span>
+          {t('homeTitle')}
         </h1>
 
         <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium px-2">

@@ -1,10 +1,10 @@
 {
   "translation": {
-    "appName": "Hebcal Sync",
+    "appName": "HebSync",
     "home": "Home",
     "myCalendar": "My Calendar",
     "addEvent": "Add Event",
-    "homeTitle": "My Hebrew Calendar",
+    "homeTitle": "HebSync",
     "homeSubtitle": "Smart and private synchronization of Hebrew events to your Google Calendar.",
     "selectAccess": "Choose your access level:",
     "maxPrivacy": "Maximum Privacy",
@@ -15,7 +15,7 @@
     "fullAccessDesc": "View and edit events in all your calendars. Allows adding Hebrew events to any user calendar.",
     "enterCalendar": "Enter My Calendar",
     "orSelectOther": "Or select another access level to re-login:",
-    "copyright": "My Hebrew Calendar © {{year}}",
+    "copyright": "HebSync © {{year}}",
     "thanksTo": "Thanks to the open source community and the Hebcal library for the computational engine",
     "login": "Login",
     "logout": "Logout",
