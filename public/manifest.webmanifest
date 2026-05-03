@@ -1,6 +1,6 @@
 {
-  "name": "HebSync",
-  "short_name": "HebSync",
+  "name": "עברי ביומן",
+  "short_name": "עברי ביומן",
   "description": "Sync Hebrew calendar events with Google Calendar.",
   "lang": "he",
   "dir": "rtl",
