@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarDays, PlusCircle, ArrowLeft, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import InstallAppButton from '../components/InstallAppButton';
 import { authenticateWithGoogle, getAccessToken } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
 
@@ -46,7 +47,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 md:px-6 dark:bg-slate-900 font-sans">
-      <div className="absolute top-4 right-4 md:top-8 md:right-8">
+      <div className="absolute top-4 right-4 md:top-8 md:right-8 flex items-center gap-2">
+        <InstallAppButton className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#0038A8] bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50" />
         <LanguageSwitcher />
       </div>
 

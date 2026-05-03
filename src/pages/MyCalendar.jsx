@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye, X, Upload, Menu } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
+import InstallAppButton from '../components/InstallAppButton';
 import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, revokeAccess, updateEvent } from '../utils/googleApi';
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
@@ -296,6 +297,7 @@ export default function MyCalendar() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
+          <InstallAppButton className="hidden md:flex items-center gap-2 px-3 py-2 bg-blue-50 text-[#0038A8] rounded-lg font-bold text-sm dark:bg-blue-900/30 dark:text-blue-300" />
           <LanguageSwitcher />
           {!isAuthenticated ? (
             <button onClick={handleLogin} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#0038A8] rounded-lg font-bold dark:bg-blue-900/30 dark:text-blue-300"><LogIn className="w-4 h-4" />{t('login')}</button>
