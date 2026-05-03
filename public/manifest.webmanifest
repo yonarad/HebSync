@@ -1,6 +1,6 @@
 {
-  "name": "עברי ביומן",
-  "short_name": "עברי ביומן",
+  "name": "עברי ליומן",
+  "short_name": "עברי ליומן",
   "description": "Sync Hebrew calendar events with Google Calendar.",
   "lang": "he",
   "dir": "rtl",
