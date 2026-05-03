@@ -18,6 +18,7 @@ export default function AddEvent() {
   const [tab, setTab] = useState('manual');
   // ... rest of the code remains same but strings replaced
   const [isLoading, setIsLoading] = useState(false);
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState('connect');
   const [calendars, setCalendars] = useState([]);
@@ -94,6 +95,7 @@ export default function AddEvent() {
   }, []);
 
   const loadCalendars = async () => {
+    setIsCalendarLoading(true);
     try {
       const cals = await fetchAllCalendars();
       // Filter to only calendars where the user has write access
@@ -102,6 +104,8 @@ export default function AddEvent() {
     } catch (e) {
       if (isAuthError(e)) return;
       console.error("Failed to load calendars", e);
+    } finally {
+      setIsCalendarLoading(false);
     }
   };
 
@@ -466,7 +470,12 @@ export default function AddEvent() {
                         </div>
                       </div>
 
-                      {calendars.length > 0 && (
+                      {isCalendarLoading ? (
+                        <div className="mt-6 p-6 rounded-2xl border border-slate-200 bg-slate-50 text-center dark:border-slate-700 dark:bg-slate-900">
+                          <RefreshCw className="mx-auto w-6 h-6 animate-spin text-[#0038A8]" />
+                          <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">{t('loadingGoogleData')}</p>
+                        </div>
+                      ) : calendars.length > 0 ? (
                         <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                           <div className="flex justify-between items-center">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('selectTargetCalendars')}</label>
@@ -499,7 +508,7 @@ export default function AddEvent() {
                             ))}
                           </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="pt-2 flex justify-end">

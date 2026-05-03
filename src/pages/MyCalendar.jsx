@@ -19,6 +19,8 @@ export default function MyCalendar() {
   // ... rest of state remain same
   const [myEvents, setMyEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoadingCount, setIsGoogleLoadingCount] = useState(0);
+  const isFetchingGoogle = isGoogleLoadingCount > 0;
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState('connect');
@@ -75,6 +77,7 @@ export default function MyCalendar() {
   }, [isAuthenticated, viewHDate, selectedCalendarIds]);
 
   const loadCalendars = async () => {
+    setIsGoogleLoadingCount((count) => count + 1);
     try {
       const cals = await fetchAllCalendars();
       setCalendars(cals);
@@ -82,6 +85,8 @@ export default function MyCalendar() {
     } catch (e) {
       if (isAuthError(e)) return;
       console.error("Failed to load calendars", e);
+    } finally {
+      setIsGoogleLoadingCount((count) => Math.max(0, count - 1));
     }
   };
 
@@ -134,6 +139,7 @@ export default function MyCalendar() {
 
   const loadEvents = async () => {
     setIsLoading(true);
+    setIsGoogleLoadingCount((count) => count + 1);
     try {
       const items = await fetchMyAppEvents(selectedCalendarIds);
       const currentHebrewYear = new HDate().getFullYear();
@@ -159,6 +165,7 @@ export default function MyCalendar() {
       }
     } finally {
       setIsLoading(false);
+      setIsGoogleLoadingCount((count) => Math.max(0, count - 1));
     }
   };
 
@@ -351,8 +358,14 @@ export default function MyCalendar() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2">
                 <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
+                {isFetchingGoogle && (
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#0038A8]" />
+                    <span>{t('loadingGoogleData')}</span>
+                  </div>
+                )}
                 {isAuthenticated && scopeMode !== 'read_only' && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ {t('new')}</button>}
               </div>
 
@@ -421,6 +434,14 @@ export default function MyCalendar() {
 
             <div className="bg-white rounded-3xl shadow-lg border border-slate-100 flex-1 overflow-hidden dark:bg-slate-800 dark:border-slate-700 flex flex-col relative">
               {isCalendarLoading && <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center"><RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" /></div>}
+              {isFetchingGoogle && !isCalendarLoading && (
+                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-20 flex items-center justify-center">
+                  <div className="rounded-3xl border border-slate-200 bg-white/90 px-6 py-4 shadow-lg dark:border-slate-700 dark:bg-slate-900/90 flex items-center gap-3">
+                    <RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" />
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-100">{t('loadingGoogleData')}</span>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
                   <div key={idx} className="p-2 md:p-4 text-center text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">

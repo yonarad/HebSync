@@ -65,6 +65,7 @@
     "backToEdit": "חזרה לעריכה",
     "confirmAndSync": "אישור וסנכרון ליומן",
     "syncing": "מסנכרן...",
+    "loadingGoogleData": "טוען נתונים מ-Google...",
     "readOnlyMode": "מצב קריאה בלבד",
     "reloginForEdit": "התחבר מחדש עם הרשאות עריכה כדי לשמור",
     "errorNoTitle": "נא להזין את שם האירוע",

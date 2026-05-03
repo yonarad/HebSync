@@ -65,6 +65,7 @@
     "backToEdit": "Back to Edit",
     "confirmAndSync": "Confirm and Sync to Calendar",
     "syncing": "Syncing...",
+    "loadingGoogleData": "Loading Google data...",
     "readOnlyMode": "Read Only Mode",
     "reloginForEdit": "Re-login with edit permissions to save",
     "errorNoTitle": "Please enter an event name",
