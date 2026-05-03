@@ -1,34 +1,93 @@
-// The Client ID is retrieved from environment variables
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
 
-/**
- * Initialize Google Identity Services for OAuth token.
- */
+const AUTH_ERROR_CODE = 'AUTH_EXPIRED';
+const APP_SIGNATURE = 'ID:hebcal-sync-app';
+
+function createAuthError(message = 'Google session expired') {
+  const error = new Error(message);
+  error.code = AUTH_ERROR_CODE;
+  return error;
+}
+
+function notifyAuthExpired() {
+  logout();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(GCAL_AUTH_EXPIRED_EVENT));
+  }
+  return createAuthError();
+}
+
+export function isAuthError(error) {
+  return error?.code === AUTH_ERROR_CODE;
+}
+
+async function readGoogleError(response, fallbackMessage) {
+  let errorMessage = fallbackMessage;
+
+  try {
+    const errorData = await response.clone().json();
+    errorMessage =
+      errorData?.error?.message ||
+      errorData?.error_description ||
+      fallbackMessage;
+  } catch {
+    const text = await response.text().catch(() => '');
+    errorMessage = text || fallbackMessage;
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    throw notifyAuthExpired();
+  }
+
+  throw new Error(errorMessage);
+}
+
+async function authorizedFetch(url, options = {}, fallbackMessage = 'Google request failed') {
+  const token = getAccessToken();
+  if (!token) throw createAuthError('Not authenticated');
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`,
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    await readGoogleError(response, fallbackMessage);
+  }
+
+  return response;
+}
+
 export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
   if (!window.google) {
-    onError(new Error("Google Identity Services not loaded"));
+    onError(new Error('Google Identity Services not loaded'));
     return;
   }
 
   let scope = '';
   if (scopeMode === 'all_events') {
-    scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
+    scope =
+      'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
   } else if (scopeMode === 'read_only') {
     scope = 'https://www.googleapis.com/auth/calendar.readonly';
   } else if (scopeMode === 'app_created') {
-    // We add calendar.calendarlist.readonly to be able to list calendars in a stateless way
-    scope = 'https://www.googleapis.com/auth/calendar.app.created https://www.googleapis.com/auth/calendar.calendarlist.readonly';
+    scope =
+      'https://www.googleapis.com/auth/calendar.app.created https://www.googleapis.com/auth/calendar.calendarlist.readonly';
   }
 
   const client = window.google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
-    scope: scope,
+    scope,
     callback: (response) => {
       if (response.error) {
         onError(response);
       } else {
-        // Save the access token to session storage
         sessionStorage.setItem('gcal_token', response.access_token);
         sessionStorage.setItem('gcal_scope_mode', scopeMode);
         onSuccess(response.access_token);
@@ -39,175 +98,152 @@ export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
   client.requestAccessToken();
 }
 
-/**
- * Gets the stored access token.
- */
 export function getAccessToken() {
   return sessionStorage.getItem('gcal_token');
 }
 
-/**
- * Logout - clears local session only
- */
 export function logout() {
   sessionStorage.removeItem('gcal_token');
   sessionStorage.removeItem('gcal_scope_mode');
   sessionStorage.removeItem('gcal_app_calendar_id');
 }
 
-/**
- * Revoke Access - tells Google to invalidate the token and remove app permissions
- */
 export async function revokeAccess() {
   const token = getAccessToken();
   if (!token) return;
 
   try {
-    // Google's revoke endpoint
     await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
-  } catch (e) {
-    console.error("Failed to revoke token:", e);
+  } catch (error) {
+    console.error('Failed to revoke token:', error);
   } finally {
-    // Always clear local data
     logout();
   }
 }
 
 export async function fetchAllCalendars() {
-  const token = getAccessToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-
-  if (!response.ok) throw new Error("Failed to fetch calendars");
+  const response = await authorizedFetch(
+    'https://www.googleapis.com/calendar/v3/users/me/calendarList',
+    {},
+    'Failed to fetch calendars',
+  );
   const data = await response.json();
   const items = data.items || [];
 
   const mode = sessionStorage.getItem('gcal_scope_mode');
   if (mode === 'app_created') {
-    // Filter to show only calendars created by this app (using our signature in description)
-    return items.filter(cal => cal.description && cal.description.includes('ID:hebcal-sync-app'));
+    return items.filter(
+      (calendar) =>
+        calendar.description && calendar.description.includes(APP_SIGNATURE),
+    );
   }
 
   return items;
 }
 
 export async function createNewCalendar(summary) {
-  const token = getAccessToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const response = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const response = await authorizedFetch(
+    'https://www.googleapis.com/calendar/v3/calendars',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        summary,
+        description:
+          'Created by HebCal-Sync. [' + APP_SIGNATURE + ']',
+      }),
     },
-    body: JSON.stringify({
-      summary: summary,
-      description: 'יומן זה נוצר על ידי אפליקציית HebCal-Sync. [ID:hebcal-sync-app]'
-    })
-  });
+    'Failed to create calendar',
+  );
 
-  if (!response.ok) throw new Error("Failed to create calendar");
   return await response.json();
 }
 
-/**
- * Fetch events created by this app.
- * We use the privateExtendedProperty filter to only get our events.
- */
 export async function fetchMyAppEvents(calendarIds = []) {
   if (calendarIds.length === 0) return [];
 
-  const token = getAccessToken();
-  if (!token) throw new Error("Not authenticated");
-
   const promises = calendarIds.map(async (calendarId) => {
-    const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
-    url.searchParams.append('privateExtendedProperty', 'appIdentifier=MyHebrewCalendar');
+    const url = new URL(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+    );
+    url.searchParams.append(
+      'privateExtendedProperty',
+      'appIdentifier=MyHebrewCalendar',
+    );
     url.searchParams.append('maxResults', '100');
     url.searchParams.append('showDeleted', 'false');
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await authorizedFetch(
+      url.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+      'Failed to fetch events',
+    );
 
-    if (!response.ok) return [];
     const data = await response.json();
-    return (data.items || []).map(event => ({ ...event, calendarId }));
+    return (data.items || []).map((event) => ({ ...event, calendarId }));
   });
 
   const results = await Promise.all(promises);
   return results.flat();
 }
 
-/**
- * Fetch all events for a specific time range.
- */
 export async function fetchEventsInRange(timeMin, timeMax, calendarIds = []) {
   if (calendarIds.length === 0) return [];
 
-  const token = getAccessToken();
-  if (!token) throw new Error("Not authenticated");
-
   const promises = calendarIds.map(async (calendarId) => {
-    const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`);
+    const url = new URL(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+    );
     url.searchParams.append('timeMin', timeMin);
     url.searchParams.append('timeMax', timeMax);
-    url.searchParams.append('singleEvents', 'true'); // Expand recurrences
+    url.searchParams.append('singleEvents', 'true');
     url.searchParams.append('orderBy', 'startTime');
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await authorizedFetch(
+      url.toString(),
+      {},
+      'Failed to fetch calendar events',
+    );
 
-    if (!response.ok) {
-      return [];
-    }
     const data = await response.json();
-    return (data.items || []).map(event => ({ ...event, calendarId }));
+    return (data.items || []).map((event) => ({ ...event, calendarId }));
   });
 
   const results = await Promise.all(promises);
   return results.flat();
 }
 
-/**
- * Creates a recurring event using RDATE strings.
- */
-export async function createHebcalEvent(title, category, originalHebrewYear, rdateString, calendarId, userDescription = '') {
-  const token = getAccessToken();
-  if (!token) throw new Error("Not authenticated");
-  if (!calendarId) throw new Error("No calendar selected");
+export async function createHebcalEvent(
+  title,
+  category,
+  originalHebrewYear,
+  rdateString,
+  calendarId,
+  userDescription = '',
+) {
+  if (!getAccessToken()) throw createAuthError('Not authenticated');
+  if (!calendarId) throw new Error('No calendar selected');
 
-  // Generate a unique ID to group these if needed, 
-  // but RDATE is a single event anyway.
   const eventId = crypto.randomUUID();
-
-  // The start date of the event is the first date in the series.
-  // To avoid double instances on the first day, we must EXCLUDE the first date from the RDATE list.
   const rdates = rdateString.split(',');
   const firstDateStr = rdates[0].replace('VALUE=DATE:', '');
-  const remainingRdates = rdates.slice(1); // All dates EXCEPT the first one
+  const remainingRdates = rdates.slice(1);
 
-  const startY = firstDateStr.substring(0, 4);
-  const startM = firstDateStr.substring(4, 6);
-  const startD = firstDateStr.substring(6, 8);
-  const startDateFormatted = `${startY}-${startM}-${startD}`;
+  const startDateFormatted = `${firstDateStr.substring(0, 4)}-${firstDateStr.substring(4, 6)}-${firstDateStr.substring(6, 8)}`;
 
+  const metadata = `Original Hebrew year: ${originalHebrewYear}\nCreated by My Hebrew Calendar`;
   const finalDescription = userDescription
-    ? `${userDescription}\n\n---\nשנת מקור: ${originalHebrewYear}\nנוצר באמצעות My Hebrew Calendar`
-    : `שנת מקור: ${originalHebrewYear}\n\nנוצר באמצעות My Hebrew Calendar`;
+    ? `${userDescription}\n\n---\n${metadata}`
+    : metadata;
 
   const eventPayload = {
     summary: title,
@@ -218,89 +254,67 @@ export async function createHebcalEvent(title, category, originalHebrewYear, rda
     end: {
       date: startDateFormatted,
     },
-    // Only add recurrence if there are remaining dates
     recurrence: remainingRdates.length > 0 ? chunkRdates(remainingRdates) : [],
     extendedProperties: {
       private: {
         appIdentifier: 'MyHebrewCalendar',
         originalHebrewYear: String(originalHebrewYear),
         eventID: eventId,
-        category: category
-      }
-    }
+        category,
+      },
+    },
   };
 
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const response = await authorizedFetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(eventPayload),
     },
-    body: JSON.stringify(eventPayload)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    console.error("API Error Detail:", JSON.stringify(errorData, null, 2));
-    const errorMsg = errorData.error?.message || response.statusText;
-    throw new Error(`שגיאת גוגל: ${errorMsg}`);
-  }
+    'Failed to create event',
+  );
 
   return await response.json();
 }
 
-/**
- * Updates an existing event's summary and description
- */
 export async function updateEvent(calendarId, googleEventId, updates) {
-  const token = getAccessToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const response = await authorizedFetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
     },
-    body: JSON.stringify(updates)
-  });
+    'Failed to update event',
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to update event");
-  }
   return await response.json();
 }
 
-/**
- * Deletes an event by Google Calendar ID
- */
 export async function deleteEvent(calendarId, googleEventId) {
-  const token = getAccessToken();
-  if (!token) throw new Error("Not authenticated");
+  await authorizedFetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+    {
+      method: 'DELETE',
+    },
+    'Failed to delete event',
+  );
 
-  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to delete event");
-  }
   return true;
 }
 
-/**
- * Helper to chunk RDATE strings to stay within Google's length limits.
- */
 function chunkRdates(rdates) {
-  const CHUNK_SIZE = 80; // Number of dates per line
+  const chunkSize = 80;
   const recurrenceLines = [];
 
-  for (let i = 0; i < rdates.length; i += CHUNK_SIZE) {
-    const chunk = rdates.slice(i, i + CHUNK_SIZE);
-    const cleanChunk = chunk.map(r => r.replace('VALUE=DATE:', ''));
+  for (let i = 0; i < rdates.length; i += chunkSize) {
+    const chunk = rdates.slice(i, i + chunkSize);
+    const cleanChunk = chunk.map((rdate) => rdate.replace('VALUE=DATE:', ''));
     recurrenceLines.push(`RDATE;VALUE=DATE:${cleanChunk.join(',')}`);
   }
 

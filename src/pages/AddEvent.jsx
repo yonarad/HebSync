@@ -5,7 +5,7 @@ import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, getAccessToken, createHebcalEvent, fetchAllCalendars, revokeAccess } from '../utils/googleApi';
+import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, isAuthError, revokeAccess } from '../utils/googleApi';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -19,6 +19,7 @@ export default function AddEvent() {
   // ... rest of the code remains same but strings replaced
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalMode, setLoginModalMode] = useState('connect');
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
   const currentHDate = new HDate();
@@ -77,6 +78,21 @@ export default function AddEvent() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setCalendars([]);
+      setSelectedCalendarIds([]);
+      setLoginModalMode('reauthorize');
+      setShowLoginModal(true);
+      setIsLoading(false);
+    };
+
+    window.addEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => {
+      window.removeEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
+  }, []);
+
   const loadCalendars = async () => {
     try {
       const cals = await fetchAllCalendars();
@@ -84,6 +100,7 @@ export default function AddEvent() {
       const writableCals = cals.filter(c => c.accessRole === 'owner' || c.accessRole === 'writer');
       setCalendars(writableCals);
     } catch (e) {
+      if (isAuthError(e)) return;
       console.error("Failed to load calendars", e);
     }
   };
@@ -134,6 +151,7 @@ export default function AddEvent() {
     if (e) e.preventDefault();
     
     if (!getAccessToken()) {
+      setLoginModalMode('connect');
       setShowLoginModal(true);
     } else {
       submitEvent();
@@ -197,8 +215,9 @@ export default function AddEvent() {
       if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
         sessionStorage.removeItem('gcal_token');
         if (window.confirm("פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?")) {
+          setLoginModalMode('reauthorize');
           setShowLoginModal(true);
-        }
+          }
       } else {
         alert("שגיאה בשמירת האירוע: " + e.message);
       }
@@ -576,7 +595,8 @@ export default function AddEvent() {
       <LoginModal 
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}
-        onSelect={onLoginSelect} 
+        onSelect={onLoginSelect}
+        mode={loginModalMode}
       />
     </div>
   );

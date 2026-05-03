@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye, X, Upload, Menu } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import InstallAppButton from '../components/InstallAppButton';
-import { authenticateWithGoogle, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, revokeAccess, updateEvent } from '../utils/googleApi';
+import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, isAuthError, revokeAccess, updateEvent } from '../utils/googleApi';
 import { HEBREW_MONTHS } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
@@ -22,6 +21,7 @@ export default function MyCalendar() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalMode, setLoginModalMode] = useState('connect');
   const [scopeMode, setScopeMode] = useState(sessionStorage.getItem('gcal_scope_mode'));
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
@@ -44,6 +44,25 @@ export default function MyCalendar() {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    const handleAuthExpired = () => {
+      setIsAuthenticated(false);
+      setScopeMode(null);
+      setCalendars([]);
+      setSelectedCalendarIds([]);
+      setCalendarEvents([]);
+      setMyEvents([]);
+      setSelectedEvent(null);
+      setLoginModalMode('reauthorize');
+      setShowLoginModal(true);
+    };
+
+    window.addEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => {
+      window.removeEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       if (selectedCalendarIds.length > 0) {
         loadCalendarData();
@@ -61,6 +80,7 @@ export default function MyCalendar() {
       setCalendars(cals);
       setSelectedCalendarIds(cals.map(c => c.id));
     } catch (e) {
+      if (isAuthError(e)) return;
       console.error("Failed to load calendars", e);
     }
   };
@@ -77,7 +97,7 @@ export default function MyCalendar() {
   };
 
   const toggleCalendar = (id) => {
-    setSelectedCalendarIds(prev => 
+    setSelectedCalendarIds(prev =>
       prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
     );
   };
@@ -105,6 +125,7 @@ export default function MyCalendar() {
       const events = await fetchEventsInRange(timeMin, timeMax, selectedCalendarIds);
       setCalendarEvents(events);
     } catch (e) {
+      if (isAuthError(e)) return;
       console.error(e);
     } finally {
       setIsCalendarLoading(false);
@@ -133,7 +154,7 @@ export default function MyCalendar() {
       setMyEvents(formattedEvents);
     } catch (e) {
       console.error(e);
-      if (e.message.includes("Not authenticated") || e.message.includes("401")) {
+      if (isAuthError(e)) {
         setIsAuthenticated(false);
       }
     } finally {
@@ -142,6 +163,7 @@ export default function MyCalendar() {
   };
 
   const handleLogin = () => {
+    setLoginModalMode('connect');
     setShowLoginModal(true);
   };
 
@@ -163,10 +185,12 @@ export default function MyCalendar() {
         await revokeAccess();
         setIsAuthenticated(false);
         setIsLoading(false);
+        setLoginModalMode('connect');
         setShowLoginModal(true);
         return;
       }
     }
+    setLoginModalMode('connect');
     setShowLoginModal(true);
   };
 
@@ -297,7 +321,6 @@ export default function MyCalendar() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <InstallAppButton className="hidden md:flex items-center gap-2 px-3 py-2 bg-blue-50 text-[#0038A8] rounded-lg font-bold text-sm dark:bg-blue-900/30 dark:text-blue-300" />
           <LanguageSwitcher />
           {!isAuthenticated ? (
             <button onClick={handleLogin} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#0038A8] rounded-lg font-bold dark:bg-blue-900/30 dark:text-blue-300"><LogIn className="w-4 h-4" />{t('login')}</button>
@@ -332,7 +355,7 @@ export default function MyCalendar() {
                 <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
                 {isAuthenticated && scopeMode !== 'read_only' && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ {t('new')}</button>}
               </div>
-              
+
               {isAuthenticated && calendars.length > 0 && (
                 <div className="flex gap-2">
                   <button onClick={selectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('selectAll')}</button>
@@ -352,16 +375,16 @@ export default function MyCalendar() {
             </div>
 
             <div className="pt-4 mt-auto border-t border-slate-100 dark:border-slate-800 space-y-4">
-               <div className="p-3 bg-blue-50/20 dark:bg-blue-900/10 rounded-xl space-y-2">
-                  <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
-                    <Upload className="w-4 h-4 opacity-50" />
-                    <div>
-                      <p className="text-[10px] font-bold">{t('importCsv')}</p>
-                      <p className="text-[9px] opacity-70 italic">{t('comingSoon')}</p>
-                    </div>
+              <div className="p-3 bg-blue-50/20 dark:bg-blue-900/10 rounded-xl space-y-2">
+                <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
+                  <Upload className="w-4 h-4 opacity-50" />
+                  <div>
+                    <p className="text-[10px] font-bold">{t('importCsv')}</p>
+                    <p className="text-[9px] opacity-70 italic">{t('comingSoon')}</p>
                   </div>
-               </div>
-               <div className="text-[9px] text-slate-400 font-medium leading-tight">
+                </div>
+              </div>
+              <div className="text-[9px] text-slate-400 font-medium leading-tight">
                 {t('thanksTo')} <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a>
               </div>
             </div>
@@ -439,7 +462,7 @@ export default function MyCalendar() {
         </main>
       </div>
 
-      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onSelect={onLoginSelect} />
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onSelect={onLoginSelect} mode={loginModalMode} />
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>

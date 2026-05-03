@@ -2,15 +2,19 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import AddEvent from '../pages/AddEvent';
+import * as googleApi from '../utils/googleApi';
+import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
 
 vi.mock('../utils/googleApi', () => ({
+  GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
   getAccessToken: vi.fn(() => 'mock-token'),
   fetchAllCalendars: vi.fn(() => Promise.resolve([
     { id: 'cal1', summary: 'Personal', accessRole: 'owner' }
   ])),
   authenticateWithGoogle: vi.fn(),
   revokeAccess: vi.fn(),
-  createHebcalEvent: vi.fn()
+  createHebcalEvent: vi.fn(),
+  isAuthError: vi.fn((error) => error?.code === 'AUTH_EXPIRED'),
 }));
 
 // Mock react-i18next
@@ -30,6 +34,11 @@ vi.mock('../components/LanguageSwitcher', () => ({
 // Mock Logo
 vi.mock('../components/Logo', () => ({
   default: () => <div data-testid="logo">Logo</div>
+}));
+
+vi.mock('../components/LoginModal', () => ({
+  default: ({ isOpen, mode }) =>
+    isOpen ? <div data-testid="login-modal">{mode}</div> : null
 }));
 
 const renderAddEvent = () => {
@@ -64,5 +73,33 @@ describe('AddEvent Component', () => {
   it('should show Hebrew/Gregorian toggle option', () => {
     renderAddEvent();
     expect(screen.getByText('enterGregorian')).toBeInTheDocument();
+  });
+
+  it('should open the login modal in reauthorize mode when the Google session expires', async () => {
+    renderAddEvent();
+    window.dispatchEvent(new CustomEvent(GCAL_AUTH_EXPIRED_EVENT));
+    expect(await screen.findByText('reauthorize')).toBeInTheDocument();
+  });
+
+  it('should reopen login modal in reauthorize mode after submit gets a 401-style error', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.mocked(googleApi.createHebcalEvent).mockRejectedValueOnce(new Error('401 unauthorized'));
+
+    renderAddEvent();
+
+    fireEvent.change(screen.getAllByRole('textbox')[0], {
+      target: { value: 'Birthday' },
+    });
+
+    await screen.findByText('selectAll');
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[checkboxes.length - 1]);
+
+    fireEvent.click(screen.getByText('showPreview'));
+    expect(await screen.findByText('preview')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('confirmAndSync'));
+    expect(await screen.findByText('reauthorize')).toBeInTheDocument();
   });
 });

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarDays, PlusCircle, ArrowLeft, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import InstallAppButton from '../components/InstallAppButton';
 import { authenticateWithGoogle, getAccessToken } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
 
@@ -48,18 +47,17 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 md:px-6 dark:bg-slate-900 font-sans">
       <div className="absolute top-4 right-4 md:top-8 md:right-8 flex items-center gap-2">
-        <InstallAppButton className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-[#0038A8] bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50" />
         <LanguageSwitcher />
       </div>
 
       <div className="max-w-4xl w-full text-center space-y-6 flex flex-col items-center flex-1 justify-center">
         <Logo className="w-16 h-16 md:w-20 md:h-20 mb-2 drop-shadow-xl" />
-        
+
         <h1 className="text-3xl md:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
           {t('homeTitle')} <br />
           <span className="text-[#0038A8] dark:text-blue-400">HebCal-Sync</span>
         </h1>
-        
+
         <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium px-2">
           {t('homeSubtitle')}
         </p>
@@ -67,7 +65,7 @@ export default function Home() {
         <div className="pt-4 text-slate-800 dark:text-slate-200 font-bold text-base md:text-lg">
           {getAccessToken() ? (
             <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <button 
+              <button
                 onClick={() => navigate('/dashboard')}
                 className="group flex items-center gap-3 px-8 py-4 bg-[#0038A8] text-white rounded-2xl font-black text-xl hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
               >
@@ -83,7 +81,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pt-2 w-full max-w-lg md:max-w-none">
           {loginOptions.map((opt) => (
-            <div 
+            <div
               key={opt.id}
               onClick={() => handleLogin(opt.id)}
               className={`group cursor-pointer p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-2 transition-all duration-300 ${isRtl ? 'text-right' : 'text-left'} flex flex-col gap-4 dark:bg-slate-800/50 dark:border-slate-700 ${opt.color} hover:shadow-2xl hover:-translate-y-1 active:scale-95`}
@@ -109,7 +107,7 @@ export default function Home() {
           <span className="bg-[#0038A8]/10 text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300 px-3 md:px-4 py-1.5 md:py-2 rounded-full">Google OAuth</span>
         </div>
       </div>
-      
+
       <footer className="mt-12 py-4 text-slate-400 text-[10px] font-medium flex flex-col items-center gap-1 text-center">
         <p>{t('copyright', { year: new Date().getFullYear() })}</p>
         <p className="flex flex-col md:flex-row items-center gap-1">

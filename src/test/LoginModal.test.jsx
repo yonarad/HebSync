@@ -12,7 +12,6 @@ const renderModal = (props = {}) => {
 };
 
 describe('LoginModal Component', () => {
-
   it('renders nothing when isOpen=false', () => {
     renderModal({ isOpen: false });
     expect(screen.queryByText('בחר רמת הרשאה')).toBeNull();
@@ -30,7 +29,7 @@ describe('LoginModal Component', () => {
     expect(screen.getByText('גישה מלאה')).toBeInTheDocument();
   });
 
-  it('defaults to "app_created" (max privacy) mode', () => {
+  it('defaults to app_created mode', () => {
     const onSelect = vi.fn();
     renderModal({ onSelect });
     fireEvent.click(screen.getByText('המשך להתחברות'));
@@ -63,18 +62,39 @@ describe('LoginModal Component', () => {
   it('calls onClose when X button is clicked', () => {
     const onClose = vi.fn();
     renderModal({ onClose });
-    // The X icon button is the only button without visible text — use role query
-    const closeButtons = screen.getAllByRole('button');
-    // X is the first button (top right)
-    const xButton = closeButtons.find(b => !b.textContent.trim());
+    const xButton = screen.getAllByRole('button').find((button) => !button.textContent.trim());
     if (xButton) fireEvent.click(xButton);
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('does not call onSelect without user clicking confirm', () => {
+  it('does not call onSelect without confirm click', () => {
     const onSelect = vi.fn();
     renderModal({ onSelect });
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it('shows reauthorization copy when mode=reauthorize', () => {
+    renderModal({ mode: 'reauthorize' });
+    expect(screen.getByText('נדרש חיבור מחדש לגוגל')).toBeInTheDocument();
+    expect(screen.getByText(/תוקף ההתחברות או ההרשאות שלך פג/)).toBeInTheDocument();
+    expect(screen.getByText('המשך לחיבור מחדש')).toBeInTheDocument();
+  });
+
+  it('resets the selected mode when reopened', () => {
+    const onSelect = vi.fn();
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <LoginModal isOpen={true} onClose={onClose} onSelect={onSelect} />
+    );
+
+    fireEvent.click(screen.getByText('צפייה בלבד'));
+    fireEvent.click(screen.getByText('המשך להתחברות'));
+    expect(onSelect).toHaveBeenLastCalledWith(SCOPE_MODES.READ_ONLY);
+
+    rerender(<LoginModal isOpen={false} onClose={onClose} onSelect={onSelect} />);
+    rerender(<LoginModal isOpen={true} onClose={onClose} onSelect={onSelect} />);
+
+    fireEvent.click(screen.getByText('המשך להתחברות'));
+    expect(onSelect).toHaveBeenLastCalledWith(SCOPE_MODES.APP_CREATED);
+  });
 });
