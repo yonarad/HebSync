@@ -527,8 +527,20 @@ export default function MyCalendar() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <h3 className="text-2xl font-bold text-[#0038A8] dark:text-blue-400">{selectedEvent.summary}</h3>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || t('noDescription')}</div>
+                  {(() => {
+                    const props = selectedEvent.extendedProperties?.private || {};
+                    const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+                    const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
+                    const currentHebrewYear = new HDate().getFullYear();
+                    const age = (originalYear && currentHebrewYear) ? (currentHebrewYear - originalYear) : 0;
+                    const ageSuffix = isHebCal ? ` (${age})` : '';
+                    return (
+                      <>
+                        <h3 className="text-2xl font-bold text-[#0038A8] dark:text-blue-400">{selectedEvent.summary}{ageSuffix}</h3>
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || t('noDescription')}</div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
