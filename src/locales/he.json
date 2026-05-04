@@ -1,10 +1,12 @@
 {
   "translation": {
-    "appName": "עברי ליומן",
+    "appNameFirst": "עברי",
+    "appNameSecond": " ליומן",
     "home": "דף הבית",
     "myCalendar": "היומן שלי",
     "addEvent": "הוספת אירוע",
-    "homeTitle": "עברי ליומן",
+    "homeTitleFirst": "עברי",
+    "homeTitleSecond": " ליומן",
     "homeSubtitle": "סנכרון חכם ופרטי של אירועים עבריים ליומן Google שלך.",
     "selectAccess": "בחר את רמת הגישה המתאימה לך:",
     "maxPrivacy": "פרטיות מקסימלית",

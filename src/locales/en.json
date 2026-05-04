@@ -1,10 +1,12 @@
 {
   "translation": {
-    "appName": "HebSync",
+    "appNameFirst": "Heb",
+    "appNameSecond": "Sync",
     "home": "Home",
     "myCalendar": "My Calendar",
     "addEvent": "Add Event",
-    "homeTitle": "HebSync",
+    "homeTitleFirst": "Heb",
+    "homeTitleSecond": "Sync",
     "homeSubtitle": "Smart and private synchronization of Hebrew events to your Google Calendar.",
     "selectAccess": "Choose your access level:",
     "maxPrivacy": "Maximum Privacy",
