@@ -1,14 +1,35 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, PlusCircle, ArrowLeft, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import { authenticateWithGoogle, getAccessToken } from '../utils/googleApi';
+import { authenticateWithGoogle, fetchSession, getAccessToken } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
 
 export default function Home() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchSession()
+      .then((session) => {
+        if (isMounted) {
+          setIsAuthenticated(!!session);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsAuthenticated(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogin = (mode) => {
     authenticateWithGoogle(mode, () => {
@@ -63,7 +84,7 @@ export default function Home() {
         </p>
 
         <div className="pt-4 text-slate-800 dark:text-slate-200 font-bold text-base md:text-lg">
-          {getAccessToken() ? (
+          {isAuthenticated ? (
             <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <button
                 onClick={() => navigate('/calendar')}

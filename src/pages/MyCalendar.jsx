@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye, X, Upload, Menu } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, isAuthError, revokeAccess, updateEvent } from '../utils/googleApi';
+import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, fetchSession, isAuthError, revokeAccess, updateEvent } from '../utils/googleApi';
 import { HEBREW_MONTHS, formatHebrewYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
@@ -57,6 +57,28 @@ export default function MyCalendar() {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [showGregorian, setShowGregorian] = useState(true);
   const [showAllEvents, setShowAllEvents] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchSession()
+      .then((session) => {
+        if (isMounted) {
+          setIsAuthenticated(!!session);
+          setScopeMode(session?.scopeMode || null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsAuthenticated(false);
+          setScopeMode(null);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {

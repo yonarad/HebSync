@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, isAuthError, revokeAccess } from '../utils/googleApi';
+import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchSession, isAuthError, revokeAccess } from '../utils/googleApi';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -93,9 +93,19 @@ export default function AddEvent() {
   }, [year, month]);
 
   useEffect(() => {
-    if (getAccessToken()) {
-      loadCalendars();
-    }
+    let isMounted = true;
+
+    fetchSession()
+      .then((session) => {
+        if (isMounted && session) {
+          loadCalendars();
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {

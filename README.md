@@ -30,10 +30,10 @@ Relevant files:
 Create a Google OAuth Web Application client and set:
 
 - Authorized JavaScript origins:
-  - `http://localhost:5173`
+  - `http://localhost:3000`
   - `https://your-app.vercel.app`
 - Authorized redirect URIs:
-  - `http://localhost:5173/api/auth/google/callback`
+  - `http://localhost:3000/api/auth/google/callback`
   - `https://your-app.vercel.app/api/auth/google/callback`
 
 Important:
@@ -86,6 +86,27 @@ The app will expose these endpoints automatically:
 - `GET /api/auth/google/callback`
 - `GET /api/auth/session`
 - `GET /api/auth/logout`
+
+## Local development
+
+Use the local combined dev flow now that the app depends on:
+
+- local server-backed `/api` routes
+- `HttpOnly` session cookies
+- Google OAuth callbacks back into the same app origin
+
+Run:
+
+```bash
+npm run dev
+```
+
+Important:
+
+- `npm run dev` starts both the local API server and Vite together
+- `npm run dev:vite` is frontend-only and will break `/api/*` routes for auth
+- local app origin is `http://localhost:3000`
+- local API proxy target is `http://localhost:8787`
 
 ## 6. Frontend integration
 

@@ -1,11 +1,10 @@
 import { formatHebrewYear } from './hebcal';
 
-export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
 
 const AUTH_ERROR_CODE = 'AUTH_EXPIRED';
 const APP_SIGNATURE = 'ID:hebcal-sync-app';
-const TOKEN_EXPIRY_MARGIN = 5 * 60 * 1000; // 5 minutes before actual expiry
+const SESSION_STORAGE_KEY = 'gcal_session';
 
 function createAuthError(message = 'Google session expired') {
   const error = new Error(message);
@@ -19,6 +18,30 @@ function notifyAuthExpired() {
     window.dispatchEvent(new CustomEvent(GCAL_AUTH_EXPIRED_EVENT));
   }
   return createAuthError();
+}
+
+function getStoredSession() {
+  const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    return null;
+  }
+}
+
+function setStoredSession(session) {
+  if (!session) {
+    logout();
+    return;
+  }
+
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  if (session.scopeMode) {
+    localStorage.setItem('gcal_scope_mode', session.scopeMode);
+  }
 }
 
 export function isAuthError(error) {
@@ -47,17 +70,9 @@ async function readGoogleError(response, fallbackMessage) {
 }
 
 async function authorizedFetch(url, options = {}, fallbackMessage = 'Google request failed') {
-  const token = getAccessToken();
-  if (!token) throw createAuthError('Not authenticated');
-
-  const headers = {
-    ...(options.headers || {}),
-    Authorization: `Bearer ${token}`,
-  };
-
   const response = await fetch(url, {
     ...options,
-    headers,
+    credentials: 'same-origin',
   });
 
   if (!response.ok) {
@@ -68,77 +83,60 @@ async function authorizedFetch(url, options = {}, fallbackMessage = 'Google requ
 }
 
 export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
-  if (!window.google) {
-    onError(new Error('Google Identity Services not loaded'));
-    return;
-  }
-
-  let scope = '';
-  if (scopeMode === 'all_events') {
-    scope =
-      'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
-  } else if (scopeMode === 'read_only') {
-    scope = 'https://www.googleapis.com/auth/calendar.readonly';
-  } else if (scopeMode === 'app_created') {
-    scope =
-      'https://www.googleapis.com/auth/calendar.app.created https://www.googleapis.com/auth/calendar.calendarlist.readonly';
-  }
-
-  const client = window.google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope,
-    callback: (response) => {
-      if (response.error) {
-        onError(response);
-      } else {
-        setTokenWithExpiry(response.access_token, response.expires_in, scopeMode);
-        onSuccess(response.access_token);
-      }
-    },
-  });
-
-  client.requestAccessToken();
-}
-
-function isTokenExpired() {
-  const expiry = localStorage.getItem('gcal_token_expiry');
-  if (!expiry) return true;
-  return Date.now() >= parseInt(expiry, 10);
-}
-
-export function setTokenWithExpiry(accessToken, expiresIn, scopeMode) {
-  const expiryTime = Date.now() + (expiresIn * 1000) - TOKEN_EXPIRY_MARGIN;
-  localStorage.setItem('gcal_token', accessToken);
-  localStorage.setItem('gcal_token_expiry', expiryTime.toString());
-  if (scopeMode) {
-    localStorage.setItem('gcal_scope_mode', scopeMode);
+  try {
+    const returnTo =
+      typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+        : '/calendar';
+    const url = new URL('/api/auth/google/start', window.location.origin);
+    url.searchParams.set('scopeMode', scopeMode);
+    url.searchParams.set('returnTo', returnTo);
+    window.location.assign(url.toString());
+    onSuccess?.();
+  } catch (error) {
+    onError?.(error);
   }
 }
 
 export function getAccessToken() {
-  if (isTokenExpired()) {
-    logout();
+  return getStoredSession() ? 'server-session' : null;
+}
+
+export async function fetchSession() {
+  const response = await fetch('/api/auth/session', {
+    credentials: 'same-origin',
+  });
+
+  if (response.status === 401) {
     notifyAuthExpired();
     return null;
   }
-  return localStorage.getItem('gcal_token');
+
+  if (!response.ok) {
+    await readGoogleError(response, 'Failed to fetch session');
+  }
+
+  const data = await response.json();
+  if (data?.authenticated && data?.user) {
+    setStoredSession(data.user);
+    return data.user;
+  }
+
+  logout();
+  return null;
 }
 
 export function logout() {
-  localStorage.removeItem('gcal_token');
-  localStorage.removeItem('gcal_token_expiry');
+  localStorage.removeItem(SESSION_STORAGE_KEY);
   localStorage.removeItem('gcal_scope_mode');
   localStorage.removeItem('gcal_app_calendar_id');
 }
 
 export async function revokeAccess() {
-  const token = getAccessToken();
-  if (!token) return;
-
   try {
-    await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    await fetch('/api/auth/logout', {
+      method: 'GET',
+      credentials: 'same-origin',
     });
   } catch (error) {
     console.error('Failed to revoke token:', error);
@@ -149,14 +147,14 @@ export async function revokeAccess() {
 
 export async function fetchAllCalendars() {
   const response = await authorizedFetch(
-    'https://www.googleapis.com/calendar/v3/users/me/calendarList',
+    '/api/google/calendars',
     {},
     'Failed to fetch calendars',
   );
   const data = await response.json();
   const items = data.items || [];
 
-  const mode = localStorage.getItem('gcal_scope_mode');
+  const mode = data.scopeMode || localStorage.getItem('gcal_scope_mode');
   if (mode === 'app_created') {
     return items.filter(
       (calendar) =>
@@ -169,17 +167,13 @@ export async function fetchAllCalendars() {
 
 export async function createNewCalendar(summary) {
   const response = await authorizedFetch(
-    'https://www.googleapis.com/calendar/v3/calendars',
+    '/api/google/calendars',
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        summary,
-        description:
-          'Created by HebCal-Sync. [' + APP_SIGNATURE + ']',
-      }),
+      body: JSON.stringify({ summary }),
     },
     'Failed to create calendar',
   );
@@ -190,59 +184,37 @@ export async function createNewCalendar(summary) {
 export async function fetchMyAppEvents(calendarIds = []) {
   if (calendarIds.length === 0) return [];
 
-  const promises = calendarIds.map(async (calendarId) => {
-    const url = new URL(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
-    );
-    url.searchParams.append(
-      'privateExtendedProperty',
-      'appIdentifier=MyHebrewCalendar',
-    );
-    url.searchParams.append('maxResults', '100');
-    url.searchParams.append('showDeleted', 'false');
-
-    const response = await authorizedFetch(
-      url.toString(),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+  const response = await authorizedFetch(
+    '/api/google/events/app',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      'Failed to fetch events',
-    );
-
-    const data = await response.json();
-    return (data.items || []).map((event) => ({ ...event, calendarId }));
-  });
-
-  const results = await Promise.all(promises);
-  return results.flat();
+      body: JSON.stringify({ calendarIds }),
+    },
+    'Failed to fetch events',
+  );
+  const data = await response.json();
+  return data.items || [];
 }
 
 export async function fetchEventsInRange(timeMin, timeMax, calendarIds = []) {
   if (calendarIds.length === 0) return [];
 
-  const promises = calendarIds.map(async (calendarId) => {
-    const url = new URL(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
-    );
-    url.searchParams.append('timeMin', timeMin);
-    url.searchParams.append('timeMax', timeMax);
-    url.searchParams.append('singleEvents', 'true');
-    url.searchParams.append('orderBy', 'startTime');
-
-    const response = await authorizedFetch(
-      url.toString(),
-      {},
-      'Failed to fetch calendar events',
-    );
-
-    const data = await response.json();
-    return (data.items || []).map((event) => ({ ...event, calendarId }));
-  });
-
-  const results = await Promise.all(promises);
-  return results.flat();
+  const response = await authorizedFetch(
+    '/api/google/events/in-range',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ timeMin, timeMax, calendarIds }),
+    },
+    'Failed to fetch calendar events',
+  );
+  const data = await response.json();
+  return data.items || [];
 }
 
 export async function createHebcalEvent(
@@ -253,7 +225,6 @@ export async function createHebcalEvent(
   calendarId,
   userDescription = '',
 ) {
-  if (!getAccessToken()) throw createAuthError('Not authenticated');
   if (!calendarId) throw new Error('No calendar selected');
 
   const eventId = crypto.randomUUID();
@@ -293,13 +264,16 @@ export async function createHebcalEvent(
   };
 
   const response = await authorizedFetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
+    '/api/google/events',
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(eventPayload),
+      body: JSON.stringify({
+        calendarId,
+        eventPayload,
+      }),
     },
     'Failed to create event',
   );
@@ -308,8 +282,12 @@ export async function createHebcalEvent(
 }
 
 export async function updateEvent(calendarId, googleEventId, updates) {
+  const url = new URL('/api/google/event', window.location.origin);
+  url.searchParams.set('calendarId', calendarId);
+  url.searchParams.set('eventId', googleEventId);
+
   const response = await authorizedFetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+    url.toString(),
     {
       method: 'PATCH',
       headers: {
@@ -324,8 +302,12 @@ export async function updateEvent(calendarId, googleEventId, updates) {
 }
 
 export async function deleteEvent(calendarId, googleEventId) {
+  const url = new URL('/api/google/event', window.location.origin);
+  url.searchParams.set('calendarId', calendarId);
+  url.searchParams.set('eventId', googleEventId);
+
   await authorizedFetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${googleEventId}`,
+    url.toString(),
     {
       method: 'DELETE',
     },
