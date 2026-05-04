@@ -1,8 +1,11 @@
-const CACHE_NAME = 'hebcal-sync-v003'
+const CACHE_NAME = 'hebcal-sync-v004'
+const OFFLINE_URL = '/offline.html'
 const APP_SHELL = [
   '/',
+  OFFLINE_URL,
   '/manifest.webmanifest',
   '/HebSyncLogo.png',
+  '/favicon.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
 ]
@@ -38,6 +41,27 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url)
   if (url.origin !== self.location.origin) return
+  if (url.pathname.startsWith('/api/')) return
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone))
+          }
+
+          return networkResponse
+        })
+        .catch(async () => {
+          const cachedResponse = await caches.match(event.request)
+          if (cachedResponse) return cachedResponse
+          return caches.match(OFFLINE_URL)
+        }),
+    )
+    return
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -47,8 +71,7 @@ self.addEventListener('fetch', (event) => {
         if (
           networkResponse &&
           networkResponse.status === 200 &&
-          (event.request.destination === 'document' ||
-            event.request.destination === 'script' ||
+          (event.request.destination === 'script' ||
             event.request.destination === 'style' ||
             event.request.destination === 'image')
         ) {

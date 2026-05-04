@@ -8,6 +8,8 @@
     "homeTitleFirst": "Heb",
     "homeTitleSecond": "Sync",
     "homeSubtitle": "Smart and private synchronization of Hebrew events to your Google Calendar.",
+    "installApp": "Install App",
+    "appInstalled": "HebSync is installed on this device.",
     "selectAccess": "Choose your access level:",
     "maxPrivacy": "Maximum Privacy",
     "maxPrivacyDesc": "Manage only calendars created by this app. The app cannot access other events in your calendars.",

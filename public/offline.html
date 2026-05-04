@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0038A8" />
+    <title>HebSync Offline</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f8fafc;
+        --card: rgba(255, 255, 255, 0.94);
+        --text: #0f172a;
+        --muted: #475569;
+        --brand: #0038a8;
+        --border: rgba(148, 163, 184, 0.2);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font-family: Heebo, Rubik, system-ui, sans-serif;
+        background:
+          radial-gradient(circle at top, rgba(0, 56, 168, 0.14), transparent 42%),
+          linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+        color: var(--text);
+      }
+
+      main {
+        width: min(100%, 520px);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--card);
+        padding: 32px;
+        text-align: center;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+      }
+
+      .badge {
+        display: inline-block;
+        margin-bottom: 18px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(0, 56, 168, 0.1);
+        color: var(--brand);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(32px, 7vw, 44px);
+        line-height: 1;
+      }
+
+      p {
+        margin: 0 auto;
+        max-width: 38ch;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      button {
+        margin-top: 24px;
+        border: none;
+        border-radius: 16px;
+        padding: 14px 22px;
+        background: var(--brand);
+        color: white;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="badge">Offline</div>
+      <h1>HebSync</h1>
+      <p>You are offline right now. The app shell is still available, and you can reconnect to continue syncing with Google Calendar.</p>
+      <button type="button" onclick="window.location.reload()">Try again</button>
+    </main>
+  </body>
+  </html>

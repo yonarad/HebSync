@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, PlusCircle, ArrowLeft, Shield, Unlock, Eye, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Shield, Unlock, Eye, Download } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { authenticateWithGoogle, fetchSession, getAccessToken } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
+import useInstallPrompt from '../hooks/useInstallPrompt';
 
 export default function Home() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
 
   useEffect(() => {
     let isMounted = true;
@@ -30,6 +32,10 @@ export default function Home() {
       isMounted = false;
     };
   }, []);
+
+  const handleInstall = async () => {
+    await promptInstall();
+  };
 
   const handleLogin = (mode) => {
     authenticateWithGoogle(mode, undefined, (err) => {
@@ -81,6 +87,22 @@ export default function Home() {
           {t('homeSubtitle')}
         </p>
 
+        {canInstall && (
+          <button
+            onClick={handleInstall}
+            className="group flex items-center gap-3 px-6 py-3 rounded-2xl border border-slate-200 bg-white/90 text-slate-800 font-black shadow-lg shadow-slate-200/70 transition-all hover:-translate-y-0.5 hover:border-[#0038A8] hover:text-[#0038A8] dark:bg-slate-800/80 dark:border-slate-700 dark:text-white dark:shadow-none"
+          >
+            <Download className="w-5 h-5 transition-transform group-hover:translate-y-0.5" />
+            {t('installApp')}
+          </button>
+        )}
+
+        {isInstalled && (
+          <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+            {t('appInstalled')}
+          </p>
+        )}
+
         <div className="pt-4 text-slate-800 dark:text-slate-200 font-bold text-base md:text-lg">
           {isAuthenticated ? (
             <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -122,7 +144,7 @@ export default function Home() {
 
         <div className="pt-6 flex flex-wrap items-center justify-center gap-3 md:gap-4 text-[10px] md:text-xs font-bold text-slate-500">
           <span className="bg-white dark:bg-slate-800 px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm">Privacy-First Architecture</span>
-          <span className="bg-white dark:bg-slate-800 px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm">No Database</span>
+          <span className="bg-white dark:bg-slate-800 px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm">Installable PWA</span>
           <span className="bg-[#0038A8]/10 text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300 px-3 md:px-4 py-1.5 md:py-2 rounded-full">Google OAuth</span>
         </div>
       </div>
