@@ -15,6 +15,25 @@ export default function AddEvent() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
 
+  // Color palette for calendars
+  const calendarColors = [
+    '#0038A8', // Blue
+    '#DC2626', // Red
+    '#16A34A', // Green
+    '#CA8A04', // Yellow
+    '#9333EA', // Purple
+    '#C2410C', // Orange
+    '#0891B2', // Cyan
+    '#BE185D', // Pink
+    '#4B5563', // Gray
+    '#7C2D12', // Brown
+  ];
+
+  const getCalendarColor = (calendarId) => {
+    const calendar = calendars.find(c => c.id === calendarId);
+    return calendar?.color || '#0038A8';
+  };
+
   const [tab, setTab] = useState('manual');
   // ... rest of the code remains same but strings replaced
   const [isLoading, setIsLoading] = useState(false);
@@ -100,7 +119,12 @@ export default function AddEvent() {
       const cals = await fetchAllCalendars();
       // Filter to only calendars where the user has write access
       const writableCals = cals.filter(c => c.accessRole === 'owner' || c.accessRole === 'writer');
-      setCalendars(writableCals);
+      // Assign colors to calendars
+      const calendarsWithColors = writableCals.map((cal, index) => ({
+        ...cal,
+        color: calendarColors[index % calendarColors.length]
+      }));
+      setCalendars(calendarsWithColors);
     } catch (e) {
       if (isAuthError(e)) return;
       console.error("Failed to load calendars", e);
@@ -495,6 +519,7 @@ export default function AddEvent() {
                                     : 'bg-white border-slate-100 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700'
                                 }`}
                               >
+                                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: cal.color }}></div>
                                 <input 
                                   type="checkbox"
                                   checked={selectedCalendarIds.includes(cal.id)}

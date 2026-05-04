@@ -15,6 +15,25 @@ export default function MyCalendar() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
 
+  // Color palette for calendars
+  const calendarColors = [
+    '#0038A8', // Blue
+    '#DC2626', // Red
+    '#16A34A', // Green
+    '#CA8A04', // Yellow
+    '#9333EA', // Purple
+    '#C2410C', // Orange
+    '#0891B2', // Cyan
+    '#BE185D', // Pink
+    '#4B5563', // Gray
+    '#7C2D12', // Brown
+  ];
+
+  const getCalendarColor = (calendarId) => {
+    const calendar = calendars.find(c => c.id === calendarId);
+    return calendar?.color || '#0038A8';
+  };
+
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
   // ... rest of state remain same
   const [myEvents, setMyEvents] = useState([]);
@@ -80,8 +99,13 @@ export default function MyCalendar() {
     setIsGoogleLoadingCount((count) => count + 1);
     try {
       const cals = await fetchAllCalendars();
-      setCalendars(cals);
-      setSelectedCalendarIds(cals.map(c => c.id));
+      // Assign colors to calendars
+      const calendarsWithColors = cals.map((cal, index) => ({
+        ...cal,
+        color: calendarColors[index % calendarColors.length]
+      }));
+      setCalendars(calendarsWithColors);
+      setSelectedCalendarIds(calendarsWithColors.map(c => c.id));
     } catch (e) {
       if (isAuthError(e)) return;
       console.error("Failed to load calendars", e);
@@ -381,6 +405,7 @@ export default function MyCalendar() {
               <div className="space-y-1 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
                 {calendars.map(cal => (
                   <label key={cal.id} className="flex items-center gap-2 text-xs cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg dark:hover:bg-slate-800 transition-colors">
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cal.color }}></div>
                     <input type="checkbox" checked={selectedCalendarIds.includes(cal.id)} onChange={() => toggleCalendar(cal.id)} className="w-3 h-3 rounded border-slate-300 text-[#0038A8]" />
                     <span className="truncate">{cal.summary}</span>
                   </label>
@@ -467,8 +492,9 @@ export default function MyCalendar() {
                             const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
                             const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
                             const ageSuffix = isHebCal ? ` (${age})` : '';
+                            const eventColor = getCalendarColor(event.calendarId);
                             return (
-                              <div key={idx} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }} className={`text-[8px] md:text-[10px] leading-tight px-1 md:px-2 py-0.5 md:py-1 rounded-md md:rounded-lg truncate font-bold cursor-pointer hover:brightness-95 transition-all flex-shrink-0 ${isHebCal ? 'bg-[#0038A8] text-white shadow-sm' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`} title={event.summary + ageSuffix}>
+                              <div key={idx} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }} className={`text-[8px] md:text-[10px] leading-tight px-1 md:px-2 py-0.5 md:py-1 rounded-md md:rounded-lg truncate font-bold cursor-pointer hover:brightness-95 transition-all flex-shrink-0 text-white shadow-sm`} style={{ backgroundColor: eventColor }} title={event.summary + ageSuffix}>
                                 {event.summary}{ageSuffix}
                               </div>
                             );

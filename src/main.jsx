@@ -13,9 +13,31 @@ createRoot(document.getElementById('root')).render(
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     if (import.meta.env.PROD) {
-      navigator.serviceWorker.register('/sw.js').catch((error) => {
-        console.error('Service worker registration failed:', error)
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      
+      // Check for updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available
+              if (confirm('יש גרסה חדשה זמינה! האם לרענן את הדף?')) {
+                window.location.reload()
+              }
+            }
+          })
+        }
       })
+      
+      // Check if there's a waiting worker
+      if (registration.waiting) {
+        if (confirm('יש גרסה חדשה זמינה! האם לרענן את הדף?')) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+          window.location.reload()
+        }
+      }
+      
       return
     }
 
