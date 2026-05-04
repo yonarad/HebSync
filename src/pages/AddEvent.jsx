@@ -241,7 +241,7 @@ export default function AddEvent() {
     } catch (e) {
       console.error("Submission error:", e);
       if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
-        sessionStorage.removeItem('gcal_token');
+        localStorage.removeItem('gcal_token');
         if (window.confirm("פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?")) {
           setLoginModalMode('reauthorize');
           setShowLoginModal(true);
@@ -605,7 +605,7 @@ export default function AddEvent() {
                 >
                   {t('backToEdit')}
                 </button>
-                {sessionStorage.getItem('gcal_scope_mode') === 'read_only' ? (
+                {localStorage.getItem('gcal_scope_mode') === 'read_only' ? (
                   <div className="flex-1 px-8 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold flex flex-col items-center justify-center gap-1 text-center cursor-not-allowed dark:bg-slate-800 dark:text-slate-400">
                     <span className="flex items-center gap-2"><Info className="w-5 h-5" /> {t('readOnlyMode')}</span>
                     <span className="text-xs font-normal">{t('reloginForEdit')}</span>

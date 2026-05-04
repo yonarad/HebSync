@@ -5,6 +5,7 @@ export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
 
 const AUTH_ERROR_CODE = 'AUTH_EXPIRED';
 const APP_SIGNATURE = 'ID:hebcal-sync-app';
+const TOKEN_EXPIRY_MARGIN = 5 * 60 * 1000; // 5 minutes before actual expiry
 
 function createAuthError(message = 'Google session expired') {
   const error = new Error(message);
@@ -90,8 +91,7 @@ export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
       if (response.error) {
         onError(response);
       } else {
-        sessionStorage.setItem('gcal_token', response.access_token);
-        sessionStorage.setItem('gcal_scope_mode', scopeMode);
+        setTokenWithExpiry(response.access_token, response.expires_in, scopeMode);
         onSuccess(response.access_token);
       }
     },
@@ -100,14 +100,35 @@ export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
   client.requestAccessToken();
 }
 
+function isTokenExpired() {
+  const expiry = localStorage.getItem('gcal_token_expiry');
+  if (!expiry) return true;
+  return Date.now() >= parseInt(expiry, 10);
+}
+
+export function setTokenWithExpiry(accessToken, expiresIn, scopeMode) {
+  const expiryTime = Date.now() + (expiresIn * 1000) - TOKEN_EXPIRY_MARGIN;
+  localStorage.setItem('gcal_token', accessToken);
+  localStorage.setItem('gcal_token_expiry', expiryTime.toString());
+  if (scopeMode) {
+    localStorage.setItem('gcal_scope_mode', scopeMode);
+  }
+}
+
 export function getAccessToken() {
-  return sessionStorage.getItem('gcal_token');
+  if (isTokenExpired()) {
+    logout();
+    notifyAuthExpired();
+    return null;
+  }
+  return localStorage.getItem('gcal_token');
 }
 
 export function logout() {
-  sessionStorage.removeItem('gcal_token');
-  sessionStorage.removeItem('gcal_scope_mode');
-  sessionStorage.removeItem('gcal_app_calendar_id');
+  localStorage.removeItem('gcal_token');
+  localStorage.removeItem('gcal_token_expiry');
+  localStorage.removeItem('gcal_scope_mode');
+  localStorage.removeItem('gcal_app_calendar_id');
 }
 
 export async function revokeAccess() {
@@ -135,7 +156,7 @@ export async function fetchAllCalendars() {
   const data = await response.json();
   const items = data.items || [];
 
-  const mode = sessionStorage.getItem('gcal_scope_mode');
+  const mode = localStorage.getItem('gcal_scope_mode');
   if (mode === 'app_created') {
     return items.filter(
       (calendar) =>

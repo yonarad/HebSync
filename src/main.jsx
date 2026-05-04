@@ -45,3 +45,16 @@ if ('serviceWorker' in navigator) {
     await Promise.all(registrations.map((registration) => registration.unregister()))
   })
 }
+
+// Sync authentication state across tabs
+window.addEventListener('storage', (event) => {
+  if (event.key === 'gcal_token') {
+    if (!event.newValue) {
+      // Token was removed (logout in another tab)
+      window.dispatchEvent(new CustomEvent('gcal-auth-expired'))
+    } else if (!event.oldValue) {
+      // Token was added (login in another tab)
+      window.location.reload()
+    }
+  }
+})

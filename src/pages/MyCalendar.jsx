@@ -43,7 +43,7 @@ export default function MyCalendar() {
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState('connect');
-  const [scopeMode, setScopeMode] = useState(sessionStorage.getItem('gcal_scope_mode'));
+  const [scopeMode, setScopeMode] = useState(localStorage.getItem('gcal_scope_mode'));
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);

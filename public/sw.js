@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hebcal-sync-v001'
+const CACHE_NAME = 'hebcal-sync-v003'
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
