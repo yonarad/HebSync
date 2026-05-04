@@ -93,6 +93,25 @@ export async function refreshGoogleAccessToken(refreshToken) {
   return data;
 }
 
+export async function revokeGoogleToken(token) {
+  const response = await fetch('https://oauth2.googleapis.com/revoke', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      token,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(text || 'Failed to revoke Google token');
+  }
+
+  return true;
+}
+
 export function parseIdToken(idToken) {
   const parts = idToken.split('.');
   if (parts.length < 2) {
@@ -179,6 +198,19 @@ export async function getConnectionById(connectionId) {
   `;
 
   return rows[0] || null;
+}
+
+export async function clearGoogleConnectionAuth(connectionId) {
+  const sql = getSql();
+  await sql`
+    UPDATE google_connections
+    SET
+      encrypted_refresh_token = NULL,
+      access_token = NULL,
+      access_token_expires_at = NULL,
+      updated_at = NOW()
+    WHERE id = ${connectionId}
+  `;
 }
 
 export async function getValidGoogleAccessToken(connectionId) {

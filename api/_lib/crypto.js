@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto';
 
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
@@ -42,4 +42,10 @@ export function createOpaqueToken(bytes = 32) {
 
 export function hashToken(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+export function signToken(value, purpose = 'default') {
+  return createHmac('sha256', getEncryptionKey())
+    .update(`${purpose}:${value}`)
+    .digest('base64url');
 }

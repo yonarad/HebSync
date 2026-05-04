@@ -1,11 +1,16 @@
-import { requireSession } from '../_lib/auth.js';
+import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../_lib/auth.js';
 import { authorizedGoogleFetch } from '../_lib/google-calendar.js';
 import { json } from '../_lib/response.js';
 
 export async function POST(request) {
-  const session = await requireSession(request);
+  const sessionToken = getSessionTokenFromRequest(request);
+  const session = sessionToken ? await requireSession(request) : null;
   if (!session) {
     return json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  if (!verifyCsrf(request, sessionToken)) {
+    return json({ error: 'Invalid CSRF token' }, { status: 403 });
   }
 
   try {

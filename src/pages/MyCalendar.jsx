@@ -222,11 +222,7 @@ export default function MyCalendar() {
 
   const onLoginSelect = (scopeMode) => {
     setShowLoginModal(false);
-    authenticateWithGoogle(scopeMode, (token) => {
-      setIsAuthenticated(true);
-      setScopeMode(scopeMode);
-      loadCalendars();
-    }, (err) => {
+    authenticateWithGoogle(scopeMode, undefined, (err) => {
       alert("שגיאה בהתחברות: " + err.message);
     });
   };

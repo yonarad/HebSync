@@ -44,17 +44,25 @@ function setStoredSession(session) {
   }
 }
 
+function getCsrfToken() {
+  return getStoredSession()?.csrfToken || null;
+}
+
 export function isAuthError(error) {
   return error?.code === AUTH_ERROR_CODE;
 }
 
 async function readGoogleError(response, fallbackMessage) {
   let errorMessage = fallbackMessage;
+  let errorCode = null;
 
   try {
     const errorData = await response.clone().json();
+    errorCode = errorData?.code || null;
     errorMessage =
       errorData?.error?.message ||
+      errorData?.error ||
+      errorData?.message ||
       errorData?.error_description ||
       fallbackMessage;
   } catch {
@@ -62,7 +70,7 @@ async function readGoogleError(response, fallbackMessage) {
     errorMessage = text || fallbackMessage;
   }
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401 || errorCode === AUTH_ERROR_CODE) {
     throw notifyAuthExpired();
   }
 
@@ -70,8 +78,26 @@ async function readGoogleError(response, fallbackMessage) {
 }
 
 async function authorizedFetch(url, options = {}, fallbackMessage = 'Google request failed') {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = new Headers(options.headers || {});
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+      await fetchSession();
+    }
+
+    const resolvedCsrfToken = getCsrfToken();
+    if (!resolvedCsrfToken) {
+      throw notifyAuthExpired();
+    }
+
+    headers.set('x-csrf-token', resolvedCsrfToken);
+  }
+
   const response = await fetch(url, {
     ...options,
+    headers,
     credentials: 'same-origin',
   });
 
@@ -86,13 +112,14 @@ export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
   try {
     const returnTo =
       typeof window !== 'undefined'
-        ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+        ? window.location.pathname === '/'
+          ? '/calendar'
+          : `${window.location.pathname}${window.location.search}${window.location.hash}`
         : '/calendar';
     const url = new URL('/api/auth/google/start', window.location.origin);
     url.searchParams.set('scopeMode', scopeMode);
     url.searchParams.set('returnTo', returnTo);
     window.location.assign(url.toString());
-    onSuccess?.();
   } catch (error) {
     onError?.(error);
   }
@@ -134,10 +161,7 @@ export function logout() {
 
 export async function revokeAccess() {
   try {
-    await fetch('/api/auth/logout', {
-      method: 'GET',
-      credentials: 'same-origin',
-    });
+    await authorizedFetch('/api/auth/logout', { method: 'POST' }, 'Failed to revoke access');
   } catch (error) {
     console.error('Failed to revoke token:', error);
   } finally {

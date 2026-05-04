@@ -198,10 +198,7 @@ export default function AddEvent() {
 
   const onLoginSelect = (scopeMode) => {
     setShowLoginModal(false);
-    authenticateWithGoogle(scopeMode, async () => {
-      await loadCalendars();
-      submitEvent();
-    }, (err) => {
+    authenticateWithGoogle(scopeMode, undefined, (err) => {
       alert(t('errorSyncFailed') + ": " + err.message);
     });
   };

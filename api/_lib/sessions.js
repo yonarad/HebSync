@@ -52,3 +52,8 @@ export async function deleteSessionByToken(token) {
   const sessionHash = hashToken(token);
   await sql`DELETE FROM user_sessions WHERE session_hash = ${sessionHash}`;
 }
+
+export async function deleteSessionsByConnectionId(connectionId) {
+  const sql = getSql();
+  await sql`DELETE FROM user_sessions WHERE google_connection_id = ${connectionId}`;
+}

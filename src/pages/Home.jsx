@@ -32,9 +32,7 @@ export default function Home() {
   }, []);
 
   const handleLogin = (mode) => {
-    authenticateWithGoogle(mode, () => {
-      navigate('/calendar');
-    }, (err) => {
+    authenticateWithGoogle(mode, undefined, (err) => {
       alert(t('errorSyncFailed') + ": " + (err.message || ""));
     });
   };
