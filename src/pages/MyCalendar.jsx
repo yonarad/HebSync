@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2, LogIn, LogOut, X, Menu } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, fetchSession, isAuthError, isHebSyncCalendar, revokeAccess, SCOPE_MODES, updateEvent, usesAllCalendarsMode } from '../utils/googleApi';
-import { HDate } from '@hebcal/core';
+import { revokeAccess } from '../utils/googleApi';
 import { buildMonthDays, buildScheduleDays, getHebrewMonthMeta, getNextMonthHDate, getOverflowPopoverLayout, getPrevMonthHDate } from '../utils/calendarView';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { CalendarToolbar, MonthCalendarView, ScheduleCalendarView, DayEventsPopover } from '../components/MyCalendarViews';
 import MyCalendarSidebar from '../components/MyCalendarSidebar';
+import useMyCalendarData from '../hooks/useMyCalendarData';
+import useCalendarEventActions from '../hooks/useCalendarEventActions';
 
 export default function MyCalendar() {
   const navigate = useNavigate();
@@ -26,120 +27,68 @@ export default function MyCalendar() {
   const closeDayEventsLabel = t('closeDayEvents');
   const dayEventsDialogLabel = t('dayEventsDialog');
 
-  // Color palette for calendars
-  const calendarColors = [
-    '#0038A8', // Blue
-    '#DC2626', // Red
-    '#16A34A', // Green
-    '#CA8A04', // Yellow
-    '#9333EA', // Purple
-    '#C2410C', // Orange
-    '#0891B2', // Cyan
-    '#BE185D', // Pink
-    '#4B5563', // Gray
-    '#7C2D12', // Brown
-  ];
+  const {
+    calendarEvents,
+    calendars,
+    getCalendarColor,
+    handleChangePermissions,
+    handleCreateCalendar,
+    handleLogin,
+    handleRefreshCalendars,
+    hasLoadedCalendarData,
+    hasWriteAccess,
+    hebSyncCalendars,
+    isAllCalendarsMode,
+    isAuthenticated,
+    isCalendarLoading,
+    isFetchingGoogle,
+    loadCalendarData,
+    loadEvents,
+    loginModalMode,
+    myEvents,
+    onLoginSelect,
+    otherCalendars,
+    promptForEditingUpgrade,
+    selectedCalendarIds,
+    setIsAuthenticated,
+    setShowGregorian,
+    setShowLoginModal,
+    setViewHDate,
+    setViewMode,
+    showGregorian,
+    showLoginModal,
+    toggleCalendar,
+    selectAllCalendars,
+    deselectAllCalendars,
+    selectCalendarsByIds,
+    deselectCalendarsByIds,
+    viewHDate,
+    viewMode,
+  } = useMyCalendarData({ t });
 
-  const getCalendarColor = (calendarId) => {
-    const calendar = calendars.find(c => c.id === calendarId);
-    return calendar?.color || '#0038A8';
-  };
-
-  const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
-  // ... rest of state remain same
-  const [myEvents, setMyEvents] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoadingCount, setIsGoogleLoadingCount] = useState(0);
-  const isFetchingGoogle = isGoogleLoadingCount > 0;
-  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
-  const [hasLoadedCalendarData, setHasLoadedCalendarData] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginModalMode, setLoginModalMode] = useState('connect');
-  const [scopeMode, setScopeMode] = useState(localStorage.getItem('gcal_scope_mode'));
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null);
   const [overflowDay, setOverflowDay] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editDesc, setEditDesc] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHebSyncGroupOpen, setIsHebSyncGroupOpen] = useState(true);
   const [isOtherGroupOpen, setIsOtherGroupOpen] = useState(false);
-
-  // Calendar View State
-  const [viewHDate, setViewHDate] = useState(new HDate());
-  const [calendarEvents, setCalendarEvents] = useState([]);
-  const [showGregorian, setShowGregorian] = useState(true);
-  const [viewMode, setViewMode] = useState(() => {
-    if (typeof window === 'undefined') return 'month';
-    return window.innerWidth < 768 ? 'schedule' : 'month';
+  const {
+    editDesc,
+    editTitle,
+    handleDelete,
+    handleEventClick,
+    handleUpdate,
+    isEditing,
+    selectedEvent,
+    setEditDesc,
+    setEditTitle,
+    setIsEditing,
+    setSelectedEvent,
+  } = useCalendarEventActions({
+    hasWriteAccess,
+    promptForEditingUpgrade,
+    t,
+    loadCalendarData,
+    loadEvents,
   });
-  const isAllCalendarsMode = usesAllCalendarsMode(scopeMode);
-  const hasWriteAccess = canEditCalendars(scopeMode);
-  const hebSyncCalendars = calendars.filter(isHebSyncCalendar);
-  const otherCalendars = calendars.filter((calendar) => !isHebSyncCalendar(calendar));
-
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchSession()
-      .then((session) => {
-        if (isMounted) {
-          setIsAuthenticated(!!session);
-          setScopeMode(session?.scopeMode || null);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setIsAuthenticated(false);
-          setScopeMode(null);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadCalendars();
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    const handleAuthExpired = () => {
-      setIsAuthenticated(false);
-      setScopeMode(null);
-      setCalendars([]);
-      setSelectedCalendarIds([]);
-      setCalendarEvents([]);
-      setMyEvents([]);
-      setSelectedEvent(null);
-      setLoginModalMode('reauthorize');
-      setShowLoginModal(true);
-    };
-
-    window.addEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
-    return () => {
-      window.removeEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (selectedCalendarIds.length > 0) {
-        setHasLoadedCalendarData(false);
-        loadCalendarData();
-        loadEvents();
-      } else {
-        setCalendarEvents([]);
-        setMyEvents([]);
-        setHasLoadedCalendarData(true);
-      }
-    }
-  }, [isAuthenticated, viewHDate, selectedCalendarIds]);
 
   useEffect(() => {
     if (hebSyncCalendars.length > 0) {
@@ -150,207 +99,11 @@ export default function MyCalendar() {
     }
   }, [hebSyncCalendars.length, otherCalendars.length]);
 
-  const loadCalendars = async () => {
-    setIsGoogleLoadingCount((count) => count + 1);
-    try {
-      const cals = await fetchAllCalendars();
-      // Assign colors to calendars
-      const calendarsWithColors = cals.map((cal, index) => ({
-        ...cal,
-        color: calendarColors[index % calendarColors.length]
-      }));
-      const hebSyncCalendarIds = calendarsWithColors
-        .filter(isHebSyncCalendar)
-        .map((calendar) => calendar.id);
-      setCalendars(calendarsWithColors);
-      setSelectedCalendarIds(hebSyncCalendarIds);
-    } catch (e) {
-      if (isAuthError(e)) return;
-      console.error("Failed to load calendars", e);
-    } finally {
-      setIsGoogleLoadingCount((count) => Math.max(0, count - 1));
-    }
-  };
-
-  const handleCreateCalendar = async () => {
-    const name = window.prompt(t('newCalendarPrompt'));
-    if (!name) return;
-    try {
-      await createNewCalendar(name);
-      await loadCalendars();
-    } catch (e) {
-      alert(t('createCalendarError'));
-    }
-  };
-
-  const toggleCalendar = (id) => {
-    setSelectedCalendarIds(prev =>
-      prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
-    );
-  };
-
-  const selectAllCalendars = () => {
-    setSelectedCalendarIds(calendars.map(c => c.id));
-  };
-
-  const deselectAllCalendars = () => {
-    setSelectedCalendarIds([]);
-  };
-
-  const selectCalendarsByIds = (calendarIds) => {
-    setSelectedCalendarIds((prev) => [...new Set([...prev, ...calendarIds])]);
-  };
-
-  const deselectCalendarsByIds = (calendarIds) => {
-    const calendarIdSet = new Set(calendarIds);
-    setSelectedCalendarIds((prev) => prev.filter((id) => !calendarIdSet.has(id)));
-  };
-
-  const handleRefreshCalendars = () => {
-    if (!isAuthenticated || isFetchingGoogle) return;
-    loadCalendars();
-  };
-
-  const loadCalendarData = async () => {
-    setIsCalendarLoading(true);
-    try {
-      const hMonth = viewHDate.getMonthName();
-      const hYear = viewHDate.getFullYear();
-
-      const firstDayH = new HDate(1, hMonth, hYear);
-      const lastDayH = new HDate(HDate.daysInMonth(HDate.monthFromName(hMonth), hYear), hMonth, hYear);
-
-      const timeMin = firstDayH.greg().toISOString();
-      const timeMax = lastDayH.greg().toISOString();
-
-      const events = await fetchEventsInRange(timeMin, timeMax, selectedCalendarIds);
-      setCalendarEvents(events);
-    } catch (e) {
-      if (isAuthError(e)) return;
-      console.error(e);
-    } finally {
-      setIsCalendarLoading(false);
-      setHasLoadedCalendarData(true);
-    }
-  };
-
-  const loadEvents = async () => {
-    setIsLoading(true);
-    setIsGoogleLoadingCount((count) => count + 1);
-    try {
-      const items = await fetchMyAppEvents(selectedCalendarIds);
-      const currentHebrewYear = new HDate().getFullYear();
-      const formattedEvents = items.map(item => {
-        const props = item.extendedProperties?.private || {};
-        const originalYear = parseInt(props.originalHebrewYear, 10);
-        const age = originalYear ? (currentHebrewYear - originalYear) : 0;
-        return {
-          id: item.id,
-          calendarId: item.calendarId,
-          eventID: props.eventID,
-          title: item.summary,
-          age: age >= 0 ? age : 0,
-          category: props.category,
-          date: item.start?.date || t('unknownDate')
-        };
-      });
-      setMyEvents(formattedEvents);
-    } catch (e) {
-      console.error(e);
-      if (isAuthError(e)) {
-        setIsAuthenticated(false);
-      }
-    } finally {
-      setIsLoading(false);
-      setIsGoogleLoadingCount((count) => Math.max(0, count - 1));
-    }
-  };
-
-  const handleLogin = () => {
-    setLoginModalMode('connect');
-    setShowLoginModal(true);
-  };
-
-  const onLoginSelect = (scopeMode) => {
-    setShowLoginModal(false);
-    authenticateWithGoogle(scopeMode, undefined, (err) => {
-      alert(t('loginErrorWithMessage', { message: err.message }));
-    });
-  };
-
-  const promptForEditingUpgrade = () => {
-    setLoginModalMode('upgrade');
-    setShowLoginModal(true);
-  };
-
-  const handleChangePermissions = async () => {
-    if (isAllCalendarsMode) {
-      if (window.confirm(t('switchToHebsyncOnlyConfirm'))) {
-        setIsLoading(true);
-        await revokeAccess();
-        setIsAuthenticated(false);
-        setScopeMode(null);
-        setIsLoading(false);
-        setLoginModalMode('connect');
-        setShowLoginModal(true);
-        return;
-      }
-    }
-    setLoginModalMode('connect');
-    setShowLoginModal(true);
-  };
-
   const handleRevoke = async () => {
     if (!window.confirm(t('revokeAccessConfirm'))) return;
-    setIsLoading(true);
     await revokeAccess();
     setIsAuthenticated(false);
-    setIsLoading(false);
     navigate('/');
-  };
-
-  const handleDelete = async (calendarId, googleEventId) => {
-    if (!hasWriteAccess) {
-      promptForEditingUpgrade();
-      return;
-    }
-    if (!window.confirm(t('deleteEventConfirm'))) return;
-    try {
-      await deleteEvent(calendarId, googleEventId);
-      setSelectedEvent(null);
-      loadCalendarData();
-      loadEvents();
-    } catch (e) {
-      alert(t('deleteEventError'));
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!hasWriteAccess) {
-      promptForEditingUpgrade();
-      return;
-    }
-    try {
-      await updateEvent(selectedEvent.calendarId, selectedEvent.id, {
-        summary: editTitle,
-        description: editDesc
-      });
-      setIsEditing(false);
-      setSelectedEvent(null);
-      loadCalendarData();
-    } catch (e) {
-      alert(t('updateEventError'));
-    }
-  };
-
-  const handleEventClick = (event) => {
-    const isHebCal = event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
-    if (!isHebCal) return;
-
-    setSelectedEvent(event);
-    setEditTitle(event.summary);
-    setEditDesc(event.description || '');
-    setIsEditing(false);
   };
 
   const handleOverflowDayOpen = (dayObj, event) => {
@@ -423,7 +176,6 @@ export default function MyCalendar() {
           ) : (
             <div className="flex items-center gap-2 md:gap-4">
               <button onClick={handleRevoke} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20" title={t('disconnect')}><LogOut className="w-5 h-5" /></button>
-              <button onClick={() => navigate('/add-event')} className="px-3 md:px-4 py-2 bg-[#0038A8] text-white rounded-lg font-bold text-sm md:text-base">+ {t('addEvent')}</button>
             </div>
           )}
         </div>
@@ -528,6 +280,18 @@ export default function MyCalendar() {
         setOverflowDay={setOverflowDay}
         handleOverflowEventClick={handleOverflowEventClick}
       />
+
+      {isAuthenticated && (
+        <button
+          type="button"
+          onClick={() => navigate('/add-event')}
+          className={`fixed bottom-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-[0_18px_40px_-18px_rgba(0,56,168,0.9)] transition-all hover:bg-[#002d86] hover:shadow-[0_20px_45px_-18px_rgba(0,56,168,0.95)] md:bottom-7 md:px-5 md:py-3.5 ${isRtl ? 'left-5 md:left-7' : 'right-5 md:right-7'}`}
+          aria-label={t('addEvent')}
+        >
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/18 text-lg leading-none">+</span>
+          <span className="hidden sm:inline">{t('addEvent')}</span>
+        </button>
+      )}
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>

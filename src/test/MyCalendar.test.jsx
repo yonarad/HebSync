@@ -134,6 +134,11 @@ describe('My Calendar Component', () => {
     expect(await screen.findByRole('button', { name: 'Refresh calendars' })).toBeInTheDocument();
   });
 
+  it('should show a floating add event button for authenticated users', async () => {
+    renderDashboard();
+    expect(await screen.findByRole('button', { name: 'addEvent' })).toBeInTheDocument();
+  });
+
   it('should open an overflow day dialog from the + more button', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
       {
