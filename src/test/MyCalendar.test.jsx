@@ -109,10 +109,10 @@ describe('My Calendar Component', () => {
     }
   });
 
-  it('should render the dashboard header and logo', () => {
+  it('should render the dashboard header and logo', async () => {
     renderDashboard();
-    expect(screen.getAllByText('appNameFirst')[0]).toBeInTheDocument();
-    expect(screen.getByTestId('logo')).toBeInTheDocument();
+    expect((await screen.findAllByText('appNameFirst'))[0]).toBeInTheDocument();
+    expect(await screen.findByTestId('logo')).toBeInTheDocument();
   });
 
   it('should have Select All and Clear All buttons in the sidebar', async () => {
@@ -147,7 +147,7 @@ describe('My Calendar Component', () => {
 
     renderDashboard();
 
-    const moreButton = await screen.findByRole('button', { name: /more events/i });
+    const moreButton = await screen.findByLabelText(/more events/i);
     fireEvent.click(moreButton);
 
     expect(await screen.findByRole('dialog', { name: 'Day events' })).toBeInTheDocument();

@@ -498,11 +498,12 @@ export default function MyCalendar() {
   const hMonthNameHebrew = HEBREW_MONTHS.find(m => m.id === hMonthNameEnglish)?.label || hMonthNameEnglish;
   const hYear = formatHebrewYear(viewHDate.getFullYear());
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
-  const maxVisibleMonthEvents = 4;
-  const overflowPopoverWidth = 220;
-  const overflowPopoverMargin = 12;
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900;
+  const isMobileViewport = viewportWidth < 768;
+  const maxVisibleMonthEvents = isMobileViewport ? 3 : 4;
+  const overflowPopoverWidth = 220;
+  const overflowPopoverMargin = 12;
   const overflowAnchorRect = overflowDay?.anchorRect;
   const overflowEventCount = overflowDay?.events?.length ?? 0;
   const overflowPopoverHeight = Math.min(
@@ -685,7 +686,7 @@ export default function MyCalendar() {
           <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-3">
             <section className="px-1 py-0">
               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div className={`flex items-center gap-2 md:gap-2.5 ${isRtl ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex w-full items-center gap-1.5 md:gap-2.5 ${isRtl ? 'justify-end self-end' : 'justify-start self-start'} lg:w-auto`}>
                   <button onClick={() => setViewHDate(new HDate())} className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">{t('today')}</button>
                   <div className="flex items-center gap-0.5">
                     <button onClick={handlePrevMonth} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}</button>
@@ -699,7 +700,7 @@ export default function MyCalendar() {
                   </div>
                 </div>
 
-                <div className={`flex items-center ${isRtl ? 'justify-start' : 'justify-end'}`}>
+                <div className={`flex w-full items-center ${isRtl ? 'justify-end self-end lg:justify-start' : 'justify-start self-start lg:justify-end'} lg:w-auto`}>
                   <label className="flex h-[34px] items-center gap-2 cursor-pointer rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                     <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-[#0038A8]" />
                     <span>{t('showGregorianDates')}</span>
@@ -730,10 +731,10 @@ export default function MyCalendar() {
                 {days.map((dayObj, i) => (
                   <div key={i} className={`min-h-[112px] md:min-h-[148px] xl:min-h-[164px] border-b border-l border-slate-200 dark:border-slate-700/60 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'} transition-colors`}>
                     {dayObj && (
-                      <div className={`flex h-full min-h-0 flex-col overflow-hidden px-1.5 py-1 md:px-2 md:py-1.5 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}>
-                        <div className={`flex w-full items-start px-1 pb-1 ${isRtl ? 'justify-start text-right' : 'justify-end text-left'}`}>
-                          <div className={`flex w-full items-center gap-1.5 ${isRtl ? 'justify-start' : 'justify-end'}`}>
-                            <span className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-sm leading-none font-bold ${
+                      <div className={`flex h-full min-h-0 flex-col overflow-hidden px-1 py-1 md:px-2 md:py-1.5 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}>
+                        <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center md:justify-start text-center md:text-right' : 'justify-center md:justify-end text-center md:text-left'}`}>
+                          <div className={`flex w-full items-center gap-0 ${isRtl ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}>
+                            <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] md:h-7 md:min-w-7 md:px-1.5 md:text-sm leading-none font-bold ${
                               dayObj.isToday
                                 ? 'bg-[#1a73e8] text-white shadow-sm'
                                 : 'text-slate-800 dark:text-slate-100'
@@ -741,7 +742,7 @@ export default function MyCalendar() {
                               {dayObj.hDayGematriya}
                             </span>
                             {showGregorian && (
-                              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                              <span className="text-[9px] md:text-[10px] font-medium text-slate-400 dark:text-slate-500">
                                 ({dayObj.gDay})
                               </span>
                             )}
@@ -781,8 +782,9 @@ export default function MyCalendar() {
                               type="button"
                               onClick={(event) => handleOverflowDayOpen(dayObj, event)}
                               className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
+                              aria-label={t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
                             >
-                              {t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                              {isMobileViewport ? '...' : t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
                             </button>
                           )}
                         </div>
