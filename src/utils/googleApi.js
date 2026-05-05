@@ -11,6 +11,12 @@ const AUTH_ERROR_CODE = 'AUTH_EXPIRED';
 const APP_SIGNATURE = 'ID:hebcal-sync-app';
 const SESSION_STORAGE_KEY = 'gcal_session';
 
+export function isHebSyncCalendar(calendar) {
+  return Boolean(
+    calendar?.description && calendar.description.includes(APP_SIGNATURE),
+  );
+}
+
 function createAuthError(message = 'Google session expired') {
   const error = new Error(message);
   error.code = AUTH_ERROR_CODE;
@@ -197,10 +203,7 @@ export async function fetchAllCalendars() {
 
   const mode = data.scopeMode || localStorage.getItem('gcal_scope_mode');
   if (mode === 'app_created') {
-    return items.filter(
-      (calendar) =>
-        calendar.description && calendar.description.includes(APP_SIGNATURE),
-    );
+    return items.filter(isHebSyncCalendar);
   }
 
   return items;

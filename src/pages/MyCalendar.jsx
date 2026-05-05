@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Eye, X, Upload, Menu, PencilLine } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, ChevronDown, Info, LogOut, Shield, Eye, X, Upload, Menu, PencilLine } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, fetchSession, isAuthError, revokeAccess, SCOPE_MODES, updateEvent, usesAllCalendarsMode } from '../utils/googleApi';
+import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, fetchSession, isAuthError, isHebSyncCalendar, revokeAccess, SCOPE_MODES, updateEvent, usesAllCalendarsMode } from '../utils/googleApi';
 import { HEBREW_MONTHS, formatHebrewYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
@@ -14,6 +14,12 @@ export default function MyCalendar() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
+  const refreshCalendarsLabel = 'Refresh calendars';
+  const hebSyncGroupLabel = isRtl ? 'יומני HebSync' : 'HebSync Calendars';
+  const otherCalendarsGroupLabel = isRtl ? 'יומנים נוספים' : 'Other Calendars';
+  const allCalendarsGroupLabel = isRtl ? 'כל היומנים' : 'All Calendars';
+  const selectedCountSuffix = isRtl ? 'מסומנים' : 'selected';
+  const noCalendarsAvailableLabel = isRtl ? 'עדיין אין יומנים זמינים.' : 'No calendars available yet.';
 
   // Color palette for calendars
   const calendarColors = [
@@ -51,6 +57,8 @@ export default function MyCalendar() {
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isHebSyncGroupOpen, setIsHebSyncGroupOpen] = useState(true);
+  const [isOtherGroupOpen, setIsOtherGroupOpen] = useState(false);
 
   // Calendar View State
   const [viewHDate, setViewHDate] = useState(new HDate());
@@ -59,6 +67,8 @@ export default function MyCalendar() {
   const [showAllEvents, setShowAllEvents] = useState(false);
   const isAllCalendarsMode = usesAllCalendarsMode(scopeMode);
   const hasWriteAccess = canEditCalendars(scopeMode);
+  const hebSyncCalendars = calendars.filter(isHebSyncCalendar);
+  const otherCalendars = calendars.filter((calendar) => !isHebSyncCalendar(calendar));
 
   useEffect(() => {
     let isMounted = true;
@@ -119,6 +129,15 @@ export default function MyCalendar() {
     }
   }, [isAuthenticated, viewHDate, selectedCalendarIds]);
 
+  useEffect(() => {
+    if (hebSyncCalendars.length > 0) {
+      setIsHebSyncGroupOpen(true);
+    }
+    if (otherCalendars.length === 0) {
+      setIsOtherGroupOpen(false);
+    }
+  }, [hebSyncCalendars.length, otherCalendars.length]);
+
   const loadCalendars = async () => {
     setIsGoogleLoadingCount((count) => count + 1);
     try {
@@ -128,8 +147,11 @@ export default function MyCalendar() {
         ...cal,
         color: calendarColors[index % calendarColors.length]
       }));
+      const hebSyncCalendarIds = calendarsWithColors
+        .filter(isHebSyncCalendar)
+        .map((calendar) => calendar.id);
       setCalendars(calendarsWithColors);
-      setSelectedCalendarIds(calendarsWithColors.map(c => c.id));
+      setSelectedCalendarIds(hebSyncCalendarIds);
     } catch (e) {
       if (isAuthError(e)) return;
       console.error("Failed to load calendars", e);
@@ -161,6 +183,86 @@ export default function MyCalendar() {
 
   const deselectAllCalendars = () => {
     setSelectedCalendarIds([]);
+  };
+
+  const selectCalendarsByIds = (calendarIds) => {
+    setSelectedCalendarIds((prev) => [...new Set([...prev, ...calendarIds])]);
+  };
+
+  const deselectCalendarsByIds = (calendarIds) => {
+    const calendarIdSet = new Set(calendarIds);
+    setSelectedCalendarIds((prev) => prev.filter((id) => !calendarIdSet.has(id)));
+  };
+
+  const handleRefreshCalendars = () => {
+    if (!isAuthenticated || isFetchingGoogle) return;
+    loadCalendars();
+  };
+
+  const renderCalendarGroup = (title, groupKey, groupCalendars, isOpen, setIsOpen) => {
+    if (groupCalendars.length === 0) return null;
+
+    const selectedCount = groupCalendars.filter((calendar) =>
+      selectedCalendarIds.includes(calendar.id),
+    ).length;
+    const isHebSyncGroup = groupKey === 'hebsync';
+
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40">
+        <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => !prev)}
+            className="flex min-w-0 flex-1 items-center gap-2 text-right"
+          >
+            <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${isHebSyncGroup ? 'bg-blue-50 text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'}`}>
+              {isOpen
+                ? <ChevronDown className="w-3.5 h-3.5" />
+                : isRtl
+                  ? <ChevronLeft className="w-3.5 h-3.5" />
+                  : <ChevronRight className="w-3.5 h-3.5" />}
+            </span>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100">{title}</div>
+              <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                {selectedCount} / {groupCalendars.length} {selectedCountSuffix}
+              </div>
+            </div>
+          </button>
+          <div className="flex shrink-0 items-center gap-2 text-[10px] font-bold">
+            <button
+              type="button"
+              onClick={() => selectCalendarsByIds(groupCalendars.map((calendar) => calendar.id))}
+              className="text-slate-500 transition-colors hover:text-[#0038A8]"
+            >
+              {t('selectAll')}
+            </button>
+            <span className="text-slate-300">|</span>
+            <button
+              type="button"
+              onClick={() => deselectCalendarsByIds(groupCalendars.map((calendar) => calendar.id))}
+              className="text-slate-500 transition-colors hover:text-[#0038A8]"
+            >
+              {t('clearAll')}
+            </button>
+          </div>
+        </div>
+
+        {isOpen && (
+          <div className="border-t border-slate-100 px-2 pb-2 pt-1 dark:border-slate-800">
+            <div className="space-y-1">
+              {groupCalendars.map((cal) => (
+                <label key={cal.id} className="flex items-center gap-2 text-xs cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg dark:hover:bg-slate-800 transition-colors">
+                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cal.color }}></div>
+                  <input type="checkbox" checked={selectedCalendarIds.includes(cal.id)} onChange={() => toggleCalendar(cal.id)} className="w-3 h-3 rounded border-slate-300 text-[#0038A8]" />
+                  <span className="truncate">{cal.summary}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const loadCalendarData = async () => {
@@ -437,42 +539,67 @@ export default function MyCalendar() {
             <div className="space-y-4 flex flex-col flex-1 min-h-0">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
-                  {isAuthenticated && (
-                    <button
-                      onClick={hasWriteAccess ? handleCreateCalendar : promptForEditingUpgrade}
-                      className="shrink-0 text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300"
-                    >
-                      + {hasWriteAccess ? t('new') : t('allowCalendarCreation')}
-                    </button>
-                  )}
-                </div>
-                <div className="min-h-[16px]">
-                  {isFetchingGoogle && (
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0038A8]" />
-                      <span>{t('loadingGoogleData')}</span>
-                    </div>
-                  )}
+                  <h2 className="min-w-0 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {isAuthenticated && (
+                      <button
+                        type="button"
+                        onClick={handleRefreshCalendars}
+                        disabled={isFetchingGoogle}
+                        aria-label={refreshCalendarsLabel}
+                        title={refreshCalendarsLabel}
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
+                          isFetchingGoogle
+                            ? 'cursor-wait border-blue-100 bg-blue-50 text-[#0038A8] dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300'
+                            : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-900/30 dark:hover:bg-blue-900/20 dark:hover:text-blue-300'
+                        }`}
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isFetchingGoogle ? 'animate-spin' : ''}`} />
+                      </button>
+                    )}
+                    {isAuthenticated && (
+                      <button
+                        onClick={hasWriteAccess ? handleCreateCalendar : promptForEditingUpgrade}
+                        className="shrink-0 text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300"
+                      >
+                        + {hasWriteAccess ? t('new') : t('allowCalendarCreation')}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {isAuthenticated && calendars.length > 0 && (
-                <div className="flex gap-2">
-                  <button onClick={selectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('selectAll')}</button>
-                  <span className="text-slate-300">|</span>
-                  <button onClick={deselectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('clearAll')}</button>
+                <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-bold dark:bg-slate-800/70">
+                  <span className="text-slate-400 dark:text-slate-500">{allCalendarsGroupLabel}</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={selectAllCalendars} className="text-slate-500 hover:text-[#0038A8] transition-colors">{t('selectAll')}</button>
+                    <span className="text-slate-300">|</span>
+                    <button onClick={deselectAllCalendars} className="text-slate-500 hover:text-[#0038A8] transition-colors">{t('clearAll')}</button>
+                  </div>
                 </div>
               )}
 
-              <div className="space-y-1 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
-                {calendars.map(cal => (
-                  <label key={cal.id} className="flex items-center gap-2 text-xs cursor-pointer text-slate-700 dark:text-slate-300 hover:bg-slate-50 p-1.5 rounded-lg dark:hover:bg-slate-800 transition-colors">
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cal.color }}></div>
-                    <input type="checkbox" checked={selectedCalendarIds.includes(cal.id)} onChange={() => toggleCalendar(cal.id)} className="w-3 h-3 rounded border-slate-300 text-[#0038A8]" />
-                    <span className="truncate">{cal.summary}</span>
-                  </label>
-                ))}
+              <div className="space-y-3 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
+                {renderCalendarGroup(
+                  hebSyncGroupLabel,
+                  'hebsync',
+                  hebSyncCalendars,
+                  isHebSyncGroupOpen,
+                  setIsHebSyncGroupOpen,
+                )}
+                {renderCalendarGroup(
+                  otherCalendarsGroupLabel,
+                  'other',
+                  otherCalendars,
+                  isOtherGroupOpen,
+                  setIsOtherGroupOpen,
+                )}
+                {calendars.length === 0 && !isFetchingGoogle && (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-400 dark:border-slate-700 dark:text-slate-500">
+                    {noCalendarsAvailableLabel}
+                  </div>
+                )}
               </div>
             </div>
 

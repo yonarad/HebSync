@@ -18,6 +18,13 @@ vi.mock('../utils/googleApi', () => ({
   authenticateWithGoogle: vi.fn(),
   canEditCalendars: vi.fn((scopeMode) => scopeMode === 'app_created' || scopeMode === 'all_events'),
   usesAllCalendarsMode: vi.fn((scopeMode) => scopeMode === 'read_only' || scopeMode === 'all_events'),
+  isHebSyncCalendar: vi.fn(
+    (calendar) =>
+      Boolean(
+        calendar?.description &&
+        calendar.description.includes('ID:hebcal-sync-app'),
+      ),
+  ),
   SCOPE_MODES: {
     APP_CREATED: 'app_created',
     READ_ONLY: 'read_only',
@@ -71,17 +78,74 @@ describe('My Calendar Component', () => {
 
   it('should have Select All and Clear All buttons in the sidebar', async () => {
     renderDashboard();
-    // In our mock, t('selectAll') returns 'selectAll'
-    const selectAllBtn = await screen.findByText('selectAll');
-    const clearAllBtn = await screen.findByText('clearAll');
-    expect(selectAllBtn).toBeInTheDocument();
-    expect(clearAllBtn).toBeInTheDocument();
+    const selectAllBtns = await screen.findAllByText('selectAll');
+    const clearAllBtns = await screen.findAllByText('clearAll');
+    expect(selectAllBtns.length).toBeGreaterThan(0);
+    expect(clearAllBtns.length).toBeGreaterThan(0);
   });
 
   it('should have external events toggle', () => {
     renderDashboard();
     const externalToggle = screen.getAllByText('externalEvents');
     expect(externalToggle.length).toBeGreaterThan(0);
+  });
+
+  it('should show a refresh button near the calendars header', async () => {
+    renderDashboard();
+    expect(await screen.findByRole('button', { name: 'Refresh calendars' })).toBeInTheDocument();
+  });
+
+  it('should select only HebSync calendars by default', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'Personal',
+        accessRole: 'owner',
+      },
+      {
+        id: 'cal2',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: /יומנים נוספים/i }));
+
+    const personalCheckbox = await screen.findByRole('checkbox', { name: 'Personal' });
+    const hebSyncCheckbox = await screen.findByRole('checkbox', { name: 'HebSync' });
+
+    expect(personalCheckbox).not.toBeChecked();
+    expect(hebSyncCheckbox).toBeChecked();
+  });
+
+  it('should group calendars into HebSync and other calendars', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'Personal',
+        accessRole: 'owner',
+      },
+      {
+        id: 'cal2',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+
+    renderDashboard();
+
+    expect(await screen.findByRole('button', { name: /יומני HebSync/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /יומנים נוספים/i })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Personal' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /יומנים נוספים/i }));
+
+    expect(await screen.findByRole('checkbox', { name: 'Personal' })).toBeInTheDocument();
+    expect(await screen.findByRole('checkbox', { name: 'HebSync' })).toBeInTheDocument();
   });
 
   it('should reopen the login modal when the Google session expires', async () => {
