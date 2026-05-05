@@ -782,9 +782,9 @@ export default function MyCalendar() {
                       );
                     })}
                   </div>
-                  <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900">
+                  <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900 md:overflow-hidden">
                     {days.map((dayObj, i) => (
-                      <div key={i} className={`min-h-[112px] md:min-h-[148px] xl:min-h-[164px] border-b border-l border-slate-200 dark:border-slate-700/60 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'} transition-colors`}>
+                      <div key={i} className={`min-h-[112px] md:min-h-0 border-b border-l border-slate-200 dark:border-slate-700/60 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'} transition-colors`}>
                         {dayObj && (
                           <div className={`flex h-full min-h-0 flex-col overflow-hidden px-1 py-1 md:px-2 md:py-1.5 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}>
                             <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center md:justify-start text-center md:text-right' : 'justify-center md:justify-end text-center md:text-left'}`}>
