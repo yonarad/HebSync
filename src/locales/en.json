@@ -36,6 +36,20 @@
     "allCalendarsGroupLabel": "All Calendars",
     "selectedCountSuffix": "selected",
     "noCalendarsAvailable": "No calendars available yet.",
+    "menu": "Management Menu",
+    "hebSyncLabel": "HebSync",
+    "externalLabel": "External",
+    "newCalendarPrompt": "Enter a name for the new calendar:",
+    "createCalendarError": "Error creating calendar",
+    "unknownDate": "Unknown date",
+    "loginErrorWithMessage": "Login error: {{message}}",
+    "revokeAccessConfirm": "This action will disconnect the app from your Google account and revoke all permissions you granted it. Continue?",
+    "deleteEventConfirm": "Are you sure you want to delete this event (and all of its occurrences) from the calendar?",
+    "deleteEventError": "Error deleting event",
+    "updateEventError": "Error updating event",
+    "moreEvents": "{{count}} more events",
+    "closeDayEvents": "Close day events",
+    "dayEventsDialog": "Day events",
     "importCsv": "Bulk Import from CSV",
     "comingSoon": "Coming Soon!",
     "eventDetails": "Event Details",
@@ -133,6 +147,7 @@
       "4": "Thu",
       "5": "Fri",
       "6": "Sat"
-    }
+    },
+    "refreshCalendars": "Refresh calendars"
   }
 }

@@ -128,6 +128,26 @@
       "4": "חמישי",
       "5": "שישי",
       "6": "שבת"
-    }
+    },
+    "menu": "תפריט ניהול",
+    "hebSyncLabel": "HebSync",
+    "externalLabel": "חיצוני",
+    "newCalendarPrompt": "הזן שם ליומן החדש:",
+    "createCalendarError": "שגיאה ביצירת יומן",
+    "unknownDate": "תאריך כלשהו",
+    "loginErrorWithMessage": "שגיאה בהתחברות: {{message}}",
+    "revokeAccessConfirm": "פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?",
+    "deleteEventConfirm": "האם אתה בטוח שברצונך למחוק אירוע זה (ואת כל המופעים שלו) מהיומן?",
+    "deleteEventError": "שגיאה במחיקה",
+    "updateEventError": "שגיאה בעדכון",
+    "moreEvents": "עוד {{count}} אירועים",
+    "closeDayEvents": "סגור אירועי יום",
+    "dayEventsDialog": "אירועי יום",
+    "refreshCalendars": "רענן יומנים",
+    "hebSyncGroupLabel": "יומני HebSync",
+    "otherCalendarsGroupLabel": "יומנים נוספים",
+    "allCalendarsGroupLabel": "כל היומנים",
+    "selectedCountSuffix": "מסומנים",
+    "noCalendarsAvailable": "עדיין אין יומנים זמינים."
   }
 }

@@ -14,12 +14,17 @@ export default function MyCalendar() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
-  const refreshCalendarsLabel = 'Refresh calendars';
-  const hebSyncGroupLabel = isRtl ? 'יומני HebSync' : 'HebSync Calendars';
-  const otherCalendarsGroupLabel = isRtl ? 'יומנים נוספים' : 'Other Calendars';
-  const allCalendarsGroupLabel = isRtl ? 'כל היומנים' : 'All Calendars';
-  const selectedCountSuffix = isRtl ? 'מסומנים' : 'selected';
-  const noCalendarsAvailableLabel = isRtl ? 'עדיין אין יומנים זמינים.' : 'No calendars available yet.';
+  const refreshCalendarsLabel = t('refreshCalendars');
+  const hebSyncGroupLabel = t('hebSyncGroupLabel');
+  const otherCalendarsGroupLabel = t('otherCalendarsGroupLabel');
+  const allCalendarsGroupLabel = t('allCalendarsGroupLabel');
+  const selectedCountSuffix = t('selectedCountSuffix');
+  const noCalendarsAvailableLabel = t('noCalendarsAvailable');
+  const menuLabel = t('menu');
+  const hebSyncLabel = t('hebSyncLabel');
+  const externalLabel = t('externalLabel');
+  const closeDayEventsLabel = t('closeDayEvents');
+  const dayEventsDialogLabel = t('dayEventsDialog');
 
   // Color palette for calendars
   const calendarColors = [
@@ -53,6 +58,7 @@ export default function MyCalendar() {
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [overflowDay, setOverflowDay] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
@@ -161,13 +167,13 @@ export default function MyCalendar() {
   };
 
   const handleCreateCalendar = async () => {
-    const name = window.prompt("הזן שם ליומן החדש:");
+    const name = window.prompt(t('newCalendarPrompt'));
     if (!name) return;
     try {
       await createNewCalendar(name);
       await loadCalendars();
     } catch (e) {
-      alert("שגיאה ביצירת יומן");
+      alert(t('createCalendarError'));
     }
   };
 
@@ -304,7 +310,7 @@ export default function MyCalendar() {
           title: item.summary,
           age: age >= 0 ? age : 0,
           category: props.category,
-          date: item.start?.date || 'תאריך כלשהו'
+          date: item.start?.date || t('unknownDate')
         };
       });
       setMyEvents(formattedEvents);
@@ -327,7 +333,7 @@ export default function MyCalendar() {
   const onLoginSelect = (scopeMode) => {
     setShowLoginModal(false);
     authenticateWithGoogle(scopeMode, undefined, (err) => {
-      alert("שגיאה בהתחברות: " + err.message);
+      alert(t('loginErrorWithMessage', { message: err.message }));
     });
   };
 
@@ -354,7 +360,7 @@ export default function MyCalendar() {
   };
 
   const handleRevoke = async () => {
-    if (!window.confirm("פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?")) return;
+    if (!window.confirm(t('revokeAccessConfirm'))) return;
     setIsLoading(true);
     await revokeAccess();
     setIsAuthenticated(false);
@@ -367,14 +373,14 @@ export default function MyCalendar() {
       promptForEditingUpgrade();
       return;
     }
-    if (!window.confirm("האם אתה בטוח שברצונך למחוק אירוע זה (ואת כל המופעים שלו) מהיומן?")) return;
+    if (!window.confirm(t('deleteEventConfirm'))) return;
     try {
       await deleteEvent(calendarId, googleEventId);
       setSelectedEvent(null);
       loadCalendarData();
       loadEvents();
     } catch (e) {
-      alert("שגיאה במחיקה");
+      alert(t('deleteEventError'));
     }
   };
 
@@ -392,7 +398,7 @@ export default function MyCalendar() {
       setSelectedEvent(null);
       loadCalendarData();
     } catch (e) {
-      alert("שגיאה בעדכון");
+      alert(t('updateEventError'));
     }
   };
 
@@ -404,6 +410,24 @@ export default function MyCalendar() {
     setEditTitle(event.summary);
     setEditDesc(event.description || '');
     setIsEditing(false);
+  };
+
+  const handleOverflowDayOpen = (dayObj, event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setOverflowDay({
+      ...dayObj,
+      anchorRect: {
+        top: rect.top,
+        left: rect.left,
+        right: rect.right,
+        bottom: rect.bottom,
+      },
+    });
+  };
+
+  const handleOverflowEventClick = (event) => {
+    setOverflowDay(null);
+    handleEventClick(event);
   };
 
   const handleNextMonth = () => {
@@ -440,6 +464,11 @@ export default function MyCalendar() {
     for (let d = 1; d <= daysInMonth; d++) {
       const hDate = new HDate(d, hMonth, hYear);
       const gDate = hDate.greg();
+      const today = new Date();
+      const isToday =
+        gDate.getFullYear() === today.getFullYear() &&
+        gDate.getMonth() === today.getMonth() &&
+        gDate.getDate() === today.getDate();
       const dayEvents = calendarEvents.filter(event => {
         const start = event.start?.date || event.start?.dateTime;
         if (!start) return false;
@@ -456,8 +485,12 @@ export default function MyCalendar() {
         hDayGematriya: gematriya(d),
         gDay: gDate.getDate(),
         gMonthLabel: gDate.toLocaleString('he-IL', { month: 'short' }),
+        gDate,
         events: dayEvents,
-        hYear: hDate.getFullYear()
+        hYear: hDate.getFullYear(),
+        isToday,
+        isShabbat: hDate.getDay() === 6,
+        weekday: hDate.getDay(),
       });
     }
     return days;
@@ -468,6 +501,35 @@ export default function MyCalendar() {
   const hMonthNameHebrew = HEBREW_MONTHS.find(m => m.id === hMonthNameEnglish)?.label || hMonthNameEnglish;
   const hYear = formatHebrewYear(viewHDate.getFullYear());
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
+  const visibleEventCount = calendarEvents.filter((event) =>
+    selectedCalendarIds.includes(event.calendarId),
+  ).length;
+  const selectedCalendarCount = selectedCalendarIds.length;
+  const maxVisibleMonthEvents = 4;
+  const overflowPopoverWidth = 244;
+  const overflowPopoverMaxHeight = 220;
+  const overflowPopoverMargin = 12;
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900;
+  const overflowAnchorRect = overflowDay?.anchorRect;
+  const overflowPreferredTop = (overflowAnchorRect?.bottom ?? 120) + 8;
+  const overflowAboveTop = (overflowAnchorRect?.top ?? 120) - overflowPopoverMaxHeight - 8;
+  const overflowTop = Math.max(
+    overflowPopoverMargin,
+    Math.min(
+      overflowPreferredTop + overflowPopoverMaxHeight <= viewportHeight - overflowPopoverMargin
+        ? overflowPreferredTop
+        : overflowAboveTop,
+      viewportHeight - overflowPopoverMaxHeight - overflowPopoverMargin,
+    ),
+  );
+  const overflowLeft = Math.max(
+    overflowPopoverMargin,
+    Math.min(
+      (overflowAnchorRect?.right ?? overflowPopoverWidth + overflowPopoverMargin) - overflowPopoverWidth,
+      viewportWidth - overflowPopoverWidth - overflowPopoverMargin,
+    ),
+  );
 
   return (
     <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
@@ -504,7 +566,7 @@ export default function MyCalendar() {
       <div className="flex flex-1 overflow-hidden relative min-h-0">
         <aside className={`fixed inset-y-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} z-40 w-72 bg-white border-slate-200 flex flex-col min-h-0 h-full dark:bg-slate-900 dark:border-slate-800 transition-transform duration-300 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}`}>
           <div className="flex items-center justify-between p-4 border-b md:hidden dark:border-slate-800">
-            <span className="font-bold dark:text-white">{isRtl ? 'תפריט ניהול' : 'Menu'}</span>
+            <span className="font-bold dark:text-white">{menuLabel}</span>
             <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg dark:hover:bg-slate-800"><X className="w-5 h-5 dark:text-slate-400" /></button>
           </div>
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden p-4 space-y-6">
@@ -622,33 +684,48 @@ export default function MyCalendar() {
 
         {isSidebarOpen && <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
-        <main className="flex-1 p-4 md:p-6 xl:p-8 overflow-auto">
-          <div className="w-full h-full flex flex-col">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">{hMonthNameHebrew} {hYear}</h2>
-                <p className="text-slate-400 font-medium text-xs mt-1">{gMonthRange} {viewHDate.greg().getFullYear()}</p>
-              </div>
+        <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] p-4 md:p-6 xl:p-8">
+          <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-4">
+            <section className="rounded-[1.75rem] border border-white/70 bg-white/85 px-4 py-3 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                  <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <button onClick={handlePrevMonth} className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}</button>
+                    <button onClick={() => setViewHDate(new HDate())} className="rounded-xl bg-slate-50 px-4 py-2 text-xs font-black text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-700/70 dark:text-slate-100 dark:hover:bg-slate-700">{t('today')}</button>
+                    <button onClick={handleNextMonth} className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
+                    <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300">{t('gregorian')}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <input type="checkbox" checked={showAllEvents} onChange={(e) => setShowAllEvents(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
+                    <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300">{t('externalEvents')}</span>
+                    <Info className="w-3 h-3 text-slate-400" />
+                  </label>
+                </div>
 
-              <div className="flex flex-wrap items-center gap-2 md:gap-4">
-                <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
-                  <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
-                  <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">{t('gregorian')}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm dark:bg-slate-800 dark:border-slate-700">
-                  <input type="checkbox" checked={showAllEvents} onChange={(e) => setShowAllEvents(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
-                  <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">{t('externalEvents')}</span>
-                  <Info className="w-3 h-3 text-slate-400" />
-                </label>
-                <div className="flex bg-white rounded-xl shadow-sm border border-slate-100 p-1 dark:bg-slate-800 dark:border-slate-700">
-                  <button onClick={handlePrevMonth} className="p-1.5 hover:bg-slate-50 rounded-lg dark:hover:bg-slate-700">{isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}</button>
-                  <button onClick={() => setViewHDate(new HDate())} className="px-3 py-1 text-xs font-bold text-slate-600 dark:text-slate-300">{t('today')}</button>
-                  <button onClick={handleNextMonth} className="p-1.5 hover:bg-slate-50 rounded-lg dark:hover:bg-slate-700">{isRtl ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>
+                <div className="flex flex-wrap items-end justify-between gap-3 lg:justify-end">
+                  <div className="text-right">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50 md:text-4xl">{hMonthNameHebrew} {hYear}</h2>
+                      <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">{gMonthRange} {viewHDate.greg().getFullYear()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#0038A8]"></span>
+                      <span>{hebSyncLabel}</span>
+                    </div>
+                    <div className="rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                      {selectedCalendarCount} / {visibleEventCount}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div className="bg-white rounded-3xl shadow-lg border border-slate-100 flex-1 overflow-hidden dark:bg-slate-800 dark:border-slate-700 flex flex-col relative">
+            <div className="bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(15,23,42,0.08)] border border-white/70 flex-1 overflow-hidden dark:bg-slate-800 dark:border-slate-700 flex flex-col relative">
               {isCalendarLoading && <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center"><RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" /></div>}
               {isFetchingGoogle && !isCalendarLoading && (
                 <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-20 flex items-center justify-center">
@@ -658,25 +735,37 @@ export default function MyCalendar() {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-7 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+              <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700 bg-slate-50/95 backdrop-blur dark:bg-slate-900/70">
                 {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
-                  <div key={idx} className="p-2 md:p-4 text-center text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  <div key={idx} className={`px-2 py-3 text-center text-[10px] md:text-xs font-bold ${idx === 6 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-500 dark:text-slate-300'}`}>
                     <span className="hidden md:inline">{t(`days.${idx}`)}</span>
                     <span className="md:hidden">{isRtl ? 'אבגדהוש'[idx] : t(`days.${idx}`).substring(0, 1)}</span>
                   </div>
                 ))}
               </div>
-              <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto">
+              <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900">
                 {days.map((dayObj, i) => (
-                  <div key={i} className={`min-h-[60px] md:min-h-[100px] p-1 md:p-2 border-b border-l border-slate-50 dark:border-slate-700/50 flex flex-col gap-1 ${!dayObj ? 'bg-slate-50/50 dark:bg-slate-900/20' : 'hover:bg-blue-50/30 transition-colors dark:hover:bg-blue-900/10'}`}>
+                  <div key={i} className={`min-h-[112px] md:min-h-[148px] xl:min-h-[164px] border-b border-l border-slate-200 dark:border-slate-700/60 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'} transition-colors`}>
                     {dayObj && (
-                      <>
-                        <div className="flex flex-col">
-                          <span className="text-sm md:text-xl font-bold text-slate-900 dark:text-slate-100">{dayObj.hDayGematriya}</span>
-                          {showGregorian && <span className="text-[8px] md:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">{dayObj.gDay}</span>}
+                      <div className={`flex h-full min-h-0 flex-col overflow-hidden px-1.5 py-1 md:px-2 md:py-1.5 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}>
+                        <div className={`flex w-full items-start px-1 pb-1 ${isRtl ? 'justify-start text-right' : 'justify-end text-left'}`}>
+                          <div className={`flex w-full items-center gap-1.5 ${isRtl ? 'justify-start' : 'justify-end'}`}>
+                            <span className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-sm leading-none font-bold ${
+                              dayObj.isToday
+                                ? 'bg-[#1a73e8] text-white shadow-sm'
+                                : 'text-slate-800 dark:text-slate-100'
+                            }`}>
+                              {dayObj.hDayGematriya}
+                            </span>
+                            {showGregorian && (
+                              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                                ({dayObj.gDay})
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[40px] md:max-h-[70px] pr-0.5 custom-scrollbar">
-                          {dayObj.events.map((event, idx) => {
+                        <div className="flex w-full flex-1 flex-col gap-1 overflow-hidden px-0.5 pb-0.5">
+                          {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
                             const props = event.extendedProperties?.private || {};
                             const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
                             const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
@@ -684,13 +773,37 @@ export default function MyCalendar() {
                             const ageSuffix = isHebCal ? ` (${age})` : '';
                             const eventColor = getCalendarColor(event.calendarId);
                             return (
-                              <div key={idx} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }} className={`text-[8px] md:text-[10px] leading-tight px-1 md:px-2 py-0.5 md:py-1 rounded-md md:rounded-lg truncate font-bold cursor-pointer hover:brightness-95 transition-all flex-shrink-0 text-white shadow-sm`} style={{ backgroundColor: eventColor }} title={event.summary + ageSuffix}>
-                                {event.summary}{ageSuffix}
+                              <div
+                                key={idx}
+                                onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                                className={`group relative w-full overflow-hidden rounded-md px-2 py-1 text-[10px] leading-tight font-bold transition-all flex-none ${
+                                  isHebCal
+                                    ? 'cursor-pointer text-white hover:brightness-95'
+                                    : 'cursor-default bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
+                                }`}
+                                style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `3px solid ${eventColor}` }}
+                                title={event.summary + ageSuffix}
+                              >
+                                <div className="truncate">{event.summary}{ageSuffix}</div>
+                                {!isHebCal && (
+                                  <div className="mt-0.5 text-[8px] font-semibold uppercase text-slate-400 dark:text-slate-300">
+                                    {externalLabel}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
+                          {dayObj.events.length > maxVisibleMonthEvents && (
+                            <button
+                              type="button"
+                              onClick={(event) => handleOverflowDayOpen(dayObj, event)}
+                              className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
+                            >
+                              {t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                            </button>
+                          )}
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -701,6 +814,85 @@ export default function MyCalendar() {
       </div>
 
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onSelect={onLoginSelect} mode={loginModalMode} />
+
+      {overflowDay && (
+        <div className="fixed inset-0 z-40" dir={isRtl ? 'rtl' : 'ltr'}>
+          <button
+            type="button"
+            aria-label={closeDayEventsLabel}
+            onClick={() => setOverflowDay(null)}
+            className="absolute inset-0 cursor-default bg-transparent"
+          />
+          <div
+            role="dialog"
+            aria-label={dayEventsDialogLabel}
+            className="absolute z-10 overflow-hidden rounded-[1rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            style={{
+              width: `${overflowPopoverWidth}px`,
+              maxWidth: `calc(100vw - ${overflowPopoverMargin * 2}px)`,
+              top: `${overflowTop}px`,
+              left: `${overflowLeft}px`,
+            }}
+          >
+            <div className="flex items-start justify-between border-b border-slate-100 px-2.5 py-2 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setOverflowDay(null)}
+                className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <div className="text-center">
+                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                  {showGregorian ? `${overflowDay.gDay}` : ''}
+                </div>
+                <div className="mt-0.5 text-xl font-black text-slate-900 dark:text-slate-50">
+                  {overflowDay.hDayGematriya}
+                </div>
+              </div>
+              <div className="w-5" />
+            </div>
+
+            <div className="space-y-1 overflow-y-auto px-2 py-2" style={{ maxHeight: `${overflowPopoverMaxHeight}px` }}>
+              {overflowDay.events.map((event, idx) => {
+                const props = event.extendedProperties?.private || {};
+                const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+                const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
+                const age = (originalYear && overflowDay.hYear) ? (overflowDay.hYear - originalYear) : 0;
+                const ageSuffix = isHebCal ? ` (${age})` : '';
+                const eventColor = getCalendarColor(event.calendarId);
+                const start = event.start?.dateTime || event.start?.date;
+                const timeLabel = start && event.start?.dateTime
+                  ? new Date(start).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })
+                  : null;
+
+                return (
+                  <button
+                    key={`${event.id || event.summary}-${idx}`}
+                    type="button"
+                    onClick={() => handleOverflowEventClick(event)}
+                    className={`w-full overflow-hidden rounded-lg border text-right transition-all ${
+                      isHebCal
+                        ? 'border-transparent text-white hover:brightness-95'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                    style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `4px solid ${eventColor}` }}
+                  >
+                    <div className="px-2.5 py-1.5">
+                      <div className="truncate text-[11px] font-bold leading-4">{event.summary}{ageSuffix}</div>
+                      {timeLabel && (
+                        <div className={`mt-0.5 text-[10px] font-semibold ${isHebCal ? 'text-white/85' : 'text-slate-400 dark:text-slate-300'}`}>
+                          {timeLabel}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -750,3 +942,5 @@ export default function MyCalendar() {
     </div>
   );
 }
+
+

@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import MyCalendar from '../pages/MyCalendar';
 import * as googleApi from '../utils/googleApi';
 import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
+import enLocale from '../locales/en.json';
+import heLocale from '../locales/he.json';
 
 // Mock the API utilities
 vi.mock('../utils/googleApi', () => ({
@@ -45,7 +47,20 @@ vi.mock('../components/Logo', () => ({
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key) => key,
+    t: (key, options) => {
+      const translations = {
+        appNameFirst: 'appNameFirst',
+        selectAll: 'selectAll',
+        clearAll: 'clearAll',
+        externalEvents: 'externalEvents',
+        refreshCalendars: 'Refresh calendars',
+        hebSyncGroupLabel: 'HebSync Calendars',
+        otherCalendarsGroupLabel: 'Other Calendars',
+        dayEventsDialog: 'Day events',
+        moreEvents: `${options?.count ?? 0} more events`,
+      };
+      return translations[key] ?? key;
+    },
     i18n: { language: 'he', changeLanguage: vi.fn() }
   }),
   initReactI18next: { type: '3rdParty', init: vi.fn() }
@@ -69,7 +84,32 @@ const renderDashboard = () => {
   );
 };
 
+const flattenLocaleKeys = (value, prefix = '') => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return [prefix];
+  }
+
+  return Object.entries(value).flatMap(([key, nestedValue]) =>
+    flattenLocaleKeys(nestedValue, prefix ? `${prefix}.${key}` : key),
+  );
+};
+
 describe('My Calendar Component', () => {
+  it('should keep english and hebrew locale keys in sync', () => {
+    const englishKeys = flattenLocaleKeys(enLocale.translation).sort();
+    const hebrewKeys = flattenLocaleKeys(heLocale.translation).sort();
+
+    expect(hebrewKeys).toEqual(englishKeys);
+
+    for (const key of englishKeys) {
+      const value = key
+        .split('.')
+        .reduce((acc, part) => acc?.[part], heLocale.translation);
+      expect(typeof value).toBe('string');
+      expect(value.trim().length).toBeGreaterThan(0);
+    }
+  });
+
   it('should render the dashboard header and logo', () => {
     renderDashboard();
     expect(screen.getAllByText('appNameFirst')[0]).toBeInTheDocument();
@@ -95,6 +135,31 @@ describe('My Calendar Component', () => {
     expect(await screen.findByRole('button', { name: 'Refresh calendars' })).toBeInTheDocument();
   });
 
+  it('should open an overflow day dialog from the + more button', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      { id: 'evt1', summary: 'Event 1', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt2', summary: 'Event 2', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt3', summary: 'Event 3', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt4', summary: 'Event 4', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt5', summary: 'Event 5', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+    ]);
+
+    renderDashboard();
+
+    const moreButton = await screen.findByRole('button', { name: /1 more events/i });
+    fireEvent.click(moreButton);
+
+    expect(await screen.findByRole('dialog', { name: 'Day events' })).toBeInTheDocument();
+  });
+
   it('should select only HebSync calendars by default', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
       {
@@ -112,7 +177,7 @@ describe('My Calendar Component', () => {
 
     renderDashboard();
 
-    fireEvent.click(await screen.findByRole('button', { name: /יומנים נוספים/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Other Calendars/i }));
 
     const personalCheckbox = await screen.findByRole('checkbox', { name: 'Personal' });
     const hebSyncCheckbox = await screen.findByRole('checkbox', { name: 'HebSync' });
@@ -138,11 +203,11 @@ describe('My Calendar Component', () => {
 
     renderDashboard();
 
-    expect(await screen.findByRole('button', { name: /יומני HebSync/i })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: /יומנים נוספים/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /HebSync Calendars/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Other Calendars/i })).toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'Personal' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /יומנים נוספים/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Other Calendars/i }));
 
     expect(await screen.findByRole('checkbox', { name: 'Personal' })).toBeInTheDocument();
     expect(await screen.findByRole('checkbox', { name: 'HebSync' })).toBeInTheDocument();
