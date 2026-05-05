@@ -4,6 +4,7 @@ import { Trash2, LogIn, LogOut, X, Menu } from 'lucide-react';
 import { HDate } from '@hebcal/core';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
+import AddEvent from './AddEvent';
 import { revokeAccess } from '../utils/googleApi';
 import { buildMonthDays, buildScheduleDays, getHebrewMonthMeta, getNextMonthHDate, getOverflowPopoverLayout, getPrevMonthHDate } from '../utils/calendarView';
 
@@ -13,6 +14,8 @@ import { CalendarToolbar, MonthCalendarView, ScheduleCalendarView, DayEventsPopo
 import MyCalendarSidebar from '../components/MyCalendarSidebar';
 import useMyCalendarData from '../hooks/useMyCalendarData';
 import useCalendarEventActions from '../hooks/useCalendarEventActions';
+
+const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
 
 export default function MyCalendar() {
   const navigate = useNavigate();
@@ -68,6 +71,8 @@ export default function MyCalendar() {
   } = useMyCalendarData({ t });
 
   const [overflowDay, setOverflowDay] = useState(null);
+  const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
+  const [createPrefillDate, setCreatePrefillDate] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHebSyncGroupOpen, setIsHebSyncGroupOpen] = useState(true);
   const [isOtherGroupOpen, setIsOtherGroupOpen] = useState(false);
@@ -100,6 +105,29 @@ export default function MyCalendar() {
     }
   }, [hebSyncCalendars.length, otherCalendars.length]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !hasWriteAccess) return;
+
+    const rawPendingCreate = sessionStorage.getItem(PENDING_CREATE_EVENT_KEY);
+    if (!rawPendingCreate) return;
+
+    sessionStorage.removeItem(PENDING_CREATE_EVENT_KEY);
+
+    try {
+      const pendingCreate = JSON.parse(rawPendingCreate);
+      if (pendingCreate?.prefillDate) {
+        setCreatePrefillDate(pendingCreate.prefillDate);
+        setIsAddEventModalOpen(true);
+        return;
+      }
+    } catch {
+      // Fall through to opening the generic add event flow.
+    }
+
+    setCreatePrefillDate(null);
+    setIsAddEventModalOpen(true);
+  }, [hasWriteAccess, isAuthenticated]);
+
   const handleRevoke = async () => {
     if (!window.confirm(t('revokeAccessConfirm'))) return;
     await revokeAccess();
@@ -125,21 +153,53 @@ export default function MyCalendar() {
     handleEventClick(event);
   };
 
+  const requestCreatePermissions = (prefillDate = null) => {
+    sessionStorage.setItem(
+      PENDING_CREATE_EVENT_KEY,
+      JSON.stringify({ prefillDate }),
+    );
+    promptForEditingUpgrade();
+  };
+
   const handleCreateFromDay = (dayObj) => {
     const year = dayObj.gDate.getFullYear();
     const month = String(dayObj.gDate.getMonth() + 1).padStart(2, '0');
     const day = String(dayObj.gDate.getDate()).padStart(2, '0');
+    const prefillDate = {
+      gregorianDate: `${year}-${month}-${day}`,
+      hebrewYear: String(dayObj.hYear),
+      hebrewMonth: dayObj.hMonthName,
+      hebrewDay: dayObj.hDay,
+    };
 
-    navigate('/add-event', {
-      state: {
-        prefillDate: {
-          gregorianDate: `${year}-${month}-${day}`,
-          hebrewYear: String(dayObj.hYear),
-          hebrewMonth: dayObj.hMonthName,
-          hebrewDay: dayObj.hDay,
-        },
-      },
-    });
+    if (!hasWriteAccess) {
+      requestCreatePermissions(prefillDate);
+      return;
+    }
+
+    setCreatePrefillDate(prefillDate);
+    setIsAddEventModalOpen(true);
+  };
+
+  const handleCreateEvent = () => {
+    if (!hasWriteAccess) {
+      requestCreatePermissions();
+      return;
+    }
+
+    setCreatePrefillDate(null);
+    setIsAddEventModalOpen(true);
+  };
+
+  const handleCloseAddEventModal = () => {
+    setIsAddEventModalOpen(false);
+    setCreatePrefillDate(null);
+  };
+
+  const handleAddEventComplete = async () => {
+    handleCloseAddEventModal();
+    await loadCalendarData();
+    await loadEvents();
   };
 
   const handleNextMonth = () => {
@@ -303,10 +363,32 @@ export default function MyCalendar() {
         handleOverflowEventClick={handleOverflowEventClick}
       />
 
+      {isAddEventModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className="absolute inset-0" onClick={handleCloseAddEventModal} aria-hidden="true" />
+          <div className="relative z-10 flex max-h-full w-full justify-center">
+            <button
+              type="button"
+              onClick={handleCloseAddEventModal}
+              className={`absolute top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/85 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 ${isRtl ? 'left-3 md:left-5' : 'right-3 md:right-5'}`}
+              aria-label={t('close')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <AddEvent
+              embedded
+              onClose={handleCloseAddEventModal}
+              onComplete={handleAddEventComplete}
+              prefillDate={createPrefillDate}
+            />
+          </div>
+        </div>
+      )}
+
       {isAuthenticated && (
         <button
           type="button"
-          onClick={() => navigate('/add-event')}
+          onClick={handleCreateEvent}
           className={`fixed bottom-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-[0_18px_40px_-18px_rgba(0,56,168,0.9)] transition-all hover:bg-[#002d86] hover:shadow-[0_20px_45px_-18px_rgba(0,56,168,0.95)] md:bottom-7 md:px-5 md:py-3.5 ${isRtl ? 'left-5 md:left-7' : 'right-5 md:right-7'}`}
           aria-label={t('addEvent')}
         >

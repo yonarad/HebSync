@@ -12,12 +12,18 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 
 const ADD_EVENT_DRAFT_KEY = 'add_event_draft';
 
-export default function AddEvent() {
+export default function AddEvent({
+  embedded = false,
+  onClose = null,
+  onComplete = null,
+  prefillDate: prefillDateProp = null,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
   const hasAppliedPrefillRef = useRef(false);
+  const prefillDate = prefillDateProp ?? location.state?.prefillDate ?? null;
 
   // Color palette for calendars
   const calendarColors = [
@@ -77,6 +83,20 @@ export default function AddEvent() {
   const convertedHDate = isGregorianEntry && gregDate ? gregorianToHebrew(new Date(gregDate), afterSunset) : null;
   const hasWriteAccess = canEditCalendars(scopeMode);
 
+  const handleClose = () => {
+    if (showPreview) {
+      setShowPreview(false);
+      return;
+    }
+
+    if (onClose) {
+      onClose();
+      return;
+    }
+
+    navigate('/calendar');
+  };
+
   useEffect(() => {
     const rawDraft = sessionStorage.getItem(ADD_EVENT_DRAFT_KEY);
     if (!rawDraft) return;
@@ -85,23 +105,24 @@ export default function AddEvent() {
       const draft = JSON.parse(rawDraft);
       if (draft.title) setTitle(draft.title);
       if (draft.category) setCategory(draft.category);
-      if (draft.year) setYear(draft.year);
-      if (draft.month) setMonth(draft.month);
-      if (draft.day) setDay(draft.day);
       if (draft.syncSpan) setSyncSpan(draft.syncSpan);
       if (draft.notes) setNotes(draft.notes);
       if (Array.isArray(draft.selectedCalendarIds)) setSelectedCalendarIds(draft.selectedCalendarIds);
       if (draft.fallback30th) setFallback30th(draft.fallback30th);
-      if (typeof draft.isGregorianEntry === 'boolean') setIsGregorianEntry(draft.isGregorianEntry);
-      if (draft.gregDate) setGregDate(draft.gregDate);
-      if (typeof draft.afterSunset === 'boolean') setAfterSunset(draft.afterSunset);
+      if (!prefillDate) {
+        if (draft.year) setYear(draft.year);
+        if (draft.month) setMonth(draft.month);
+        if (draft.day) setDay(draft.day);
+        if (typeof draft.isGregorianEntry === 'boolean') setIsGregorianEntry(draft.isGregorianEntry);
+        if (draft.gregDate) setGregDate(draft.gregDate);
+        if (typeof draft.afterSunset === 'boolean') setAfterSunset(draft.afterSunset);
+      }
     } catch {
       sessionStorage.removeItem(ADD_EVENT_DRAFT_KEY);
     }
-  }, []);
+  }, [prefillDate]);
 
   useEffect(() => {
-    const prefillDate = location.state?.prefillDate;
     if (!prefillDate || hasAppliedPrefillRef.current) return;
 
     hasAppliedPrefillRef.current = true;
@@ -114,7 +135,7 @@ export default function AddEvent() {
     if (prefillDate.hebrewYear) setYear(String(prefillDate.hebrewYear));
     if (prefillDate.hebrewMonth) setMonth(prefillDate.hebrewMonth);
     if (prefillDate.hebrewDay) setDay(Number(prefillDate.hebrewDay));
-  }, [location.state]);
+  }, [prefillDate]);
 
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {
@@ -180,13 +201,13 @@ export default function AddEvent() {
       JSON.stringify({
         title,
         category,
-        year,
-        month,
-        day,
         syncSpan,
         notes,
         selectedCalendarIds,
         fallback30th,
+        year,
+        month,
+        day,
         isGregorianEntry,
         gregDate,
         afterSunset,
@@ -335,7 +356,11 @@ export default function AddEvent() {
 
       sessionStorage.removeItem(ADD_EVENT_DRAFT_KEY);
       alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
-      navigate('/calendar');
+      if (onComplete) {
+        await onComplete();
+      } else {
+        navigate('/calendar');
+      }
     } catch (e) {
       console.error("Submission error:", e);
       if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
@@ -353,11 +378,15 @@ export default function AddEvent() {
   };
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      className={`${embedded ? 'flex max-h-[min(92vh,960px)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] bg-slate-50 shadow-2xl dark:bg-slate-900' : 'min-h-screen bg-slate-50 dark:bg-slate-900'} font-sans ${isRtl ? 'text-right' : 'text-left'}`}
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
+      {!embedded && (
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30 sticky top-0">
         <div className="flex items-center gap-4 md:gap-6">
           <button 
-            onClick={() => showPreview ? setShowPreview(false) : navigate('/calendar')}
+            onClick={handleClose}
             className="p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400"
           >
             <ArrowLeft className={`w-5 h-5 ${isRtl ? '' : 'rotate-180'}`} />
@@ -389,8 +418,9 @@ export default function AddEvent() {
           )}
         </div>
       </header>
+      )}
 
-      <main className="p-4 md:p-8 overflow-auto flex-1">
+      <main className={`${embedded ? 'overflow-auto px-4 py-4 md:px-6 md:py-5' : 'p-4 md:p-8 overflow-auto'} flex-1`}>
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex flex-col gap-1 mb-2">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">

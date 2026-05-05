@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import AddEvent from '../pages/AddEvent';
 import * as googleApi from '../utils/googleApi';
 import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
@@ -49,15 +49,19 @@ vi.mock('../components/LoginModal', () => ({
     isOpen ? <div data-testid="login-modal">{mode}</div> : null
 }));
 
-const renderAddEvent = () => {
+const renderAddEvent = (initialEntries = ['/add-event']) => {
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <AddEvent />
-    </BrowserRouter>
+    </MemoryRouter>
   );
 };
 
 describe('AddEvent Component', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
   it('should render the form headers', () => {
     renderAddEvent();
     expect(screen.getByText('addEventTitle')).toBeInTheDocument();
@@ -81,6 +85,92 @@ describe('AddEvent Component', () => {
   it('should show Hebrew/Gregorian toggle option', () => {
     renderAddEvent();
     expect(screen.getByText('enterGregorian')).toBeInTheDocument();
+  });
+
+  it('should prefill the clicked day as a Gregorian date when opened from the calendar', async () => {
+    renderAddEvent([
+      {
+        pathname: '/add-event',
+        state: {
+          prefillDate: {
+            gregorianDate: '2026-05-07',
+            hebrewYear: '5786',
+            hebrewMonth: 'Iyyar',
+            hebrewDay: 20,
+          },
+        },
+      },
+    ]);
+
+    await waitFor(() => {
+      const gregorianToggle = screen.getByRole('checkbox', { name: 'enterGregorian' });
+      const [categorySelect, yearSelect, monthSelect, daySelect] = screen.getAllByRole('combobox');
+
+      expect(gregorianToggle).not.toBeChecked();
+      expect(categorySelect).toHaveValue('birthday');
+      expect(yearSelect).toHaveValue('5786');
+      expect(monthSelect).toHaveValue('Iyyar');
+      expect(daySelect).toHaveValue('20');
+    });
+  });
+
+  it('should prefer calendar day prefill over a saved draft date', async () => {
+    sessionStorage.setItem(
+      'add_event_draft',
+      JSON.stringify({
+        year: '5787',
+        month: 'Sivan',
+        day: 1,
+        isGregorianEntry: false,
+      }),
+    );
+
+    renderAddEvent([
+      {
+        pathname: '/add-event',
+        state: {
+          prefillDate: {
+            gregorianDate: '2026-05-07',
+            hebrewYear: '5786',
+            hebrewMonth: 'Iyyar',
+            hebrewDay: 20,
+          },
+        },
+      },
+    ]);
+
+    await waitFor(() => {
+      const [, yearSelect, monthSelect, daySelect] = screen.getAllByRole('combobox');
+
+      expect(yearSelect).toHaveValue('5786');
+      expect(monthSelect).toHaveValue('Iyyar');
+      expect(daySelect).toHaveValue('20');
+    });
+  });
+
+  it('should restore the chosen date from draft after returning without calendar state', async () => {
+    sessionStorage.setItem(
+      'add_event_draft',
+      JSON.stringify({
+        year: '5786',
+        month: 'Iyyar',
+        day: 20,
+        isGregorianEntry: false,
+        gregDate: '2026-05-07',
+      }),
+    );
+
+    renderAddEvent();
+
+    await waitFor(() => {
+      const gregorianToggle = screen.getByRole('checkbox', { name: 'enterGregorian' });
+      const [, yearSelect, monthSelect, daySelect] = screen.getAllByRole('combobox');
+
+      expect(gregorianToggle).not.toBeChecked();
+      expect(yearSelect).toHaveValue('5786');
+      expect(monthSelect).toHaveValue('Iyyar');
+      expect(daySelect).toHaveValue('20');
+    });
   });
 
   it('should open the login modal in reauthorize mode when the Google session expires', async () => {

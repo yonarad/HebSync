@@ -21,6 +21,7 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../utils/googleApi', () => ({
   GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
   getAccessToken: vi.fn(() => 'mock-token'),
+  getScopeMode: vi.fn(() => 'all_events'),
   fetchSession: vi.fn(() => Promise.resolve({ scopeMode: 'all_events' })),
   fetchAllCalendars: vi.fn(() => Promise.resolve([
     { id: 'cal1', summary: 'Personal', accessRole: 'owner' }
@@ -44,6 +45,7 @@ vi.mock('../utils/googleApi', () => ({
   },
   revokeAccess: vi.fn(),
   createNewCalendar: vi.fn(),
+  createHebcalEvent: vi.fn(),
   deleteEvent: vi.fn(),
   updateEvent: vi.fn(),
   isAuthError: vi.fn((error) => error?.code === 'AUTH_EXPIRED'),
@@ -113,6 +115,7 @@ const flattenLocaleKeys = (value, prefix = '') => {
 describe('My Calendar Component', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    sessionStorage.clear();
   });
 
   it('should keep english and hebrew locale keys in sync', () => {
@@ -154,7 +157,7 @@ describe('My Calendar Component', () => {
     expect(await screen.findByRole('button', { name: 'addEvent' })).toBeInTheDocument();
   });
 
-  it('should navigate to add event with the clicked day as context', async () => {
+  it('should open add event modal with the clicked day as context', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
       {
         id: 'cal1',
@@ -170,16 +173,59 @@ describe('My Calendar Component', () => {
     const dayButtons = await screen.findAllByLabelText(/Create an event on day/i);
     fireEvent.click(dayButtons[0]);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/add-event', {
-      state: {
-        prefillDate: expect.objectContaining({
-          gregorianDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-          hebrewYear: expect.any(String),
-          hebrewMonth: expect.any(String),
-          hebrewDay: expect.any(Number),
-        }),
+    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+    const [, yearSelect, monthSelect, daySelect] = screen.getAllByRole('combobox');
+
+    expect(yearSelect.value).not.toBe('');
+    expect(monthSelect.value).not.toBe('');
+    expect(daySelect.value).not.toBe('');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/add-event', expect.anything());
+  });
+
+  it('should open add event modal from the floating add button', async () => {
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'addEvent' }));
+
+    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith('/add-event');
+  });
+
+  it('should request an upgrade instead of navigating when read-only user clicks add event', async () => {
+    vi.mocked(googleApi.fetchSession).mockResolvedValueOnce({ scopeMode: 'read_only' });
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'addEvent' }));
+
+    expect(await screen.findByTestId('login-modal')).toBeInTheDocument();
+    expect(screen.getByText('upgrade')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith('/add-event');
+  });
+
+  it('should request an upgrade instead of navigating when read-only user clicks a day', async () => {
+    vi.mocked(googleApi.fetchSession).mockResolvedValueOnce({ scopeMode: 'read_only' });
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
       },
-    });
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([]);
+
+    renderDashboard();
+
+    const dayButtons = await screen.findAllByLabelText(/Create an event on day/i);
+    fireEvent.click(dayButtons[0]);
+
+    expect(await screen.findByTestId('login-modal')).toBeInTheDocument();
+    expect(screen.getByText('upgrade')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith(
+      '/add-event',
+      expect.anything(),
+    );
   });
 
   it('should open an overflow day dialog from the + more button', async () => {
