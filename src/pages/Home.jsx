@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Download, Eye, Shield } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Download, Eye, Info, Shield } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { authenticateWithGoogle, fetchSession, getAccessToken, SCOPE_MODES } from '../utils/googleApi';
@@ -12,7 +12,6 @@ const CONNECT_OPTIONS = [
     id: SCOPE_MODES.APP_CREATED,
     titleKey: 'permissionHebsyncOnly',
     descriptionKey: 'permissionHebsyncOnlyDesc',
-    badgeKey: 'recommended',
     icon: Shield,
     accentClassName:
       'border-emerald-200 bg-emerald-50/60 hover:border-emerald-400 dark:border-emerald-900/40 dark:bg-emerald-950/20',
@@ -231,12 +230,22 @@ export default function Home() {
                 })}
               </div>
 
-              <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800/60">
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                  {selectedMode === SCOPE_MODES.APP_CREATED
-                    ? t('permissionHebsyncOnlyFooter')
-                    : t('permissionAllCalendarsFooter')}
-                </p>
+              <div className="mt-6 rounded-2xl border border-slate-200/80 bg-slate-50/85 px-4 py-3.5 dark:border-slate-700 dark:bg-slate-800/40">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm dark:bg-slate-900 dark:text-slate-400">
+                    <Info className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+                      {t('howAccessWorks')}
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      {selectedMode === SCOPE_MODES.APP_CREATED
+                        ? t('permissionHebsyncOnlyFooter')
+                        : t('permissionAllCalendarsFooter')}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {isAuthenticated ? (

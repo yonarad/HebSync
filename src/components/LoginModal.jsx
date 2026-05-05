@@ -10,7 +10,6 @@ const CONNECT_OPTIONS = [
     id: SCOPE_MODES.APP_CREATED,
     titleKey: 'permissionHebsyncOnly',
     descriptionKey: 'permissionHebsyncOnlyDesc',
-    badgeKey: 'recommended',
     icon: Shield,
     iconClassName: 'text-emerald-500',
   },
@@ -57,7 +56,7 @@ export default function LoginModal({ isOpen, onClose, onSelect, mode = 'connect'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/55 backdrop-blur-sm"
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       <div className="w-full max-w-4xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
