@@ -100,6 +100,7 @@ export function MonthCalendarView({
   getCalendarColor,
   handleEventClick,
   handleOverflowDayOpen,
+  handleCreateFromDay,
 }) {
   return (
     <>
@@ -118,7 +119,14 @@ export function MonthCalendarView({
         {days.map((dayObj, i) => (
           <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
             {dayObj && (
-              <div className={`flex h-full min-h-0 flex-col overflow-hidden px-1 py-1 md:px-2 md:py-1.5 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}>
+              <div
+                onClick={() => handleCreateFromDay(dayObj)}
+                className={`flex h-full min-h-0 cursor-pointer flex-col overflow-hidden px-1 py-1 transition-colors hover:bg-slate-50/80 md:px-2 md:py-1.5 dark:hover:bg-slate-800/40 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}
+                aria-label={t('createEventOnDay', {
+                  hebrewDay: dayObj.hDayGematriya,
+                  gregorianDay: dayObj.gDay,
+                })}
+              >
                 <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center text-center md:justify-start md:text-right' : 'justify-center text-center md:justify-end md:text-left'}`}>
                   <div className={`flex w-full items-center gap-0 ${isRtl ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}>
                     <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:px-1.5 md:text-sm ${
@@ -162,7 +170,10 @@ export function MonthCalendarView({
                   {dayObj.events.length > maxVisibleMonthEvents && (
                     <button
                       type="button"
-                      onClick={(event) => handleOverflowDayOpen(dayObj, event)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleOverflowDayOpen(dayObj, event);
+                      }}
                       className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
                       aria-label={t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
                     >
@@ -188,6 +199,7 @@ export function ScheduleCalendarView({
   getCalendarColor,
   handleEventClick,
   isCalendarLoading,
+  handleCreateFromDay,
 }) {
   return (
     <div className="flex-1 overflow-y-auto bg-white px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
@@ -207,7 +219,15 @@ export function ScheduleCalendarView({
               key={dayObj.gDate.toISOString()}
               className="grid grid-cols-[60px_minmax(0,1fr)] gap-2.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[86px_minmax(0,1fr)] md:gap-4"
             >
-              <div className={`pt-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+              <button
+                type="button"
+                onClick={() => handleCreateFromDay(dayObj)}
+                className={`pt-1 transition-colors hover:text-[#1a73e8] ${isRtl ? 'text-right' : 'text-left'}`}
+                aria-label={t('createEventOnDay', {
+                  hebrewDay: dayObj.hDayGematriya,
+                  gregorianDay: dayObj.gDay,
+                })}
+              >
                 <div className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-black md:h-10 md:w-10 md:text-base ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
                   {dayObj.isToday ? dayObj.gDay : dayObj.hDayGematriya}
                 </div>
@@ -217,7 +237,7 @@ export function ScheduleCalendarView({
                 <div className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
                   {showGregorian ? `${dayObj.gMonthLabel} ${dayObj.gDay}` : hMonthNameHebrew}
                 </div>
-              </div>
+              </button>
 
               <div className="space-y-1.5">
                 {dayObj.events.map((event, idx) => {

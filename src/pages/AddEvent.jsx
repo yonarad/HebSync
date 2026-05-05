@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
@@ -14,8 +14,10 @@ const ADD_EVENT_DRAFT_KEY = 'add_event_draft';
 
 export default function AddEvent() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
+  const hasAppliedPrefillRef = useRef(false);
 
   // Color palette for calendars
   const calendarColors = [
@@ -97,6 +99,22 @@ export default function AddEvent() {
       sessionStorage.removeItem(ADD_EVENT_DRAFT_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    const prefillDate = location.state?.prefillDate;
+    if (!prefillDate || hasAppliedPrefillRef.current) return;
+
+    hasAppliedPrefillRef.current = true;
+    setTab('manual');
+    setShowPreview(false);
+    setIsGregorianEntry(false);
+    setGregDate(prefillDate.gregorianDate || '');
+    setAfterSunset(false);
+
+    if (prefillDate.hebrewYear) setYear(String(prefillDate.hebrewYear));
+    if (prefillDate.hebrewMonth) setMonth(prefillDate.hebrewMonth);
+    if (prefillDate.hebrewDay) setDay(Number(prefillDate.hebrewDay));
+  }, [location.state]);
 
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {

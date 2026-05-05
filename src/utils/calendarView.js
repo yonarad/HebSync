@@ -34,6 +34,7 @@ export function buildMonthDays(viewHDate, calendarEvents) {
     days.push({
       hDay: d,
       hDayGematriya: gematriya(d),
+      hMonthName: hMonth,
       gDay: gDate.getDate(),
       gMonthLabel: gDate.toLocaleString('he-IL', { month: 'short' }),
       gDate,

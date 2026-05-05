@@ -1,11 +1,21 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import MyCalendar from '../pages/MyCalendar';
 import * as googleApi from '../utils/googleApi';
 import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
 import enLocale from '../locales/en.json';
 import heLocale from '../locales/he.json';
+
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock the API utilities
 vi.mock('../utils/googleApi', () => ({
@@ -63,6 +73,7 @@ vi.mock('react-i18next', () => ({
         noEventsInView: 'No events in this view.',
         allDay: 'All day',
         loadingGoogleData: 'Loading Google data...',
+        createEventOnDay: `Create an event on day ${options?.hebrewDay ?? ''} (${options?.gregorianDay ?? ''})`,
       };
       return translations[key] ?? key;
     },
@@ -100,6 +111,10 @@ const flattenLocaleKeys = (value, prefix = '') => {
 };
 
 describe('My Calendar Component', () => {
+  beforeEach(() => {
+    mockNavigate.mockClear();
+  });
+
   it('should keep english and hebrew locale keys in sync', () => {
     const englishKeys = flattenLocaleKeys(enLocale.translation).sort();
     const hebrewKeys = flattenLocaleKeys(heLocale.translation).sort();
@@ -137,6 +152,24 @@ describe('My Calendar Component', () => {
   it('should show a floating add event button for authenticated users', async () => {
     renderDashboard();
     expect(await screen.findByRole('button', { name: 'addEvent' })).toBeInTheDocument();
+  });
+
+  it('should navigate to add event with the clicked day as context', async () => {
+    renderDashboard();
+
+    const dayButtons = await screen.findAllByLabelText(/Create an event on day/i);
+    fireEvent.click(dayButtons[0]);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/add-event', {
+      state: {
+        prefillDate: expect.objectContaining({
+          gregorianDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          hebrewYear: expect.any(String),
+          hebrewMonth: expect.any(String),
+          hebrewDay: expect.any(Number),
+        }),
+      },
+    });
   });
 
   it('should open an overflow day dialog from the + more button', async () => {

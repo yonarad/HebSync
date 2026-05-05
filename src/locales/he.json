@@ -150,6 +150,7 @@
     "selectedCountSuffix": "מסומנים",
     "noCalendarsAvailable": "עדיין אין יומנים זמינים.",
     "showGregorianDates": "הצג תאריכים לועזיים",
+    "createEventOnDay": "יצירת אירוע ביום {{hebrewDay}} ({{gregorianDay}})",
     "viewMonth": "חודש",
     "viewSchedule": "לוח זמנים",
     "noEventsInView": "אין אירועים בתצוגה הזו.",

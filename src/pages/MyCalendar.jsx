@@ -124,6 +124,23 @@ export default function MyCalendar() {
     handleEventClick(event);
   };
 
+  const handleCreateFromDay = (dayObj) => {
+    const year = dayObj.gDate.getFullYear();
+    const month = String(dayObj.gDate.getMonth() + 1).padStart(2, '0');
+    const day = String(dayObj.gDate.getDate()).padStart(2, '0');
+
+    navigate('/add-event', {
+      state: {
+        prefillDate: {
+          gregorianDate: `${year}-${month}-${day}`,
+          hebrewYear: String(dayObj.hYear),
+          hebrewMonth: dayObj.hMonthName,
+          hebrewDay: dayObj.hDay,
+        },
+      },
+    });
+  };
+
   const handleNextMonth = () => {
     setViewHDate((prev) => getNextMonthHDate(prev));
   };
@@ -246,6 +263,7 @@ export default function MyCalendar() {
                   getCalendarColor={getCalendarColor}
                   handleEventClick={handleEventClick}
                   handleOverflowDayOpen={handleOverflowDayOpen}
+                  handleCreateFromDay={handleCreateFromDay}
                 />
               ) : (
                 <ScheduleCalendarView
@@ -257,6 +275,7 @@ export default function MyCalendar() {
                   getCalendarColor={getCalendarColor}
                   handleEventClick={handleEventClick}
                   isCalendarLoading={isScheduleLoading}
+                  handleCreateFromDay={handleCreateFromDay}
                 />
               )}
             </div>

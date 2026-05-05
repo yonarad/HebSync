@@ -150,6 +150,7 @@
     },
     "refreshCalendars": "Refresh calendars",
     "showGregorianDates": "Show Gregorian dates",
+    "createEventOnDay": "Create an event on day {{hebrewDay}} ({{gregorianDay}})",
     "viewMonth": "Month",
     "viewSchedule": "Schedule",
     "noEventsInView": "No events in this view.",
