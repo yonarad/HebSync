@@ -773,10 +773,11 @@ export default function MyCalendar() {
                   <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700 bg-slate-50/95 backdrop-blur dark:bg-slate-900/70">
                     {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
                       const weekdayLabel = t(`days.${idx}`);
+                      const mobileHebrewWeekdays = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
                       return (
                         <div key={idx} className={`px-2 py-3 text-center text-[10px] md:text-xs font-bold ${idx === 6 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-500 dark:text-slate-300'}`}>
                           <span className="hidden md:inline">{weekdayLabel}</span>
-                          <span className="md:hidden">{weekdayLabel.substring(0, 1)}</span>
+                          <span className="md:hidden">{isRtl ? mobileHebrewWeekdays[idx] : weekdayLabel.substring(0, 1)}</span>
                         </div>
                       );
                     })}
