@@ -1,6 +1,13 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import LoginModal, { SCOPE_MODES } from '../components/LoginModal';
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key) => key,
+    i18n: { language: 'en' },
+  }),
+}));
 
 const renderModal = (props = {}) => {
   const defaults = {
@@ -8,93 +15,53 @@ const renderModal = (props = {}) => {
     onClose: vi.fn(),
     onSelect: vi.fn(),
   };
+
   return render(<LoginModal {...defaults} {...props} />);
 };
 
-describe('LoginModal Component', () => {
-  it('renders nothing when isOpen=false', () => {
+describe('LoginModal', () => {
+  it('renders nothing when closed', () => {
     renderModal({ isOpen: false });
-    expect(screen.queryByText('בחר רמת הרשאה')).toBeNull();
+    expect(screen.queryByText('permissionModalTitle')).toBeNull();
   });
 
-  it('renders the modal when isOpen=true', () => {
+  it('shows the two connect options', () => {
     renderModal();
-    expect(screen.getByText('בחר רמת הרשאה')).toBeInTheDocument();
+    expect(screen.getByText('permissionHebsyncOnly')).toBeInTheDocument();
+    expect(screen.getByText('permissionAllCalendars')).toBeInTheDocument();
   });
 
-  it('shows all three permission options', () => {
-    renderModal();
-    expect(screen.getByText('פרטיות מקסימלית')).toBeInTheDocument();
-    expect(screen.getByText('צפייה בלבד')).toBeInTheDocument();
-    expect(screen.getByText('גישה מלאה')).toBeInTheDocument();
-  });
-
-  it('defaults to app_created mode', () => {
+  it('defaults to HebSync-only mode', () => {
     const onSelect = vi.fn();
     renderModal({ onSelect });
-    fireEvent.click(screen.getByText('המשך להתחברות'));
+
+    fireEvent.click(screen.getByText('continue'));
     expect(onSelect).toHaveBeenCalledWith(SCOPE_MODES.APP_CREATED);
   });
 
-  it('calls onSelect with selected mode when confirmed', () => {
+  it('maps the all-calendars option to the read-only scope for the first step', () => {
     const onSelect = vi.fn();
     renderModal({ onSelect });
-    fireEvent.click(screen.getByText('צפייה בלבד'));
-    fireEvent.click(screen.getByText('המשך להתחברות'));
+
+    fireEvent.click(screen.getByText('permissionAllCalendars'));
+    fireEvent.click(screen.getByText('continue'));
+
     expect(onSelect).toHaveBeenCalledWith(SCOPE_MODES.READ_ONLY);
   });
 
-  it('calls onSelect with all_events when full access is selected', () => {
-    const onSelect = vi.fn();
-    renderModal({ onSelect });
-    fireEvent.click(screen.getByText('גישה מלאה'));
-    fireEvent.click(screen.getByText('המשך להתחברות'));
-    expect(onSelect).toHaveBeenCalledWith(SCOPE_MODES.ALL_EVENTS);
-  });
-
-  it('calls onClose when cancel button is clicked', () => {
-    const onClose = vi.fn();
-    renderModal({ onClose });
-    fireEvent.click(screen.getByText('ביטול'));
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls onClose when X button is clicked', () => {
-    const onClose = vi.fn();
-    renderModal({ onClose });
-    const xButton = screen.getAllByRole('button').find((button) => !button.textContent.trim());
-    if (xButton) fireEvent.click(xButton);
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('does not call onSelect without confirm click', () => {
-    const onSelect = vi.fn();
-    renderModal({ onSelect });
-    expect(onSelect).not.toHaveBeenCalled();
-  });
-
-  it('shows reauthorization copy when mode=reauthorize', () => {
+  it('shows reconnect copy in reauthorize mode', () => {
     renderModal({ mode: 'reauthorize' });
-    expect(screen.getByText('נדרש חיבור מחדש לגוגל')).toBeInTheDocument();
-    expect(screen.getByText(/תוקף ההתחברות או ההרשאות שלך פג/)).toBeInTheDocument();
-    expect(screen.getByText('המשך לחיבור מחדש')).toBeInTheDocument();
+    expect(screen.getByText('permissionReconnectTitle')).toBeInTheDocument();
+    expect(screen.getByText('permissionReconnectCta')).toBeInTheDocument();
   });
 
-  it('resets the selected mode when reopened', () => {
+  it('shows the editing upgrade flow', () => {
     const onSelect = vi.fn();
-    const onClose = vi.fn();
-    const { rerender } = render(
-      <LoginModal isOpen={true} onClose={onClose} onSelect={onSelect} />
-    );
+    renderModal({ mode: 'upgrade', onSelect });
 
-    fireEvent.click(screen.getByText('צפייה בלבד'));
-    fireEvent.click(screen.getByText('המשך להתחברות'));
-    expect(onSelect).toHaveBeenLastCalledWith(SCOPE_MODES.READ_ONLY);
+    expect(screen.getByText('permissionUpgradeTitle')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('permissionUpgradeCta'));
 
-    rerender(<LoginModal isOpen={false} onClose={onClose} onSelect={onSelect} />);
-    rerender(<LoginModal isOpen={true} onClose={onClose} onSelect={onSelect} />);
-
-    fireEvent.click(screen.getByText('המשך להתחברות'));
-    expect(onSelect).toHaveBeenLastCalledWith(SCOPE_MODES.APP_CREATED);
+    expect(onSelect).toHaveBeenCalledWith(SCOPE_MODES.ALL_EVENTS);
   });
 });

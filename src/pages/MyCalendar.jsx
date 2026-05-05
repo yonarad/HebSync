@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Unlock, Eye, X, Upload, Menu } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, Info, LogOut, Shield, Eye, X, Upload, Menu, PencilLine } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, fetchSession, isAuthError, revokeAccess, updateEvent } from '../utils/googleApi';
+import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, fetchSession, isAuthError, revokeAccess, SCOPE_MODES, updateEvent, usesAllCalendarsMode } from '../utils/googleApi';
 import { HEBREW_MONTHS, formatHebrewYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 
@@ -57,6 +57,8 @@ export default function MyCalendar() {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [showGregorian, setShowGregorian] = useState(true);
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const isAllCalendarsMode = usesAllCalendarsMode(scopeMode);
+  const hasWriteAccess = canEditCalendars(scopeMode);
 
   useEffect(() => {
     let isMounted = true;
@@ -227,12 +229,18 @@ export default function MyCalendar() {
     });
   };
 
+  const promptForEditingUpgrade = () => {
+    setLoginModalMode('upgrade');
+    setShowLoginModal(true);
+  };
+
   const handleChangePermissions = async () => {
-    if (scopeMode === 'all_events') {
-      if (window.confirm("כדי לעבור לרמת פרטיות גבוהה יותר, עלינו לבטל את ההרשאות הרחבות הקיימות. האם לבצע ניתוק והתחברות מחדש?")) {
+    if (isAllCalendarsMode) {
+      if (window.confirm(t('switchToHebsyncOnlyConfirm'))) {
         setIsLoading(true);
         await revokeAccess();
         setIsAuthenticated(false);
+        setScopeMode(null);
         setIsLoading(false);
         setLoginModalMode('connect');
         setShowLoginModal(true);
@@ -253,6 +261,10 @@ export default function MyCalendar() {
   };
 
   const handleDelete = async (calendarId, googleEventId) => {
+    if (!hasWriteAccess) {
+      promptForEditingUpgrade();
+      return;
+    }
     if (!window.confirm("האם אתה בטוח שברצונך למחוק אירוע זה (ואת כל המופעים שלו) מהיומן?")) return;
     try {
       await deleteEvent(calendarId, googleEventId);
@@ -265,6 +277,10 @@ export default function MyCalendar() {
   };
 
   const handleUpdate = async () => {
+    if (!hasWriteAccess) {
+      promptForEditingUpgrade();
+      return;
+    }
     try {
       await updateEvent(selectedEvent.calendarId, selectedEvent.id, {
         summary: editTitle,
@@ -392,11 +408,29 @@ export default function MyCalendar() {
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden p-4 space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <span>{isRtl ? 'רמת הרשאה' : 'Access Level'}</span>
-                <button onClick={handleChangePermissions} className="text-[#0038A8] dark:text-blue-400 underline">{isRtl ? 'שינוי' : 'Change'}</button>
+                <span>{t('calendarAccess')}</span>
+                <button onClick={handleChangePermissions} className="text-[#0038A8] dark:text-blue-400 underline">{t('change')}</button>
               </div>
-              <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                {scopeMode === 'app_created' ? <><Shield className="w-3 h-3 text-green-500" /> {t('maxPrivacy')}</> : scopeMode === 'read_only' ? <><Eye className="w-3 h-3 text-purple-500" /> {t('readOnly')}</> : <><Unlock className="w-3 h-3 text-blue-500" /> {t('fullAccess')}</>}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  {isAllCalendarsMode ? <><Eye className="w-3 h-3 text-blue-500" /> {t('permissionAllCalendars')}</> : <><Shield className="w-3 h-3 text-emerald-500" /> {t('permissionHebsyncOnly')}</>}
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+                  {isAllCalendarsMode
+                    ? hasWriteAccess
+                      ? t('editingEnabledStatus')
+                      : t('viewingOnlyStatus')
+                    : t('hebSyncOnlyStatus')}
+                </p>
+                {isAllCalendarsMode && !hasWriteAccess && (
+                  <button
+                    onClick={promptForEditingUpgrade}
+                    className="mt-3 inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-[11px] font-bold text-[#0038A8] transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+                  >
+                    <PencilLine className="w-3.5 h-3.5" />
+                    {t('enableEditing')}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -409,7 +443,7 @@ export default function MyCalendar() {
                     <span>{t('loadingGoogleData')}</span>
                   </div>
                 )}
-                {isAuthenticated && scopeMode !== 'read_only' && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ {t('new')}</button>}
+                {isAuthenticated && hasWriteAccess && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ {t('new')}</button>}
               </div>
 
               {isAuthenticated && calendars.length > 0 && (
@@ -563,12 +597,12 @@ export default function MyCalendar() {
               )}
             </div>
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
-              <button onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)} className={`flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20`}><Trash2 className="w-4 h-4" /> {t('delete')}</button>
+              <button onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)} className={`flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20`}><Trash2 className="w-4 h-4" /> {hasWriteAccess ? t('delete') : t('enableEditing')}</button>
               <div className="flex gap-2">
                 {isEditing ? (
                   <><button onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-xl font-bold">{t('cancel')}</button><button onClick={handleUpdate} className="px-6 py-2 bg-[#0038A8] text-white rounded-xl font-bold hover:bg-blue-800 shadow-md">{t('save')}</button></>
                 ) : (
-                  <button onClick={() => setIsEditing(true)} className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700">{t('edit')}</button>
+                  <button onClick={() => (hasWriteAccess ? setIsEditing(true) : promptForEditingUpgrade())} className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700">{hasWriteAccess ? t('edit') : t('enableEditing')}</button>
                 )}
               </div>
             </div>

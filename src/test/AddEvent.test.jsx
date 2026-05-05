@@ -8,9 +8,17 @@ import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
 vi.mock('../utils/googleApi', () => ({
   GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
   getAccessToken: vi.fn(() => 'mock-token'),
+  getScopeMode: vi.fn(() => 'all_events'),
+  canEditCalendars: vi.fn((scopeMode) => scopeMode === 'app_created' || scopeMode === 'all_events'),
+  SCOPE_MODES: {
+    APP_CREATED: 'app_created',
+    READ_ONLY: 'read_only',
+    ALL_EVENTS: 'all_events',
+  },
   fetchAllCalendars: vi.fn(() => Promise.resolve([
     { id: 'cal1', summary: 'Personal', accessRole: 'owner' }
   ])),
+  fetchSession: vi.fn(() => Promise.resolve({ scopeMode: 'all_events' })),
   authenticateWithGoogle: vi.fn(),
   revokeAccess: vi.fn(),
   createHebcalEvent: vi.fn(),
@@ -101,5 +109,25 @@ describe('AddEvent Component', () => {
 
     fireEvent.click(screen.getByText('confirmAndSync'));
     expect(await screen.findByText('reauthorize')).toBeInTheDocument();
+  });
+
+  it('should ask for an editing upgrade before syncing in all-calendars view mode', async () => {
+    vi.mocked(googleApi.fetchSession).mockResolvedValueOnce({ scopeMode: 'read_only' });
+
+    renderAddEvent();
+
+    fireEvent.change(screen.getAllByRole('textbox')[0], {
+      target: { value: 'Birthday' },
+    });
+
+    await screen.findByText('selectAll');
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[checkboxes.length - 1]);
+
+    fireEvent.click(screen.getByText('showPreview'));
+    expect(await screen.findByText('preview')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('allowEditingToContinue'));
+    expect(await screen.findByText('upgrade')).toBeInTheDocument();
   });
 });

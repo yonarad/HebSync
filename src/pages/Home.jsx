@@ -1,17 +1,42 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, Unlock, Eye, Download } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Download, Eye, Shield } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import { authenticateWithGoogle, fetchSession, getAccessToken } from '../utils/googleApi';
+import { authenticateWithGoogle, fetchSession, getAccessToken, SCOPE_MODES } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
 import useInstallPrompt from '../hooks/useInstallPrompt';
+
+const CONNECT_OPTIONS = [
+  {
+    id: SCOPE_MODES.APP_CREATED,
+    titleKey: 'permissionHebsyncOnly',
+    descriptionKey: 'permissionHebsyncOnlyDesc',
+    badgeKey: 'recommended',
+    icon: Shield,
+    accentClassName:
+      'border-emerald-200 bg-emerald-50/60 hover:border-emerald-400 dark:border-emerald-900/40 dark:bg-emerald-950/20',
+    iconClassName: 'text-emerald-500',
+  },
+  {
+    id: SCOPE_MODES.READ_ONLY,
+    titleKey: 'permissionAllCalendars',
+    descriptionKey: 'permissionAllCalendarsDesc',
+    helperKey: 'permissionAllCalendarsHelper',
+    icon: Eye,
+    accentClassName:
+      'border-blue-200 bg-blue-50/60 hover:border-blue-400 dark:border-blue-900/40 dark:bg-blue-950/20',
+    iconClassName: 'text-blue-500',
+  },
+];
 
 export default function Home() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
+  const [selectedMode, setSelectedMode] = useState(SCOPE_MODES.APP_CREATED);
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
+  const isRtl = i18n.language === 'he';
 
   useEffect(() => {
     let isMounted = true;
@@ -37,125 +62,216 @@ export default function Home() {
     await promptInstall();
   };
 
-  const handleLogin = (mode) => {
-    authenticateWithGoogle(mode, undefined, (err) => {
-      alert(t('errorSyncFailed') + ": " + (err.message || ""));
+  const handleContinue = () => {
+    authenticateWithGoogle(selectedMode, undefined, (err) => {
+      alert(`${t('errorSyncFailed')}: ${err.message || ''}`);
     });
   };
 
-  const loginOptions = [
-    {
-      id: 'app_created',
-      title: t('maxPrivacy'),
-      description: t('maxPrivacyDesc'),
-      icon: <Shield className="w-8 h-8 text-green-500" />,
-      color: 'border-green-100 hover:border-green-500 bg-green-50/30'
-    },
-    {
-      id: 'read_only',
-      title: t('readOnly'),
-      description: t('readOnlyDesc'),
-      icon: <Eye className="w-8 h-8 text-purple-500" />,
-      color: 'border-purple-100 hover:border-purple-500 bg-purple-50/30'
-    },
-    {
-      id: 'all_events',
-      title: t('fullAccess'),
-      description: t('fullAccessDesc'),
-      icon: <Unlock className="w-8 h-8 text-blue-500" />,
-      color: 'border-blue-100 hover:border-blue-500 bg-blue-50/30'
-    }
-  ];
-
-  const isRtl = i18n.language === 'he';
-
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 md:px-6 dark:bg-slate-900 font-sans">
-      <div className="absolute top-4 right-4 md:top-8 md:right-8 flex items-center gap-2">
-        <LanguageSwitcher />
-      </div>
-
-      <div className="max-w-4xl w-full text-center space-y-6 flex flex-col items-center flex-1 justify-center">
-        <Logo className="w-16 h-16 md:w-20 md:h-20 mb-2 drop-shadow-xl" />
-
-        <h1 className="text-3xl md:text-6xl font-extrabold tracking-tight leading-tight dark:text-white" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>
-          <span className="text-[#0038A8] dark:text-blue-400">{t('homeTitleFirst')}</span>
-          <span className="text-slate-900 dark:text-white">{t('homeTitleSecond')}</span>
-        </h1>
-
-        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium px-2">
-          {t('homeSubtitle')}
-        </p>
-
-        {canInstall && (
-          <button
-            onClick={handleInstall}
-            className="group flex items-center gap-3 px-6 py-3 rounded-2xl border border-slate-200 bg-white/90 text-slate-800 font-black shadow-lg shadow-slate-200/70 transition-all hover:-translate-y-0.5 hover:border-[#0038A8] hover:text-[#0038A8] dark:bg-slate-800/80 dark:border-slate-700 dark:text-white dark:shadow-none"
-          >
-            <Download className="w-5 h-5 transition-transform group-hover:translate-y-0.5" />
-            {t('installApp')}
-          </button>
-        )}
-
-        {isInstalled && (
-          <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
-            {t('appInstalled')}
-          </p>
-        )}
-
-        <div className="pt-4 text-slate-800 dark:text-slate-200 font-bold text-base md:text-lg">
-          {isAuthenticated ? (
-            <div className="flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <button
-                onClick={() => navigate('/calendar')}
-                className="group flex items-center gap-3 px-8 py-4 bg-[#0038A8] text-white rounded-2xl font-black text-xl hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_45%,#f8fafc_100%)] px-4 py-8 dark:bg-slate-950 md:px-6 md:py-10">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Logo className="h-11 w-11 drop-shadow-xl" />
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
+                {t('calendarSetup')}
+              </p>
+              <h1
+                className="text-xl font-black tracking-tight text-slate-900 dark:text-white"
+                style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}
               >
-                {t('enterCalendar')}
-                <ArrowLeft className={`w-6 h-6 transition-transform ${isRtl ? 'group-hover:translate-x-[-4px]' : 'group-hover:translate-x-[4px] rotate-180'}`} />
-              </button>
-              <p className="text-sm font-bold text-slate-400">{t('orSelectOther')}</p>
+                <span className="text-[#0038A8] dark:text-blue-400">{t('appNameFirst')}</span>
+                <span>{t('appNameSecond')}</span>
+              </h1>
             </div>
-          ) : (
-            t('selectAccess')
-          )}
+          </div>
+          <div className="flex items-center gap-2">
+            {canInstall && (
+              <button
+                onClick={handleInstall}
+                className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 md:flex"
+              >
+                <Download className="h-4 w-4" />
+                {t('installApp')}
+              </button>
+            )}
+            <LanguageSwitcher />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pt-2 w-full max-w-lg md:max-w-none">
-          {loginOptions.map((opt) => (
-            <div
-              key={opt.id}
-              onClick={() => handleLogin(opt.id)}
-              className={`group cursor-pointer p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-2 transition-all duration-300 ${isRtl ? 'text-right' : 'text-left'} flex flex-col gap-4 dark:bg-slate-800/50 dark:border-slate-700 ${opt.color} hover:shadow-2xl hover:-translate-y-1 active:scale-95`}
-            >
-              <div className="flex justify-between items-start">
-                <div className="p-2.5 md:p-3 bg-white dark:bg-slate-800 rounded-xl md:rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
-                  {opt.icon}
+        <div className="flex flex-1 items-center py-8 md:py-10">
+          <div className="grid w-full gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <section className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl shadow-slate-200/70 backdrop-blur md:p-8 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-slate-400">
+                {t('connectCalendarEyebrow')}
+              </p>
+              <h2
+                className="mt-4 text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-6xl"
+                style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}
+              >
+                <span className="text-[#0038A8] dark:text-blue-400">{t('homeTitleFirst')}</span>
+                <span>{t('homeTitleSecond')}</span>
+              </h2>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 md:text-lg">
+                {t('permissionScreenSubtitle')}
+              </p>
+
+              <div className="mt-8 rounded-[1.75rem] bg-slate-50 p-5 dark:bg-slate-800/60">
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
+                  {t('howAccessWorks')}
+                </p>
+                <h3 className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                  {t('permissionInfoTitle')}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {t('permissionInfoBody')}
+                </p>
+                <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    {t('permissionInfoTrustTitle')}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    {t('permissionInfoTrustBody')}
+                  </p>
                 </div>
               </div>
-              <div>
-                <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">{opt.title}</h3>
-                <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                  {opt.description}
+
+              {isInstalled && (
+                <p className="mt-5 text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                  {t('appInstalled')}
+                </p>
+              )}
+
+              {canInstall && (
+                <button
+                  onClick={handleInstall}
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 md:hidden"
+                >
+                  <Download className="h-4 w-4" />
+                  {t('installApp')}
+                </button>
+              )}
+            </section>
+
+            <section className="rounded-[2rem] border border-white/70 bg-white/92 p-6 shadow-xl shadow-slate-200/70 backdrop-blur md:p-8 dark:border-slate-800 dark:bg-slate-900/92 dark:shadow-none">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
+                    {t('connectCalendarEyebrow')}
+                  </p>
+                  <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                    {t('permissionScreenTitle')}
+                  </h3>
+                </div>
+                {isAuthenticated && (
+                  <button
+                    onClick={() => navigate('/calendar')}
+                    className="group flex items-center gap-2 rounded-2xl bg-[#0038A8] px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
+                  >
+                    {t('enterCalendar')}
+                    <ArrowLeft className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-1' : 'rotate-180 group-hover:translate-x-1'}`} />
+                  </button>
+                )}
+              </div>
+
+              {!isAuthenticated && (
+                <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  {t('permissionModalBody')}
+                </p>
+              )}
+
+              <div className="mt-6 space-y-4">
+                {CONNECT_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const isSelected = selectedMode === option.id;
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setSelectedMode(option.id)}
+                      className={`relative w-full rounded-[1.75rem] border-2 p-5 text-start transition-all ${option.accentClassName} ${
+                        isSelected
+                          ? 'ring-2 ring-[#0038A8]/15 dark:ring-blue-400/15'
+                          : ''
+                      }`}
+                    >
+                      {isSelected && (
+                        <CheckCircle2 className={`absolute top-5 ${isRtl ? 'left-5' : 'right-5'} h-5 w-5 text-[#0038A8] dark:text-blue-300`} />
+                      )}
+                      <div className="flex gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-800">
+                          <Icon className={`h-6 w-6 ${option.iconClassName}`} />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                              {t(option.titleKey)}
+                            </h4>
+                            {option.badgeKey && (
+                              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                {t(option.badgeKey)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                            {t(option.descriptionKey)}
+                          </p>
+                          {option.helperKey && (
+                            <p className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                              {t(option.helperKey)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800/60">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  {selectedMode === SCOPE_MODES.APP_CREATED
+                    ? t('permissionHebsyncOnlyFooter')
+                    : t('permissionAllCalendarsFooter')}
                 </p>
               </div>
-            </div>
-          ))}
+
+              {isAuthenticated ? (
+                <p className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {t('orSelectOther')}
+                </p>
+              ) : null}
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                <button
+                  onClick={handleContinue}
+                  className="rounded-2xl bg-[#0038A8] px-6 py-3.5 text-base font-black text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
+                >
+                  {t('continue')}
+                </button>
+              </div>
+            </section>
+          </div>
         </div>
 
-        <div className="pt-6 flex flex-wrap items-center justify-center gap-3 md:gap-4 text-[10px] md:text-xs font-bold text-slate-500">
-          <span className="bg-white dark:bg-slate-800 px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm">Privacy-First Architecture</span>
-          <span className="bg-white dark:bg-slate-800 px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm">Installable PWA</span>
-          <span className="bg-[#0038A8]/10 text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300 px-3 md:px-4 py-1.5 md:py-2 rounded-full">Google OAuth</span>
-        </div>
+        <footer className="pb-2 pt-4 text-center text-[11px] font-medium text-slate-400">
+          <p>{t('copyright', { year: new Date().getFullYear() })}</p>
+          <p className="mt-1">
+            {t('thanksTo')}{' '}
+            <a
+              href="https://github.com/hebcal/hebcal-es6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-[#0038A8] hover:underline dark:text-blue-400"
+            >
+              Hebcal
+            </a>
+          </p>
+        </footer>
       </div>
-
-      <footer className="mt-12 py-4 text-slate-400 text-[10px] font-medium flex flex-col items-center gap-1 text-center">
-        <p>{t('copyright', { year: new Date().getFullYear() })}</p>
-        <p className="flex flex-col md:flex-row items-center gap-1">
-          <span>{t('thanksTo')}</span>
-          <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] dark:text-blue-400 hover:underline">Hebcal</a>
-        </p>
-      </footer>
     </div>
   );
 }

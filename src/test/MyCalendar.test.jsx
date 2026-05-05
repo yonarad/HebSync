@@ -9,12 +9,20 @@ import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
 vi.mock('../utils/googleApi', () => ({
   GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
   getAccessToken: vi.fn(() => 'mock-token'),
+  fetchSession: vi.fn(() => Promise.resolve({ scopeMode: 'all_events' })),
   fetchAllCalendars: vi.fn(() => Promise.resolve([
     { id: 'cal1', summary: 'Personal', accessRole: 'owner' }
   ])),
   fetchMyAppEvents: vi.fn(() => Promise.resolve([])),
   fetchEventsInRange: vi.fn(() => Promise.resolve([])),
   authenticateWithGoogle: vi.fn(),
+  canEditCalendars: vi.fn((scopeMode) => scopeMode === 'app_created' || scopeMode === 'all_events'),
+  usesAllCalendarsMode: vi.fn((scopeMode) => scopeMode === 'read_only' || scopeMode === 'all_events'),
+  SCOPE_MODES: {
+    APP_CREATED: 'app_created',
+    READ_ONLY: 'read_only',
+    ALL_EVENTS: 'all_events',
+  },
   revokeAccess: vi.fn(),
   createNewCalendar: vi.fn(),
   deleteEvent: vi.fn(),
@@ -57,8 +65,7 @@ const renderDashboard = () => {
 describe('My Calendar Component', () => {
   it('should render the dashboard header and logo', () => {
     renderDashboard();
-    // Using a more specific selector or getting the first one
-    expect(screen.getAllByText(/Heb/)[0]).toBeInTheDocument();
+    expect(screen.getAllByText('appNameFirst')[0]).toBeInTheDocument();
     expect(screen.getByTestId('logo')).toBeInTheDocument();
   });
 

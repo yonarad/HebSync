@@ -1,6 +1,11 @@
 import { formatHebrewYear } from './hebcal';
 
 export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
+export const SCOPE_MODES = {
+  APP_CREATED: 'app_created',
+  READ_ONLY: 'read_only',
+  ALL_EVENTS: 'all_events',
+};
 
 const AUTH_ERROR_CODE = 'AUTH_EXPIRED';
 const APP_SIGNATURE = 'ID:hebcal-sync-app';
@@ -123,6 +128,18 @@ export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
   } catch (error) {
     onError?.(error);
   }
+}
+
+export function getScopeMode() {
+  return getStoredSession()?.scopeMode || localStorage.getItem('gcal_scope_mode');
+}
+
+export function usesAllCalendarsMode(scopeMode = getScopeMode()) {
+  return scopeMode === SCOPE_MODES.READ_ONLY || scopeMode === SCOPE_MODES.ALL_EVENTS;
+}
+
+export function canEditCalendars(scopeMode = getScopeMode()) {
+  return scopeMode === SCOPE_MODES.APP_CREATED || scopeMode === SCOPE_MODES.ALL_EVENTS;
 }
 
 export function getAccessToken() {

@@ -5,10 +5,12 @@ import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchSession, isAuthError, revokeAccess } from '../utils/googleApi';
+import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchSession, getScopeMode, isAuthError, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+
+const ADD_EVENT_DRAFT_KEY = 'add_event_draft';
 
 export default function AddEvent() {
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ export default function AddEvent() {
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState('connect');
+  const [scopeMode, setScopeMode] = useState(getScopeMode());
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
   const currentHDate = new HDate();
@@ -70,6 +73,30 @@ export default function AddEvent() {
 
   // Computed Hebrew date from Gregorian
   const convertedHDate = isGregorianEntry && gregDate ? gregorianToHebrew(new Date(gregDate), afterSunset) : null;
+  const hasWriteAccess = canEditCalendars(scopeMode);
+
+  useEffect(() => {
+    const rawDraft = sessionStorage.getItem(ADD_EVENT_DRAFT_KEY);
+    if (!rawDraft) return;
+
+    try {
+      const draft = JSON.parse(rawDraft);
+      if (draft.title) setTitle(draft.title);
+      if (draft.category) setCategory(draft.category);
+      if (draft.year) setYear(draft.year);
+      if (draft.month) setMonth(draft.month);
+      if (draft.day) setDay(draft.day);
+      if (draft.syncSpan) setSyncSpan(draft.syncSpan);
+      if (draft.notes) setNotes(draft.notes);
+      if (Array.isArray(draft.selectedCalendarIds)) setSelectedCalendarIds(draft.selectedCalendarIds);
+      if (draft.fallback30th) setFallback30th(draft.fallback30th);
+      if (typeof draft.isGregorianEntry === 'boolean') setIsGregorianEntry(draft.isGregorianEntry);
+      if (draft.gregDate) setGregDate(draft.gregDate);
+      if (typeof draft.afterSunset === 'boolean') setAfterSunset(draft.afterSunset);
+    } catch {
+      sessionStorage.removeItem(ADD_EVENT_DRAFT_KEY);
+    }
+  }, []);
 
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {
@@ -98,10 +125,15 @@ export default function AddEvent() {
     fetchSession()
       .then((session) => {
         if (isMounted && session) {
+          setScopeMode(session.scopeMode || null);
           loadCalendars();
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (isMounted) {
+          setScopeMode(null);
+        }
+      });
 
     return () => {
       isMounted = false;
@@ -112,6 +144,7 @@ export default function AddEvent() {
     const handleAuthExpired = () => {
       setCalendars([]);
       setSelectedCalendarIds([]);
+      setScopeMode(null);
       setLoginModalMode('reauthorize');
       setShowLoginModal(true);
       setIsLoading(false);
@@ -122,6 +155,39 @@ export default function AddEvent() {
       window.removeEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
     };
   }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      ADD_EVENT_DRAFT_KEY,
+      JSON.stringify({
+        title,
+        category,
+        year,
+        month,
+        day,
+        syncSpan,
+        notes,
+        selectedCalendarIds,
+        fallback30th,
+        isGregorianEntry,
+        gregDate,
+        afterSunset,
+      }),
+    );
+  }, [
+    afterSunset,
+    category,
+    day,
+    fallback30th,
+    gregDate,
+    isGregorianEntry,
+    month,
+    notes,
+    selectedCalendarIds,
+    syncSpan,
+    title,
+    year,
+  ]);
 
   const loadCalendars = async () => {
     setIsCalendarLoading(true);
@@ -207,12 +273,18 @@ export default function AddEvent() {
     if (!window.confirm(isRtl ? "פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?" : "This will disconnect the app from your Google account and revoke all permissions. Continue?")) return;
     setIsLoading(true);
     await revokeAccess();
+    setScopeMode(null);
     setIsLoading(false);
     navigate('/');
   };
 
   const submitEvent = async () => {
     if (isLoading) return; // Guard against double submission
+    if (!hasWriteAccess) {
+      setLoginModalMode('upgrade');
+      setShowLoginModal(true);
+      return;
+    }
     setIsLoading(true);
     try {
       let targetYear, targetMonth, targetDay;
@@ -243,6 +315,7 @@ export default function AddEvent() {
         createHebcalEvent(title, category, targetYear, rdateString, calendarId, notes)
       ));
 
+      sessionStorage.removeItem(ADD_EVENT_DRAFT_KEY);
       alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
       navigate('/calendar');
     } catch (e) {
@@ -612,21 +685,22 @@ export default function AddEvent() {
                 >
                   {t('backToEdit')}
                 </button>
-                {localStorage.getItem('gcal_scope_mode') === 'read_only' ? (
-                  <div className="flex-1 px-8 py-4 bg-slate-100 text-slate-500 rounded-xl font-bold flex flex-col items-center justify-center gap-1 text-center cursor-not-allowed dark:bg-slate-800 dark:text-slate-400">
-                    <span className="flex items-center gap-2"><Info className="w-5 h-5" /> {t('readOnlyMode')}</span>
-                    <span className="text-xs font-normal">{t('reloginForEdit')}</span>
-                  </div>
-                ) : (
-                  <button 
-                    onClick={() => submitEvent()}
-                    disabled={isLoading}
-                    className="flex-1 px-8 py-4 bg-[#0038A8] hover:bg-blue-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 disabled:opacity-70"
-                  >
-                    {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-                    {isLoading ? t('syncing') : t('confirmAndSync')}
-                  </button>
-                )}
+                <button 
+                  onClick={() => submitEvent()}
+                  disabled={isLoading}
+                  className={`flex-1 px-8 py-4 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 ${
+                    hasWriteAccess
+                      ? 'bg-[#0038A8] hover:bg-blue-800 text-white shadow-blue-900/20'
+                      : 'bg-blue-50 hover:bg-blue-100 text-[#0038A8] shadow-blue-900/5 dark:bg-blue-900/30 dark:text-blue-300'
+                  }`}
+                >
+                  {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : hasWriteAccess ? <CheckCircle className="w-5 h-5" /> : <Info className="w-5 h-5" />}
+                  {isLoading
+                    ? t('syncing')
+                    : hasWriteAccess
+                      ? t('confirmAndSync')
+                      : t('allowEditingToContinue')}
+                </button>
               </div>
             </div>
           )}
