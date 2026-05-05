@@ -149,6 +149,10 @@
     "allCalendarsGroupLabel": "כל היומנים",
     "selectedCountSuffix": "מסומנים",
     "noCalendarsAvailable": "עדיין אין יומנים זמינים.",
-    "showGregorianDates": "הצג תאריכים לועזיים"
+    "showGregorianDates": "הצג תאריכים לועזיים",
+    "viewMonth": "חודש",
+    "viewSchedule": "לוח זמנים",
+    "noEventsInView": "אין אירועים בתצוגה הזו.",
+    "allDay": "כל היום"
   }
 }

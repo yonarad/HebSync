@@ -69,6 +69,10 @@ export default function MyCalendar() {
   const [viewHDate, setViewHDate] = useState(new HDate());
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [showGregorian, setShowGregorian] = useState(true);
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window === 'undefined') return 'month';
+    return window.innerWidth < 768 ? 'schedule' : 'month';
+  });
   const isAllCalendarsMode = usesAllCalendarsMode(scopeMode);
   const hasWriteAccess = canEditCalendars(scopeMode);
   const hebSyncCalendars = calendars.filter(isHebSyncCalendar);
@@ -528,6 +532,16 @@ export default function MyCalendar() {
       viewportWidth - overflowPopoverWidth - overflowPopoverMargin,
     ),
   );
+  const scheduleDays = days
+    .filter((dayObj) => dayObj?.events?.length)
+    .map((dayObj) => ({
+      ...dayObj,
+      events: [...dayObj.events].sort((a, b) => {
+        const aStart = a.start?.dateTime || a.start?.date || '';
+        const bStart = b.start?.dateTime || b.start?.date || '';
+        return aStart.localeCompare(bStart);
+      }),
+    }));
 
   return (
     <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
@@ -685,22 +699,66 @@ export default function MyCalendar() {
         <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">
           <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-3">
             <section className="px-1 py-0">
-              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                <div className={`flex w-full items-center gap-1.5 md:gap-2.5 ${isRtl ? 'justify-end self-end' : 'justify-start self-start'} lg:w-auto`}>
-                  <button onClick={() => setViewHDate(new HDate())} className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">{t('today')}</button>
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div className={`flex w-full items-center gap-1.5 md:gap-2.5 ${isRtl ? 'justify-end' : 'justify-start'} md:w-auto`}>
+                  <button
+                    type="button"
+                    onClick={() => setViewHDate(new HDate())}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-slate-300 bg-white px-5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+                  >
+                    {t('today')}
+                  </button>
                   <div className="flex items-center gap-0.5">
-                    <button onClick={handlePrevMonth} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}</button>
-                    <button onClick={handleNextMonth} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>
+                    <button
+                      type="button"
+                      onClick={isRtl ? handleNextMonth : handlePrevMonth}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    >
+                      {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={isRtl ? handlePrevMonth : handleNextMonth}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    >
+                      {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
                   </div>
-                  <div className={`text-right ${isRtl ? 'lg:text-right' : 'lg:text-left'}`}>
-                    <div className="flex flex-col gap-0.5">
-                      <h2 className="text-[20px] font-medium tracking-tight text-slate-900 dark:text-slate-50 md:text-[24px]" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>{hMonthNameHebrew} {hYear}</h2>
-                      <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">{gMonthRange} {viewHDate.greg().getFullYear()}</p>
-                    </div>
+                  <div className={`min-w-0 ${isRtl ? 'text-right' : 'text-left'}`}>
+                    <h2 className="text-[1.6rem] font-black tracking-tight text-slate-900 dark:text-slate-50 md:text-[1.85rem]" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>
+                      {hMonthNameHebrew} {hYear}
+                    </h2>
+                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 md:text-xs">
+                      {gMonthRange} {viewHDate.greg().getFullYear()}
+                    </p>
                   </div>
                 </div>
 
-                <div className={`flex w-full items-center ${isRtl ? 'justify-end self-end lg:justify-start' : 'justify-start self-start lg:justify-end'} lg:w-auto`}>
+                <div className={`flex w-full flex-wrap items-center gap-2 ${isRtl ? 'justify-end md:justify-start' : 'justify-start md:justify-end'} md:w-auto`}>
+                  <div className="inline-flex rounded-full border border-slate-300 bg-white p-0.5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('month')}
+                      className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                        viewMode === 'month'
+                          ? 'bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-white'
+                          : 'text-slate-500 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {t('viewMonth')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('schedule')}
+                      className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                        viewMode === 'schedule'
+                          ? 'bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-white'
+                          : 'text-slate-500 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {t('viewSchedule')}
+                    </button>
+                  </div>
                   <label className="flex h-[34px] items-center gap-2 cursor-pointer rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                     <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-[#0038A8]" />
                     <span>{t('showGregorianDates')}</span>
@@ -709,90 +767,148 @@ export default function MyCalendar() {
               </div>
             </section>
 
-            <div className="bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(15,23,42,0.08)] border border-white/70 flex-1 overflow-hidden dark:bg-slate-800 dark:border-slate-700 flex flex-col relative">
-              {isCalendarLoading && <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center"><RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" /></div>}
-              {isFetchingGoogle && !isCalendarLoading && (
-                <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-20 flex items-center justify-center">
-                  <div className="rounded-3xl border border-slate-200 bg-white/90 px-6 py-4 shadow-lg dark:border-slate-700 dark:bg-slate-900/90 flex items-center gap-3">
-                    <RefreshCw className="w-8 h-8 animate-spin text-[#0038A8]" />
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-100">{t('loadingGoogleData')}</span>
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700 bg-slate-50/95 backdrop-blur dark:bg-slate-900/70">
-                {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
-                  <div key={idx} className={`px-2 py-3 text-center text-[10px] md:text-xs font-bold ${idx === 6 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-500 dark:text-slate-300'}`}>
-                    <span className="hidden md:inline">{t(`days.${idx}`)}</span>
-                    <span className="md:hidden">{isRtl ? 'אבגדהוש'[idx] : t(`days.${idx}`).substring(0, 1)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900">
-                {days.map((dayObj, i) => (
-                  <div key={i} className={`min-h-[112px] md:min-h-[148px] xl:min-h-[164px] border-b border-l border-slate-200 dark:border-slate-700/60 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'} transition-colors`}>
-                    {dayObj && (
-                      <div className={`flex h-full min-h-0 flex-col overflow-hidden px-1 py-1 md:px-2 md:py-1.5 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}>
-                        <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center md:justify-start text-center md:text-right' : 'justify-center md:justify-end text-center md:text-left'}`}>
-                          <div className={`flex w-full items-center gap-0 ${isRtl ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}>
-                            <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] md:h-7 md:min-w-7 md:px-1.5 md:text-sm leading-none font-bold ${
-                              dayObj.isToday
-                                ? 'bg-[#1a73e8] text-white shadow-sm'
-                                : 'text-slate-800 dark:text-slate-100'
-                            }`}>
-                              {dayObj.hDayGematriya}
-                            </span>
-                            {showGregorian && (
-                              <span className="text-[9px] md:text-[10px] font-medium text-slate-400 dark:text-slate-500">
-                                ({dayObj.gDay})
-                              </span>
-                            )}
-                          </div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] dark:border-slate-700/60 dark:bg-slate-900">
+              {viewMode === 'month' ? (
+                <>
+                  <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700 bg-slate-50/95 backdrop-blur dark:bg-slate-900/70">
+                    {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
+                      const weekdayLabel = t(`days.${idx}`);
+                      return (
+                        <div key={idx} className={`px-2 py-3 text-center text-[10px] md:text-xs font-bold ${idx === 6 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-500 dark:text-slate-300'}`}>
+                          <span className="hidden md:inline">{weekdayLabel}</span>
+                          <span className="md:hidden">{weekdayLabel.substring(0, 1)}</span>
                         </div>
-                        <div className="flex w-full flex-1 flex-col gap-1 overflow-hidden px-0.5 pb-0.5">
-                          {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
-                            const props = event.extendedProperties?.private || {};
-                            const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-                            const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
-                            const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
-                            const ageSuffix = isHebCal ? ` (${age})` : '';
-                            const eventColor = getCalendarColor(event.calendarId);
-                            return (
-                              <div
-                                key={idx}
-                                onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
-                                className={`group relative w-full overflow-hidden rounded-md px-2 py-1 text-[10px] leading-tight font-bold transition-all flex-none ${
-                                  isHebCal
-                                    ? 'cursor-pointer text-white hover:brightness-95'
-                                    : 'cursor-default bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
-                                }`}
-                                style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `3px solid ${eventColor}` }}
-                                title={event.summary + ageSuffix}
-                              >
-                                <div className="truncate">{event.summary}{ageSuffix}</div>
-                                {!isHebCal && (
-                                  <div className="mt-0.5 text-[8px] font-semibold uppercase text-slate-400 dark:text-slate-300">
-                                    {externalLabel}
-                                  </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900">
+                    {days.map((dayObj, i) => (
+                      <div key={i} className={`min-h-[112px] md:min-h-[148px] xl:min-h-[164px] border-b border-l border-slate-200 dark:border-slate-700/60 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'} transition-colors`}>
+                        {dayObj && (
+                          <div className={`flex h-full min-h-0 flex-col overflow-hidden px-1 py-1 md:px-2 md:py-1.5 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}>
+                            <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center md:justify-start text-center md:text-right' : 'justify-center md:justify-end text-center md:text-left'}`}>
+                              <div className={`flex w-full items-center gap-0 ${isRtl ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}>
+                                <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] leading-none font-bold md:h-7 md:min-w-7 md:px-1.5 md:text-sm ${
+                                  dayObj.isToday
+                                    ? 'bg-[#1a73e8] text-white shadow-sm'
+                                    : 'text-slate-800 dark:text-slate-100'
+                                }`}>
+                                  {dayObj.hDayGematriya}
+                                </span>
+                                {showGregorian && (
+                                  <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
+                                    ({dayObj.gDay})
+                                  </span>
                                 )}
                               </div>
-                            );
-                          })}
-                          {dayObj.events.length > maxVisibleMonthEvents && (
-                            <button
-                              type="button"
-                              onClick={(event) => handleOverflowDayOpen(dayObj, event)}
-                              className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
-                              aria-label={t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
-                            >
-                              {isMobileViewport ? '...' : t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
-                            </button>
-                          )}
-                        </div>
+                            </div>
+                            <div className="flex w-full flex-1 flex-col gap-1 overflow-hidden px-0.5 pb-0.5">
+                              {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
+                                const props = event.extendedProperties?.private || {};
+                                const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+                                const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
+                                const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
+                                const ageSuffix = isHebCal ? ` (${age})` : '';
+                                const eventColor = getCalendarColor(event.calendarId);
+                                return (
+                                  <div
+                                    key={idx}
+                                    onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                                    className={`group relative w-full overflow-hidden rounded-md px-2 py-1 text-[10px] leading-tight font-bold transition-all flex-none ${
+                                      isHebCal
+                                        ? 'cursor-pointer text-white hover:brightness-95'
+                                        : 'cursor-default bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
+                                    }`}
+                                    style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `3px solid ${eventColor}` }}
+                                    title={event.summary + ageSuffix}
+                                  >
+                                    <div className="truncate">{event.summary}{ageSuffix}</div>
+                                    {!isHebCal && (
+                                      <div className="mt-0.5 text-[8px] font-semibold uppercase text-slate-400 dark:text-slate-300">
+                                        {externalLabel}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {dayObj.events.length > maxVisibleMonthEvents && (
+                                <button
+                                  type="button"
+                                  onClick={(event) => handleOverflowDayOpen(dayObj, event)}
+                                  className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
+                                  aria-label={t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                                >
+                                  {isMobileViewport ? '...' : t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <div className="flex-1 overflow-y-auto bg-white px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
+                  {scheduleDays.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm font-medium text-slate-400 dark:text-slate-500">
+                      {t('noEventsInView')}
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      {scheduleDays.map((dayObj) => (
+                        <section key={dayObj.gDate.toISOString()} className="border-b border-slate-100 pb-4 last:border-b-0 dark:border-slate-800">
+                          <div className={`mb-3 flex items-start justify-between gap-4 ${isRtl ? '' : 'flex-row-reverse'}`}>
+                            <div className={`min-w-0 ${isRtl ? 'text-right' : 'text-left'}`}>
+                              <div className="text-base font-black text-slate-900 dark:text-slate-50 md:text-lg">{dayObj.hDayGematriya}</div>
+                              <div className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                                {t(`days.${dayObj.weekday}`)}
+                                {showGregorian ? ` (${dayObj.gDay})` : ''}
+                              </div>
+                            </div>
+                            <div className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'}`}>
+                              {dayObj.isToday ? t('today') : dayObj.gMonthLabel}
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            {dayObj.events.map((event, idx) => {
+                              const props = event.extendedProperties?.private || {};
+                              const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+                              const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
+                              const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
+                              const ageSuffix = isHebCal ? ` (${age})` : '';
+                              const eventColor = getCalendarColor(event.calendarId);
+                              const start = event.start?.dateTime || event.start?.date;
+                              const end = event.end?.dateTime || event.end?.date;
+                              const timeLabel = event.start?.dateTime
+                                ? `${new Date(start).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}${end ? ` - ${new Date(end).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}`
+                                : t('allDay');
+                              return (
+                                <button
+                                  key={`${event.id || event.summary}-${idx}`}
+                                  type="button"
+                                  onClick={() => handleEventClick(event)}
+                                  className={`flex w-full items-start gap-3 rounded-2xl border px-3 py-2.5 text-right transition-all ${
+                                    isHebCal
+                                      ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
+                                      : 'border-slate-100 bg-slate-50/80 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/70 dark:hover:bg-slate-800'
+                                  }`}
+                                >
+                                  <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventColor }} />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-50">{event.summary}{ageSuffix}</div>
+                                    <div className="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">{timeLabel}</div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </main>

@@ -149,6 +149,10 @@
       "6": "Sat"
     },
     "refreshCalendars": "Refresh calendars",
-    "showGregorianDates": "Show Gregorian dates"
+    "showGregorianDates": "Show Gregorian dates",
+    "viewMonth": "Month",
+    "viewSchedule": "Schedule",
+    "noEventsInView": "No events in this view.",
+    "allDay": "All day"
   }
 }

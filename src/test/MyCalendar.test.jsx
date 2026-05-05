@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import MyCalendar from '../pages/MyCalendar';
@@ -57,6 +57,11 @@ vi.mock('react-i18next', () => ({
         otherCalendarsGroupLabel: 'Other Calendars',
         dayEventsDialog: 'Day events',
         moreEvents: `${options?.count ?? 0} more events`,
+        viewMonth: 'Month',
+        viewSchedule: 'Schedule',
+        showGregorianDates: 'Show Gregorian dates',
+        noEventsInView: 'No events in this view.',
+        allDay: 'All day',
       };
       return translations[key] ?? key;
     },
@@ -151,6 +156,66 @@ describe('My Calendar Component', () => {
     fireEvent.click(moreButton);
 
     expect(await screen.findByRole('dialog', { name: 'Day events' })).toBeInTheDocument();
+  });
+
+  it('should allow switching to schedule view', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'evt1',
+        summary: 'Event 1',
+        calendarId: 'cal1',
+        start: { dateTime: '2026-05-07T08:00:00.000Z' },
+        end: { dateTime: '2026-05-07T09:00:00.000Z' },
+        extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+
+    expect(await screen.findByText((content) => content.includes('Event 1'))).toBeInTheDocument();
+  });
+
+  it('should default to schedule view on mobile', async () => {
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 375;
+
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'evt1',
+        summary: 'Mobile Event',
+        calendarId: 'cal1',
+        start: { dateTime: '2026-05-07T08:00:00.000Z' },
+        end: { dateTime: '2026-05-07T09:00:00.000Z' },
+        extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+      },
+    ]);
+
+    renderDashboard();
+
+    expect(await screen.findByText((content) => content.includes('Mobile Event'))).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
+    });
+
+    window.innerWidth = originalWidth;
   });
 
   it('should select only HebSync calendars by default', async () => {
