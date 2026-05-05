@@ -506,21 +506,25 @@ export default function MyCalendar() {
   ).length;
   const selectedCalendarCount = selectedCalendarIds.length;
   const maxVisibleMonthEvents = 4;
-  const overflowPopoverWidth = 244;
-  const overflowPopoverMaxHeight = 220;
+  const overflowPopoverWidth = 220;
   const overflowPopoverMargin = 12;
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1280;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900;
   const overflowAnchorRect = overflowDay?.anchorRect;
+  const overflowEventCount = overflowDay?.events?.length ?? 0;
+  const overflowPopoverHeight = Math.min(
+    viewportHeight - overflowPopoverMargin * 2,
+    56 + overflowEventCount * 44,
+  );
   const overflowPreferredTop = (overflowAnchorRect?.bottom ?? 120) + 8;
-  const overflowAboveTop = (overflowAnchorRect?.top ?? 120) - overflowPopoverMaxHeight - 8;
+  const overflowAboveTop = (overflowAnchorRect?.top ?? 120) - overflowPopoverHeight - 8;
   const overflowTop = Math.max(
     overflowPopoverMargin,
     Math.min(
-      overflowPreferredTop + overflowPopoverMaxHeight <= viewportHeight - overflowPopoverMargin
+      overflowPreferredTop + overflowPopoverHeight <= viewportHeight - overflowPopoverMargin
         ? overflowPreferredTop
         : overflowAboveTop,
-      viewportHeight - overflowPopoverMaxHeight - overflowPopoverMargin,
+      viewportHeight - overflowPopoverHeight - overflowPopoverMargin,
     ),
   );
   const overflowLeft = Math.max(
@@ -826,7 +830,7 @@ export default function MyCalendar() {
           <div
             role="dialog"
             aria-label={dayEventsDialogLabel}
-            className="absolute z-10 overflow-hidden rounded-[1rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            className="absolute z-10 overflow-hidden rounded-[0.9rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             style={{
               width: `${overflowPopoverWidth}px`,
               maxWidth: `calc(100vw - ${overflowPopoverMargin * 2}px)`,
@@ -834,7 +838,7 @@ export default function MyCalendar() {
               left: `${overflowLeft}px`,
             }}
           >
-            <div className="flex items-start justify-between border-b border-slate-100 px-2.5 py-2 dark:border-slate-800">
+            <div className="flex items-start justify-between border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setOverflowDay(null)}
@@ -846,14 +850,14 @@ export default function MyCalendar() {
                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
                   {showGregorian ? `${overflowDay.gDay}` : ''}
                 </div>
-                <div className="mt-0.5 text-xl font-black text-slate-900 dark:text-slate-50">
+                <div className="mt-0.5 text-lg font-black text-slate-900 dark:text-slate-50">
                   {overflowDay.hDayGematriya}
                 </div>
               </div>
               <div className="w-5" />
             </div>
 
-            <div className="space-y-1 overflow-y-auto px-2 py-2" style={{ maxHeight: `${overflowPopoverMaxHeight}px` }}>
+            <div className="space-y-1 px-1.5 py-1.5">
               {overflowDay.events.map((event, idx) => {
                 const props = event.extendedProperties?.private || {};
                 const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
@@ -871,17 +875,17 @@ export default function MyCalendar() {
                     key={`${event.id || event.summary}-${idx}`}
                     type="button"
                     onClick={() => handleOverflowEventClick(event)}
-                    className={`w-full overflow-hidden rounded-lg border text-right transition-all ${
+                    className={`w-full overflow-hidden rounded-md border text-right transition-all ${
                       isHebCal
                         ? 'border-transparent text-white hover:brightness-95'
                         : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
                     }`}
                     style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `4px solid ${eventColor}` }}
                   >
-                    <div className="px-2.5 py-1.5">
-                      <div className="truncate text-[11px] font-bold leading-4">{event.summary}{ageSuffix}</div>
+                    <div className="px-2 py-1.5">
+                      <div className="truncate text-[10px] font-bold leading-4">{event.summary}{ageSuffix}</div>
                       {timeLabel && (
-                        <div className={`mt-0.5 text-[10px] font-semibold ${isHebCal ? 'text-white/85' : 'text-slate-400 dark:text-slate-300'}`}>
+                        <div className={`mt-0.5 text-[9px] font-semibold ${isHebCal ? 'text-white/85' : 'text-slate-400 dark:text-slate-300'}`}>
                           {timeLabel}
                         </div>
                       )}
@@ -942,5 +946,3 @@ export default function MyCalendar() {
     </div>
   );
 }
-
-
