@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, ChevronDown, Info, LogOut, Shield, Eye, X, Upload, Menu, PencilLine } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Filter, Trash2, LogIn, RefreshCw, ChevronRight, ChevronLeft, ChevronDown, LogOut, Shield, Eye, X, Upload, Menu, PencilLine } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, fetchMyAppEvents, deleteEvent, fetchEventsInRange, fetchAllCalendars, createNewCalendar, fetchSession, isAuthError, isHebSyncCalendar, revokeAccess, SCOPE_MODES, updateEvent, usesAllCalendarsMode } from '../utils/googleApi';
@@ -21,7 +21,6 @@ export default function MyCalendar() {
   const selectedCountSuffix = t('selectedCountSuffix');
   const noCalendarsAvailableLabel = t('noCalendarsAvailable');
   const menuLabel = t('menu');
-  const hebSyncLabel = t('hebSyncLabel');
   const externalLabel = t('externalLabel');
   const closeDayEventsLabel = t('closeDayEvents');
   const dayEventsDialogLabel = t('dayEventsDialog');
@@ -70,7 +69,6 @@ export default function MyCalendar() {
   const [viewHDate, setViewHDate] = useState(new HDate());
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [showGregorian, setShowGregorian] = useState(true);
-  const [showAllEvents, setShowAllEvents] = useState(false);
   const isAllCalendarsMode = usesAllCalendarsMode(scopeMode);
   const hasWriteAccess = canEditCalendars(scopeMode);
   const hebSyncCalendars = calendars.filter(isHebSyncCalendar);
@@ -477,7 +475,6 @@ export default function MyCalendar() {
           eDate.getMonth() === gDate.getMonth() &&
           eDate.getDate() === gDate.getDate();
         if (!isSameDay) return false;
-        if (!showAllEvents) return event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
         return true;
       });
       days.push({
@@ -501,10 +498,6 @@ export default function MyCalendar() {
   const hMonthNameHebrew = HEBREW_MONTHS.find(m => m.id === hMonthNameEnglish)?.label || hMonthNameEnglish;
   const hYear = formatHebrewYear(viewHDate.getFullYear());
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
-  const visibleEventCount = calendarEvents.filter((event) =>
-    selectedCalendarIds.includes(event.calendarId),
-  ).length;
-  const selectedCalendarCount = selectedCalendarIds.length;
   const maxVisibleMonthEvents = 4;
   const overflowPopoverWidth = 220;
   const overflowPopoverMargin = 12;
@@ -688,43 +681,29 @@ export default function MyCalendar() {
 
         {isSidebarOpen && <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
-        <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] p-4 md:p-6 xl:p-8">
-          <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-4">
-            <section className="rounded-[1.75rem] border border-white/70 bg-white/85 px-4 py-3 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                  <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <button onClick={handlePrevMonth} className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}</button>
-                    <button onClick={() => setViewHDate(new HDate())} className="rounded-xl bg-slate-50 px-4 py-2 text-xs font-black text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-700/70 dark:text-slate-100 dark:hover:bg-slate-700">{t('today')}</button>
-                    <button onClick={handleNextMonth} className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>
+        <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">
+          <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-3">
+            <section className="px-1 py-0">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <div className={`flex items-center gap-2 md:gap-2.5 ${isRtl ? 'justify-end' : 'justify-start'}`}>
+                  <button onClick={() => setViewHDate(new HDate())} className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">{t('today')}</button>
+                  <div className="flex items-center gap-0.5">
+                    <button onClick={handlePrevMonth} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}</button>
+                    <button onClick={handleNextMonth} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white">{isRtl ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</button>
                   </div>
-                  <label className="flex items-center gap-2 cursor-pointer rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
-                    <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300">{t('gregorian')}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                    <input type="checkbox" checked={showAllEvents} onChange={(e) => setShowAllEvents(e.target.checked)} className="w-3.5 h-3.5 text-[#0038A8] rounded border-slate-300" />
-                    <span className="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-300">{t('externalEvents')}</span>
-                    <Info className="w-3 h-3 text-slate-400" />
-                  </label>
+                  <div className={`text-right ${isRtl ? 'lg:text-right' : 'lg:text-left'}`}>
+                    <div className="flex flex-col gap-0.5">
+                      <h2 className="text-[20px] font-medium tracking-tight text-slate-900 dark:text-slate-50 md:text-[24px]" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>{hMonthNameHebrew} {hYear}</h2>
+                      <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">{gMonthRange} {viewHDate.greg().getFullYear()}</p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-end justify-between gap-3 lg:justify-end">
-                  <div className="text-right">
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-50 md:text-4xl">{hMonthNameHebrew} {hYear}</h2>
-                      <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">{gMonthRange} {viewHDate.greg().getFullYear()}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#0038A8]"></span>
-                      <span>{hebSyncLabel}</span>
-                    </div>
-                    <div className="rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
-                      {selectedCalendarCount} / {visibleEventCount}
-                    </div>
-                  </div>
+                <div className={`flex items-center ${isRtl ? 'justify-start' : 'justify-end'}`}>
+                  <label className="flex h-[34px] items-center gap-2 cursor-pointer rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-[#0038A8]" />
+                    <span>{t('showGregorianDates')}</span>
+                  </label>
                 </div>
               </div>
             </section>

@@ -148,6 +148,7 @@
       "5": "Fri",
       "6": "Sat"
     },
-    "refreshCalendars": "Refresh calendars"
+    "refreshCalendars": "Refresh calendars",
+    "showGregorianDates": "Show Gregorian dates"
   }
 }

@@ -52,7 +52,6 @@ vi.mock('react-i18next', () => ({
         appNameFirst: 'appNameFirst',
         selectAll: 'selectAll',
         clearAll: 'clearAll',
-        externalEvents: 'externalEvents',
         refreshCalendars: 'Refresh calendars',
         hebSyncGroupLabel: 'HebSync Calendars',
         otherCalendarsGroupLabel: 'Other Calendars',
@@ -124,12 +123,6 @@ describe('My Calendar Component', () => {
     expect(clearAllBtns.length).toBeGreaterThan(0);
   });
 
-  it('should have external events toggle', () => {
-    renderDashboard();
-    const externalToggle = screen.getAllByText('externalEvents');
-    expect(externalToggle.length).toBeGreaterThan(0);
-  });
-
   it('should show a refresh button near the calendars header', async () => {
     renderDashboard();
     expect(await screen.findByRole('button', { name: 'Refresh calendars' })).toBeInTheDocument();
@@ -154,7 +147,7 @@ describe('My Calendar Component', () => {
 
     renderDashboard();
 
-    const moreButton = await screen.findByRole('button', { name: /1 more events/i });
+    const moreButton = await screen.findByRole('button', { name: /more events/i });
     fireEvent.click(moreButton);
 
     expect(await screen.findByRole('dialog', { name: 'Day events' })).toBeInTheDocument();
