@@ -802,7 +802,7 @@ export default function MyCalendar() {
                                 )}
                               </div>
                             </div>
-                            <div className="flex w-full flex-1 flex-col gap-1 overflow-hidden px-0.5 pb-0.5">
+                            <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0.5 pb-0.5">
                               {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
                                 const props = event.extendedProperties?.private || {};
                                 const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
@@ -823,11 +823,6 @@ export default function MyCalendar() {
                                     title={event.summary + ageSuffix}
                                   >
                                     <div className="truncate">{event.summary}{ageSuffix}</div>
-                                    {!isHebCal && (
-                                      <div className="mt-0.5 text-[8px] font-semibold uppercase text-slate-400 dark:text-slate-300">
-                                        {externalLabel}
-                                      </div>
-                                    )}
                                   </div>
                                 );
                               })}
@@ -855,21 +850,24 @@ export default function MyCalendar() {
                       {t('noEventsInView')}
                     </div>
                   ) : (
-                    <div className="space-y-5">
+                    <div className="space-y-3">
                       {scheduleDays.map((dayObj) => (
-                        <section key={dayObj.gDate.toISOString()} className="border-b border-slate-100 pb-4 last:border-b-0 dark:border-slate-800">
-                          <div className={`mb-3 flex items-start justify-between gap-4 ${isRtl ? '' : 'flex-row-reverse'}`}>
-                            <div className={`min-w-0 ${isRtl ? 'text-right' : 'text-left'}`}>
-                              <div className="text-base font-black text-slate-900 dark:text-slate-50 md:text-lg">{dayObj.hDayGematriya}</div>
-                              <div className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                                {t(`days.${dayObj.weekday}`)}
-                                {showGregorian ? ` (${dayObj.gDay})` : ''}
-                              </div>
+                        <section
+                          key={dayObj.gDate.toISOString()}
+                          className="grid grid-cols-[60px_minmax(0,1fr)] gap-2.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[86px_minmax(0,1fr)] md:gap-4"
+                        >
+                          <div className={`pt-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+                            <div className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-black md:h-10 md:w-10 md:text-base ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
+                              {dayObj.isToday ? dayObj.gDay : dayObj.hDayGematriya}
                             </div>
-                            <div className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'}`}>
-                              {dayObj.isToday ? t('today') : dayObj.gMonthLabel}
+                            <div className="mt-1 text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
+                              {t(`days.${dayObj.weekday}`)}
+                            </div>
+                            <div className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
+                              {showGregorian ? `${dayObj.gMonthLabel} ${dayObj.gDay}` : hMonthNameHebrew}
                             </div>
                           </div>
+
                           <div className="space-y-1.5">
                             {dayObj.events.map((event, idx) => {
                               const props = event.extendedProperties?.private || {};
@@ -882,23 +880,27 @@ export default function MyCalendar() {
                               const end = event.end?.dateTime || event.end?.date;
                               const timeLabel = event.start?.dateTime
                                 ? `${new Date(start).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}${end ? ` - ${new Date(end).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}`
-                                : t('allDay');
+                                : '';
                               return (
                                 <button
                                   key={`${event.id || event.summary}-${idx}`}
                                   type="button"
                                   onClick={() => handleEventClick(event)}
-                                  className={`flex w-full items-start gap-3 rounded-2xl border px-3 py-2.5 text-right transition-all ${
+                                  className={`flex w-full items-start gap-3 rounded-2xl border px-3 py-2 text-right transition-all ${
                                     isHebCal
                                       ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
                                       : 'border-slate-100 bg-slate-50/80 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/70 dark:hover:bg-slate-800'
                                   }`}
                                 >
                                   <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventColor }} />
-                                  <div className="min-w-0 flex-1">
+                                  <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
                                     <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-50">{event.summary}{ageSuffix}</div>
-                                    <div className="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500">{timeLabel}</div>
                                   </div>
+                                  {timeLabel && (
+                                    <div className="shrink-0 pt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 md:text-xs">
+                                      {timeLabel}
+                                    </div>
+                                  )}
                                 </button>
                               );
                             })}
