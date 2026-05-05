@@ -62,6 +62,7 @@ vi.mock('react-i18next', () => ({
         showGregorianDates: 'Show Gregorian dates',
         noEventsInView: 'No events in this view.',
         allDay: 'All day',
+        loadingGoogleData: 'Loading Google data...',
       };
       return translations[key] ?? key;
     },
@@ -214,6 +215,31 @@ describe('My Calendar Component', () => {
     await waitFor(() => {
       expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
     });
+
+    window.innerWidth = originalWidth;
+  });
+
+  it('should show a loading state in schedule view before events resolve', async () => {
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 375;
+
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockImplementationOnce(
+      () => new Promise(() => {}),
+    );
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+
+    expect(await screen.findByText('Loading Google data...')).toBeInTheDocument();
+    expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
 
     window.innerWidth = originalWidth;
   });

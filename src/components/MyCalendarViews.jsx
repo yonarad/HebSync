@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LoaderCircle, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
 
 export const MOBILE_HEBREW_WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
@@ -187,10 +187,16 @@ export function ScheduleCalendarView({
   hMonthNameHebrew,
   getCalendarColor,
   handleEventClick,
+  isCalendarLoading,
 }) {
   return (
     <div className="flex-1 overflow-y-auto bg-white px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
-      {scheduleDays.length === 0 ? (
+      {isCalendarLoading ? (
+        <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-slate-400 dark:text-slate-500">
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+          <span>{t('loadingGoogleData')}</span>
+        </div>
+      ) : scheduleDays.length === 0 ? (
         <div className="flex h-full items-center justify-center text-sm font-medium text-slate-400 dark:text-slate-500">
           {t('noEventsInView')}
         </div>

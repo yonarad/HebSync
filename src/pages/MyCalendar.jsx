@@ -52,6 +52,7 @@ export default function MyCalendar() {
   const [isGoogleLoadingCount, setIsGoogleLoadingCount] = useState(0);
   const isFetchingGoogle = isGoogleLoadingCount > 0;
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [hasLoadedCalendarData, setHasLoadedCalendarData] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState('connect');
   const [scopeMode, setScopeMode] = useState(localStorage.getItem('gcal_scope_mode'));
@@ -129,11 +130,13 @@ export default function MyCalendar() {
   useEffect(() => {
     if (isAuthenticated) {
       if (selectedCalendarIds.length > 0) {
+        setHasLoadedCalendarData(false);
         loadCalendarData();
         loadEvents();
       } else {
         setCalendarEvents([]);
         setMyEvents([]);
+        setHasLoadedCalendarData(true);
       }
     }
   }, [isAuthenticated, viewHDate, selectedCalendarIds]);
@@ -227,6 +230,7 @@ export default function MyCalendar() {
       console.error(e);
     } finally {
       setIsCalendarLoading(false);
+      setHasLoadedCalendarData(true);
     }
   };
 
@@ -387,6 +391,11 @@ export default function MyCalendar() {
     viewportHeight,
   });
   const scheduleDays = buildScheduleDays(days);
+  const isScheduleLoading =
+    isCalendarLoading ||
+    (isAuthenticated && isFetchingGoogle) ||
+    (isAuthenticated && selectedCalendarIds.length === 0) ||
+    !hasLoadedCalendarData;
 
   return (
     <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
@@ -495,6 +504,7 @@ export default function MyCalendar() {
                   hMonthNameHebrew={hMonthNameHebrew}
                   getCalendarColor={getCalendarColor}
                   handleEventClick={handleEventClick}
+                  isCalendarLoading={isScheduleLoading}
                 />
               )}
             </div>
