@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, LogIn, LogOut, X, Menu } from 'lucide-react';
+import { HDate } from '@hebcal/core';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { revokeAccess } from '../utils/googleApi';
@@ -166,6 +167,7 @@ export default function MyCalendar() {
     (isAuthenticated && isFetchingGoogle) ||
     (isAuthenticated && selectedCalendarIds.length === 0) ||
     !hasLoadedCalendarData;
+  const isMonthLoading = isScheduleLoading;
 
   return (
     <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
@@ -264,6 +266,7 @@ export default function MyCalendar() {
                   handleEventClick={handleEventClick}
                   handleOverflowDayOpen={handleOverflowDayOpen}
                   handleCreateFromDay={handleCreateFromDay}
+                  isCalendarLoading={isMonthLoading}
                 />
               ) : (
                 <ScheduleCalendarView

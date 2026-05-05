@@ -101,6 +101,7 @@ export function MonthCalendarView({
   handleEventClick,
   handleOverflowDayOpen,
   handleCreateFromDay,
+  isCalendarLoading,
 }) {
   return (
     <>
@@ -115,77 +116,84 @@ export function MonthCalendarView({
           );
         })}
       </div>
-      <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900 md:overflow-hidden">
-        {days.map((dayObj, i) => (
-          <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
-            {dayObj && (
-              <div
-                onClick={() => handleCreateFromDay(dayObj)}
-                className={`flex h-full min-h-0 cursor-pointer flex-col overflow-hidden px-1 py-1 transition-colors hover:bg-slate-50/80 md:px-2 md:py-1.5 dark:hover:bg-slate-800/40 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}
-                aria-label={t('createEventOnDay', {
-                  hebrewDay: dayObj.hDayGematriya,
-                  gregorianDay: dayObj.gDay,
-                })}
-              >
-                <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center text-center md:justify-start md:text-right' : 'justify-center text-center md:justify-end md:text-left'}`}>
-                  <div className={`flex w-full items-center gap-0 ${isRtl ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}>
-                    <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:px-1.5 md:text-sm ${
-                      dayObj.isToday
-                        ? 'bg-[#1a73e8] text-white shadow-sm'
-                        : 'text-slate-800 dark:text-slate-100'
-                    }`}>
-                      {dayObj.hDayGematriya}
-                    </span>
-                    {showGregorian && (
-                      <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
-                        ({dayObj.gDay})
+      {isCalendarLoading ? (
+        <div data-testid="calendar-loading-state" className="flex flex-1 items-center justify-center gap-2 bg-white text-sm font-medium text-slate-400 dark:bg-slate-900 dark:text-slate-500">
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+          <span>{t('loadingGoogleData')}</span>
+        </div>
+      ) : (
+        <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900 md:overflow-hidden">
+          {days.map((dayObj, i) => (
+            <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
+              {dayObj && (
+                <div
+                  onClick={() => handleCreateFromDay(dayObj)}
+                  className={`flex h-full min-h-0 cursor-pointer flex-col overflow-hidden px-1 py-1 transition-colors hover:bg-slate-50/80 md:px-2 md:py-1.5 dark:hover:bg-slate-800/40 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}
+                  aria-label={t('createEventOnDay', {
+                    hebrewDay: dayObj.hDayGematriya,
+                    gregorianDay: dayObj.gDay,
+                  })}
+                >
+                  <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center text-center md:justify-start md:text-right' : 'justify-center text-center md:justify-end md:text-left'}`}>
+                    <div className={`flex w-full items-center gap-0 ${isRtl ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}>
+                      <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:px-1.5 md:text-sm ${
+                        dayObj.isToday
+                          ? 'bg-[#1a73e8] text-white shadow-sm'
+                          : 'text-slate-800 dark:text-slate-100'
+                      }`}>
+                        {dayObj.hDayGematriya}
                       </span>
+                      {showGregorian && (
+                        <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
+                          ({dayObj.gDay})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0.5 pb-0.5">
+                    {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
+                      const props = event.extendedProperties?.private || {};
+                      const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+                      const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
+                      const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
+                      const ageSuffix = isHebCal ? ` (${age})` : '';
+                      const eventColor = getCalendarColor(event.calendarId);
+                      return (
+                        <div
+                          key={idx}
+                          onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                          className={`group relative w-full flex-none overflow-hidden rounded-md px-2 py-1 text-[10px] font-bold leading-tight transition-all ${
+                            isHebCal
+                              ? 'cursor-pointer text-white hover:brightness-95'
+                              : 'cursor-default bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
+                          }`}
+                          style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `3px solid ${eventColor}` }}
+                          title={event.summary + ageSuffix}
+                        >
+                          <div className="truncate">{event.summary}{ageSuffix}</div>
+                        </div>
+                      );
+                    })}
+                    {dayObj.events.length > maxVisibleMonthEvents && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOverflowDayOpen(dayObj, event);
+                        }}
+                        className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
+                        aria-label={t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                      >
+                        {isMobileViewport ? '...' : t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                      </button>
                     )}
                   </div>
                 </div>
-                <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0.5 pb-0.5">
-                  {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
-                    const props = event.extendedProperties?.private || {};
-                    const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-                    const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
-                    const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
-                    const ageSuffix = isHebCal ? ` (${age})` : '';
-                    const eventColor = getCalendarColor(event.calendarId);
-                    return (
-                      <div
-                        key={idx}
-                        onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
-                        className={`group relative w-full flex-none overflow-hidden rounded-md px-2 py-1 text-[10px] font-bold leading-tight transition-all ${
-                          isHebCal
-                            ? 'cursor-pointer text-white hover:brightness-95'
-                            : 'cursor-default bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
-                        }`}
-                        style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `3px solid ${eventColor}` }}
-                        title={event.summary + ageSuffix}
-                      >
-                        <div className="truncate">{event.summary}{ageSuffix}</div>
-                      </div>
-                    );
-                  })}
-                  {dayObj.events.length > maxVisibleMonthEvents && (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleOverflowDayOpen(dayObj, event);
-                      }}
-                      className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
-                      aria-label={t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
-                    >
-                      {isMobileViewport ? '...' : t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -204,7 +212,7 @@ export function ScheduleCalendarView({
   return (
     <div className="flex-1 overflow-y-auto bg-white px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
       {isCalendarLoading ? (
-        <div className="flex h-full items-center justify-center gap-2 text-sm font-medium text-slate-400 dark:text-slate-500">
+        <div data-testid="calendar-loading-state" className="flex h-full items-center justify-center gap-2 text-sm font-medium text-slate-400 dark:text-slate-500">
           <LoaderCircle className="h-4 w-4 animate-spin" />
           <span>{t('loadingGoogleData')}</span>
         </div>

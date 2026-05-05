@@ -155,6 +155,16 @@ describe('My Calendar Component', () => {
   });
 
   it('should navigate to add event with the clicked day as context', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([]);
+
     renderDashboard();
 
     const dayButtons = await screen.findAllByLabelText(/Create an event on day/i);
@@ -195,6 +205,36 @@ describe('My Calendar Component', () => {
     fireEvent.click(moreButton);
 
     expect(await screen.findByRole('dialog', { name: 'Day events' })).toBeInTheDocument();
+  });
+
+  it('should open event details when clicking an event chip', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'evt1',
+        summary: 'Event 1',
+        description: 'Event description',
+        calendarId: 'cal1',
+        start: { date: '2026-05-07' },
+        extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    fireEvent.click(await screen.findByText((content) => content.includes('Event 1')));
+
+    expect(await screen.findByText('eventDetails')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Event 1/ })).toBeInTheDocument();
+    expect(await screen.findByText('Event description')).toBeInTheDocument();
   });
 
   it('should allow switching to schedule view', async () => {
@@ -280,6 +320,24 @@ describe('My Calendar Component', () => {
     expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
 
     window.innerWidth = originalWidth;
+  });
+
+  it('should show a loading state in month view before events resolve', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockImplementationOnce(
+      () => new Promise(() => {}),
+    );
+
+    renderDashboard();
+
+    expect(await screen.findByTestId('calendar-loading-state')).toBeInTheDocument();
   });
 
   it('should select only HebSync calendars by default', async () => {
