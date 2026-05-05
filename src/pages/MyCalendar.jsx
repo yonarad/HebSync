@@ -435,15 +435,26 @@ export default function MyCalendar() {
             </div>
 
             <div className="space-y-4 flex flex-col flex-1 min-h-0">
-              <div className="flex justify-between items-center gap-2">
-                <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
-                {isFetchingGoogle && (
-                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                    <RefreshCw className="w-4 h-4 animate-spin text-[#0038A8]" />
-                    <span>{t('loadingGoogleData')}</span>
-                  </div>
-                )}
-                {isAuthenticated && hasWriteAccess && <button onClick={handleCreateCalendar} className="text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300">+ {t('new')}</button>}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 text-sm"><CalendarIcon className="w-4 h-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
+                  {isAuthenticated && (
+                    <button
+                      onClick={hasWriteAccess ? handleCreateCalendar : promptForEditingUpgrade}
+                      className="shrink-0 text-[10px] bg-blue-50 text-[#0038A8] px-2 py-1 rounded font-bold dark:bg-blue-900/30 dark:text-blue-300"
+                    >
+                      + {hasWriteAccess ? t('new') : t('allowCalendarCreation')}
+                    </button>
+                  )}
+                </div>
+                <div className="min-h-[16px]">
+                  {isFetchingGoogle && (
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0038A8]" />
+                      <span>{t('loadingGoogleData')}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {isAuthenticated && calendars.length > 0 && (
@@ -597,12 +608,12 @@ export default function MyCalendar() {
               )}
             </div>
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
-              <button onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)} className={`flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20`}><Trash2 className="w-4 h-4" /> {hasWriteAccess ? t('delete') : t('enableEditing')}</button>
+              <button onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)} className={`flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20`}><Trash2 className="w-4 h-4" /> {hasWriteAccess ? t('delete') : t('allowDelete')}</button>
               <div className="flex gap-2">
                 {isEditing ? (
                   <><button onClick={() => setIsEditing(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-xl font-bold">{t('cancel')}</button><button onClick={handleUpdate} className="px-6 py-2 bg-[#0038A8] text-white rounded-xl font-bold hover:bg-blue-800 shadow-md">{t('save')}</button></>
                 ) : (
-                  <button onClick={() => (hasWriteAccess ? setIsEditing(true) : promptForEditingUpgrade())} className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700">{hasWriteAccess ? t('edit') : t('enableEditing')}</button>
+                  <button onClick={() => (hasWriteAccess ? setIsEditing(true) : promptForEditingUpgrade())} className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700">{hasWriteAccess ? t('edit') : t('allowEdit')}</button>
                 )}
               </div>
             </div>
