@@ -72,6 +72,7 @@ vi.mock('react-i18next', () => ({
         viewMonth: 'Month',
         viewSchedule: 'Schedule',
         showGregorianDates: 'Show Gregorian dates',
+        discardEventConfirm: 'Discard event draft?',
         noEventsInView: 'No events in this view.',
         allDay: 'All day',
         loadingGoogleData: 'Loading Google data...',
@@ -189,6 +190,35 @@ describe('My Calendar Component', () => {
 
     expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalledWith('/add-event');
+  });
+
+  it('should ask for confirmation before closing add event modal from the backdrop', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'addEvent' }));
+    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('add-event-modal-backdrop'));
+
+    expect(window.confirm).toHaveBeenCalledWith('Discard event draft?');
+    expect(screen.getByText('addEventTitle')).toBeInTheDocument();
+  });
+
+  it('should close add event modal when backdrop confirmation is accepted', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'addEvent' }));
+    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('add-event-modal-backdrop'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('addEventTitle')).not.toBeInTheDocument();
+    });
   });
 
   it('should request an upgrade instead of navigating when read-only user clicks add event', async () => {

@@ -59,7 +59,6 @@ const renderAddEvent = (initialEntries = ['/add-event']) => {
 
 describe('AddEvent Component', () => {
   beforeEach(() => {
-    sessionStorage.clear();
   });
 
   it('should render the form headers', () => {
@@ -108,65 +107,6 @@ describe('AddEvent Component', () => {
 
       expect(gregorianToggle).not.toBeChecked();
       expect(categorySelect).toHaveValue('birthday');
-      expect(yearSelect).toHaveValue('5786');
-      expect(monthSelect).toHaveValue('Iyyar');
-      expect(daySelect).toHaveValue('20');
-    });
-  });
-
-  it('should prefer calendar day prefill over a saved draft date', async () => {
-    sessionStorage.setItem(
-      'add_event_draft',
-      JSON.stringify({
-        year: '5787',
-        month: 'Sivan',
-        day: 1,
-        isGregorianEntry: false,
-      }),
-    );
-
-    renderAddEvent([
-      {
-        pathname: '/add-event',
-        state: {
-          prefillDate: {
-            gregorianDate: '2026-05-07',
-            hebrewYear: '5786',
-            hebrewMonth: 'Iyyar',
-            hebrewDay: 20,
-          },
-        },
-      },
-    ]);
-
-    await waitFor(() => {
-      const [, yearSelect, monthSelect, daySelect] = screen.getAllByRole('combobox');
-
-      expect(yearSelect).toHaveValue('5786');
-      expect(monthSelect).toHaveValue('Iyyar');
-      expect(daySelect).toHaveValue('20');
-    });
-  });
-
-  it('should restore the chosen date from draft after returning without calendar state', async () => {
-    sessionStorage.setItem(
-      'add_event_draft',
-      JSON.stringify({
-        year: '5786',
-        month: 'Iyyar',
-        day: 20,
-        isGregorianEntry: false,
-        gregDate: '2026-05-07',
-      }),
-    );
-
-    renderAddEvent();
-
-    await waitFor(() => {
-      const gregorianToggle = screen.getByRole('checkbox', { name: 'enterGregorian' });
-      const [, yearSelect, monthSelect, daySelect] = screen.getAllByRole('combobox');
-
-      expect(gregorianToggle).not.toBeChecked();
       expect(yearSelect).toHaveValue('5786');
       expect(monthSelect).toHaveValue('Iyyar');
       expect(daySelect).toHaveValue('20');

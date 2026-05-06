@@ -131,6 +131,7 @@
     "allowEditingToContinue": "Allow editing to continue",
     "switchToHebsyncOnlyConfirm": "To switch back to HebSync calendars only, we'll disconnect and reconnect your Google account with the safer access level. Continue?",
     "close": "Close",
+    "discardEventConfirm": "Are you sure you want to close? Your unsaved event details may be lost.",
     "errorNoTitle": "Please enter an event name",
     "errorNoCalendar": "Please select at least one calendar to sync",
     "errorSyncFailed": "Error syncing event",

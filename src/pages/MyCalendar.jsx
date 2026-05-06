@@ -30,6 +30,7 @@ export default function MyCalendar() {
   const menuLabel = t('menu');
   const closeDayEventsLabel = t('closeDayEvents');
   const dayEventsDialogLabel = t('dayEventsDialog');
+  const discardEventConfirmLabel = t('discardEventConfirm');
 
   const {
     calendarEvents,
@@ -194,6 +195,11 @@ export default function MyCalendar() {
   const handleCloseAddEventModal = () => {
     setIsAddEventModalOpen(false);
     setCreatePrefillDate(null);
+  };
+
+  const handleRequestCloseAddEventModal = () => {
+    if (!window.confirm(discardEventConfirmLabel)) return;
+    handleCloseAddEventModal();
   };
 
   const handleAddEventComplete = async () => {
@@ -365,22 +371,29 @@ export default function MyCalendar() {
 
       {isAddEventModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
-          <div className="absolute inset-0" onClick={handleCloseAddEventModal} aria-hidden="true" />
-          <div className="relative z-10 flex max-h-full w-full justify-center">
+          <div
+            className="absolute inset-0"
+            onClick={handleRequestCloseAddEventModal}
+            aria-hidden="true"
+            data-testid="add-event-modal-backdrop"
+          />
+          <div className="pointer-events-none relative z-10 flex max-h-full w-full justify-center">
             <button
               type="button"
-              onClick={handleCloseAddEventModal}
-              className={`absolute top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/85 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 ${isRtl ? 'left-3 md:left-5' : 'right-3 md:right-5'}`}
+              onClick={handleRequestCloseAddEventModal}
+              className={`pointer-events-auto absolute top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/85 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 ${isRtl ? 'left-3 md:left-5' : 'right-3 md:right-5'}`}
               aria-label={t('close')}
             >
               <X className="h-5 w-5" />
             </button>
-            <AddEvent
-              embedded
-              onClose={handleCloseAddEventModal}
-              onComplete={handleAddEventComplete}
-              prefillDate={createPrefillDate}
-            />
+            <div className="pointer-events-auto">
+              <AddEvent
+                embedded
+                onClose={handleRequestCloseAddEventModal}
+                onComplete={handleAddEventComplete}
+                prefillDate={createPrefillDate}
+              />
+            </div>
           </div>
         </div>
       )}

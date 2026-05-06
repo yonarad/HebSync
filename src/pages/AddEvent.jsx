@@ -10,8 +10,6 @@ import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getA
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
-const ADD_EVENT_DRAFT_KEY = 'add_event_draft';
-
 export default function AddEvent({
   embedded = false,
   onClose = null,
@@ -98,31 +96,6 @@ export default function AddEvent({
   };
 
   useEffect(() => {
-    const rawDraft = sessionStorage.getItem(ADD_EVENT_DRAFT_KEY);
-    if (!rawDraft) return;
-
-    try {
-      const draft = JSON.parse(rawDraft);
-      if (draft.title) setTitle(draft.title);
-      if (draft.category) setCategory(draft.category);
-      if (draft.syncSpan) setSyncSpan(draft.syncSpan);
-      if (draft.notes) setNotes(draft.notes);
-      if (Array.isArray(draft.selectedCalendarIds)) setSelectedCalendarIds(draft.selectedCalendarIds);
-      if (draft.fallback30th) setFallback30th(draft.fallback30th);
-      if (!prefillDate) {
-        if (draft.year) setYear(draft.year);
-        if (draft.month) setMonth(draft.month);
-        if (draft.day) setDay(draft.day);
-        if (typeof draft.isGregorianEntry === 'boolean') setIsGregorianEntry(draft.isGregorianEntry);
-        if (draft.gregDate) setGregDate(draft.gregDate);
-        if (typeof draft.afterSunset === 'boolean') setAfterSunset(draft.afterSunset);
-      }
-    } catch {
-      sessionStorage.removeItem(ADD_EVENT_DRAFT_KEY);
-    }
-  }, [prefillDate]);
-
-  useEffect(() => {
     if (!prefillDate || hasAppliedPrefillRef.current) return;
 
     hasAppliedPrefillRef.current = true;
@@ -194,39 +167,6 @@ export default function AddEvent({
       window.removeEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
     };
   }, []);
-
-  useEffect(() => {
-    sessionStorage.setItem(
-      ADD_EVENT_DRAFT_KEY,
-      JSON.stringify({
-        title,
-        category,
-        syncSpan,
-        notes,
-        selectedCalendarIds,
-        fallback30th,
-        year,
-        month,
-        day,
-        isGregorianEntry,
-        gregDate,
-        afterSunset,
-      }),
-    );
-  }, [
-    afterSunset,
-    category,
-    day,
-    fallback30th,
-    gregDate,
-    isGregorianEntry,
-    month,
-    notes,
-    selectedCalendarIds,
-    syncSpan,
-    title,
-    year,
-  ]);
 
   const loadCalendars = async () => {
     setIsCalendarLoading(true);
@@ -354,7 +294,6 @@ export default function AddEvent({
         createHebcalEvent(title, category, targetYear, rdateString, calendarId, notes)
       ));
 
-      sessionStorage.removeItem(ADD_EVENT_DRAFT_KEY);
       alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
       if (onComplete) {
         await onComplete();
