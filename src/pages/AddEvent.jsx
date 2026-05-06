@@ -314,7 +314,7 @@ export default function AddEvent({
 
   return (
     <div
-      className={`${embedded ? 'flex max-h-[min(92vh,960px)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] bg-slate-50 shadow-2xl dark:bg-slate-900' : 'min-h-screen bg-slate-50 dark:bg-slate-900'} font-sans ${isRtl ? 'text-right' : 'text-left'}`}
+      className={`${embedded ? 'flex h-[min(100dvh-1.5rem,960px)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.75rem] bg-slate-50 shadow-2xl dark:bg-slate-900 md:h-[min(92vh,960px)] md:rounded-[2rem]' : 'min-h-screen bg-slate-50 dark:bg-slate-900'} font-sans ${isRtl ? 'text-right' : 'text-left'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       {!embedded && (
@@ -620,21 +620,21 @@ export default function AddEvent({
               </div>
             </>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col p-6 md:p-8">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800">
+            <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-4 md:p-8">
+              <div className="flex items-start justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50 p-3 md:items-center md:p-4 dark:border-blue-800 dark:bg-blue-900/20">
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('occurrences')}: {syncSpan}</p>
+                  <h3 className="font-bold text-base text-slate-900 md:text-lg dark:text-white">{title}</h3>
+                  <p className="text-xs text-slate-500 md:text-sm dark:text-slate-400">{t('occurrences')}: {syncSpan}</p>
                 </div>
                 <div className={isRtl ? 'text-left' : 'text-right'}>
-                  <span className="text-xs font-bold text-[#0038A8] bg-white px-2 py-1 rounded dark:bg-slate-700 dark:text-blue-300">
+                  <span className="rounded bg-white px-2 py-1 text-[11px] font-bold text-[#0038A8] md:text-xs dark:bg-slate-700 dark:text-blue-300">
                     {t(category)}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-6 min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="max-h-[min(52vh,32rem)] overflow-auto">
+              <div className="mt-4 min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="hidden max-h-[min(52vh,32rem)] overflow-auto md:block">
                   <table className={`w-full table-fixed ${isRtl ? 'text-right' : 'text-left'} border-collapse`}>
                     <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-900">
                       <tr className="text-slate-600 dark:text-slate-400 text-sm font-bold">
@@ -656,19 +656,39 @@ export default function AddEvent({
                     </tbody>
                   </table>
                 </div>
+                <div className="max-h-[min(48dvh,26rem)] overflow-auto md:hidden">
+                  <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {previewData.map((occ, idx) => (
+                      <div key={idx} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3 px-3 py-3">
+                        <div className="pt-0.5 text-center text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                          {idx + 1}
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                          <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{occ.hebrewDate}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">{occ.gregorianDate}</div>
+                          {occ.note ? (
+                            <div className="text-[11px] font-medium text-amber-600 dark:text-amber-400 break-words">
+                              {occ.note}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <div className="sticky bottom-0 mt-4 flex flex-col gap-4 border-t border-slate-200 bg-white/95 pt-4 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95 sm:flex-row">
+              <div className="sticky bottom-0 mt-3 flex flex-col gap-3 border-t border-slate-200 bg-white/95 pt-3 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95 sm:mt-4 sm:flex-row sm:gap-4 sm:pt-4">
                 <button 
                   onClick={() => setShowPreview(false)}
-                  className="flex-1 px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-all hover:bg-slate-50 sm:px-8 sm:py-4 sm:text-base dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 >
                   {t('backToEdit')}
                 </button>
                 <button 
                   onClick={() => submitEvent()}
                   disabled={isLoading}
-                  className={`flex-1 px-8 py-4 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 ${
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold shadow-lg transition-all disabled:opacity-70 sm:px-8 sm:py-4 sm:text-base ${
                     hasWriteAccess
                       ? 'bg-[#0038A8] hover:bg-blue-800 text-white shadow-blue-900/20'
                       : 'bg-blue-50 hover:bg-blue-100 text-[#0038A8] shadow-blue-900/5 dark:bg-blue-900/30 dark:text-blue-300'
