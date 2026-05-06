@@ -23,6 +23,7 @@ vi.mock('../utils/googleApi', () => ({
   getAccessToken: vi.fn(() => 'mock-token'),
   getScopeMode: vi.fn(() => 'all_events'),
   fetchSession: vi.fn(() => Promise.resolve({ scopeMode: 'all_events' })),
+  fetchGoogleCalendarColors: vi.fn(() => Promise.resolve({ calendar: {} })),
   fetchAllCalendars: vi.fn(() => Promise.resolve([
     { id: 'cal1', summary: 'Personal', accessRole: 'owner' }
   ])),

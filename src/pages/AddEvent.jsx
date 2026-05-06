@@ -4,8 +4,9 @@ import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear } from '../utils/hebcal';
+import { resolveCalendarColor } from '../utils/googleCalendarColors';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchSession, getScopeMode, isAuthError, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
+import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -23,20 +24,6 @@ export default function AddEvent({
   const hasAppliedPrefillRef = useRef(false);
   const notesRef = useRef(null);
   const prefillDate = prefillDateProp ?? location.state?.prefillDate ?? null;
-
-  // Color palette for calendars
-  const calendarColors = [
-    '#0038A8', // Blue
-    '#DC2626', // Red
-    '#16A34A', // Green
-    '#CA8A04', // Yellow
-    '#9333EA', // Purple
-    '#C2410C', // Orange
-    '#0891B2', // Cyan
-    '#BE185D', // Pink
-    '#4B5563', // Gray
-    '#7C2D12', // Brown
-  ];
 
   const getCalendarColor = (calendarId) => {
     const calendar = calendars.find(c => c.id === calendarId);
@@ -178,13 +165,16 @@ export default function AddEvent({
   const loadCalendars = async () => {
     setIsCalendarLoading(true);
     try {
-      const cals = await fetchAllCalendars();
+      const [cals, googleColors] = await Promise.all([
+        fetchAllCalendars(),
+        fetchGoogleCalendarColors().catch(() => null),
+      ]);
       // Filter to only calendars where the user has write access
       const writableCals = cals.filter(c => c.accessRole === 'owner' || c.accessRole === 'writer');
       // Assign colors to calendars
       const calendarsWithColors = writableCals.map((cal, index) => ({
         ...cal,
-        color: calendarColors[index % calendarColors.length]
+        color: resolveCalendarColor(cal, index, googleColors),
       }));
       setCalendars(calendarsWithColors);
     } catch (e) {

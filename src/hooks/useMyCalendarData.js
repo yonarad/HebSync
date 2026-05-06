@@ -5,6 +5,7 @@ import {
   canEditCalendars,
   createNewCalendar,
   fetchAllCalendars,
+  fetchGoogleCalendarColors,
   fetchEventsInRange,
   fetchMyAppEvents,
   fetchSession,
@@ -15,19 +16,7 @@ import {
   revokeAccess,
   usesAllCalendarsMode,
 } from '../utils/googleApi';
-
-const CALENDAR_COLORS = [
-  '#0038A8',
-  '#DC2626',
-  '#16A34A',
-  '#CA8A04',
-  '#9333EA',
-  '#C2410C',
-  '#0891B2',
-  '#BE185D',
-  '#4B5563',
-  '#7C2D12',
-];
+import { resolveCalendarColor } from '../utils/googleCalendarColors';
 
 export default function useMyCalendarData({ t }) {
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
@@ -85,10 +74,13 @@ export default function useMyCalendarData({ t }) {
   const loadCalendars = async () => {
     setIsGoogleLoadingCount((count) => count + 1);
     try {
-      const fetchedCalendars = await fetchAllCalendars();
+      const [fetchedCalendars, googleColors] = await Promise.all([
+        fetchAllCalendars(),
+        fetchGoogleCalendarColors().catch(() => null),
+      ]);
       const calendarsWithColors = fetchedCalendars.map((calendar, index) => ({
         ...calendar,
-        color: CALENDAR_COLORS[index % CALENDAR_COLORS.length],
+        color: resolveCalendarColor(calendar, index, googleColors),
       }));
       const hebSyncCalendarIds = calendarsWithColors
         .filter(isHebSyncCalendar)

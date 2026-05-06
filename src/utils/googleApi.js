@@ -209,6 +209,15 @@ export async function fetchAllCalendars() {
   return items;
 }
 
+export async function fetchGoogleCalendarColors() {
+  const response = await authorizedFetch(
+    '/api/google/colors',
+    {},
+    'Failed to fetch Google calendar colors',
+  );
+  return await response.json();
+}
+
 export async function createNewCalendar(summary) {
   const response = await authorizedFetch(
     '/api/google/calendars',
