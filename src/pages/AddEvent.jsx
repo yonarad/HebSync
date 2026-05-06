@@ -629,7 +629,7 @@ export default function AddEvent({
               </div>
             </>
           ) : (
-            <div className="p-6 md:p-8 space-y-6">
+            <div className="flex min-h-0 flex-1 flex-col p-6 md:p-8">
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">{title}</h3>
@@ -642,30 +642,32 @@ export default function AddEvent({
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} border-collapse min-w-[500px]`}>
-                  <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-sm font-bold">
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewYear')}</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewDate')}</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('gregorianDate')}</th>
-                      <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('notes')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewData.map((occ, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800">
-                        <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{isRtl ? formatHebrewYear(occ.hebrewYear) : occ.hebrewYear}</td>
-                        <td className="p-4 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{occ.hebrewDate}</td>
-                        <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{occ.gregorianDate}</td>
-                        <td className="p-4 text-xs font-medium text-amber-600 dark:text-amber-400">{occ.note}</td>
+              <div className="mt-6 min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="max-h-[min(52vh,32rem)] overflow-auto">
+                  <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} border-collapse min-w-[500px]`}>
+                    <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-900">
+                      <tr className="text-slate-600 dark:text-slate-400 text-sm font-bold">
+                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewYear')}</th>
+                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewDate')}</th>
+                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('gregorianDate')}</th>
+                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('notes')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {previewData.map((occ, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800">
+                          <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{isRtl ? formatHebrewYear(occ.hebrewYear) : occ.hebrewYear}</td>
+                          <td className="p-4 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{occ.hebrewDate}</td>
+                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{occ.gregorianDate}</td>
+                          <td className="p-4 text-xs font-medium text-amber-600 dark:text-amber-400">{occ.note}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <div className="sticky bottom-0 mt-4 flex flex-col gap-4 border-t border-slate-200 bg-white/95 pt-4 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95 sm:flex-row">
                 <button 
                   onClick={() => setShowPreview(false)}
                   className="flex-1 px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
