@@ -299,7 +299,8 @@ describe('My Calendar Component', () => {
         summary: 'Event 1',
         description: 'Event description',
         calendarId: 'cal1',
-        start: { date: '2026-05-07' },
+        start: { dateTime: '2026-05-07T08:00:00.000Z' },
+        end: { dateTime: '2026-05-07T09:00:00.000Z' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
@@ -312,6 +313,37 @@ describe('My Calendar Component', () => {
     expect(await screen.findByText('eventDetails')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /Event 1/ })).toBeInTheDocument();
     expect(await screen.findByText('Event description')).toBeInTheDocument();
+    expect(await screen.findByTestId('event-time-range')).toBeInTheDocument();
+  });
+
+  it('should open event details when clicking an external event chip', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'evt1',
+        summary: 'External Event',
+        description: 'External description',
+        calendarId: 'cal1',
+        start: { date: '2026-05-07' },
+        extendedProperties: { private: {} },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    fireEvent.click(await screen.findByRole('button', { name: /External Event/ }));
+
+    expect(await screen.findByText('eventDetails')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /External Event/ })).toBeInTheDocument();
+    expect(await screen.findByText('External description')).toBeInTheDocument();
   });
 
   it('should allow switching to schedule view', async () => {
@@ -338,7 +370,7 @@ describe('My Calendar Component', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
 
-    expect(await screen.findByText((content) => content.includes('Event 1'))).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Event 1/ })).toBeInTheDocument();
   });
 
   it('should default to schedule view on mobile', async () => {
@@ -366,7 +398,7 @@ describe('My Calendar Component', () => {
 
     renderDashboard();
 
-    expect(await screen.findByText((content) => content.includes('Mobile Event'))).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Mobile Event/ })).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
     });
@@ -393,7 +425,7 @@ describe('My Calendar Component', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
 
-    expect(await screen.findByText('Loading Google data...')).toBeInTheDocument();
+    expect(await screen.findByTestId('calendar-loading-state')).toBeInTheDocument();
     expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
 
     window.innerWidth = originalWidth;

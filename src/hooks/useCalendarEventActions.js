@@ -14,9 +14,6 @@ export default function useCalendarEventActions({
   const [editDesc, setEditDesc] = useState('');
 
   const handleEventClick = (event) => {
-    const isHebCal = event.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar';
-    if (!isHebCal) return;
-
     setSelectedEvent(event);
     setEditTitle(event.summary);
     setEditDesc(event.description || '');

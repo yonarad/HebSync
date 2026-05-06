@@ -1,6 +1,32 @@
 import { ChevronLeft, ChevronRight, LoaderCircle, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
 
+function hexToRgba(hex, alpha) {
+  if (!hex) return `rgba(0, 56, 168, ${alpha})`;
+  const normalized = hex.replace('#', '');
+  const fullHex = normalized.length === 3
+    ? normalized.split('').map((char) => char + char).join('')
+    : normalized;
+
+  const red = Number.parseInt(fullHex.slice(0, 2), 16);
+  const green = Number.parseInt(fullHex.slice(2, 4), 16);
+  const blue = Number.parseInt(fullHex.slice(4, 6), 16);
+
+  if ([red, green, blue].some((value) => Number.isNaN(value))) {
+    return `rgba(0, 56, 168, ${alpha})`;
+  }
+
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function formatEventTimeLabel(event, locale) {
+  if (!event?.start?.dateTime) return '';
+  return new Date(event.start.dateTime).toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export const MOBILE_HEBREW_WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
 
 export function CalendarToolbar({
@@ -103,6 +129,8 @@ export function MonthCalendarView({
   handleCreateFromDay,
   isCalendarLoading,
 }) {
+  const timeLocale = isRtl ? 'he-IL' : 'en-US';
+
   return (
     <>
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
@@ -150,7 +178,7 @@ export function MonthCalendarView({
                       )}
                     </div>
                   </div>
-                  <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0.5 pb-0.5">
+                  <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0 pb-0.5">
                     {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
                       const props = event.extendedProperties?.private || {};
                       const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
@@ -158,19 +186,37 @@ export function MonthCalendarView({
                       const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
                       const ageSuffix = isHebCal ? ` (${age})` : '';
                       const eventColor = getCalendarColor(event.calendarId);
+                      const timeLabel = formatEventTimeLabel(event, timeLocale);
+                      const chipLabel = `${event.summary}${ageSuffix}`;
+                      const isTimedEvent = Boolean(timeLabel);
                       return (
                         <div
                           key={idx}
                           onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
-                          className={`group relative w-full flex-none overflow-hidden rounded-md px-2 py-1 text-[10px] font-bold leading-tight transition-all ${
-                            isHebCal
-                              ? 'cursor-pointer text-white hover:brightness-95'
-                              : 'cursor-default bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
+                          className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${
+                            isTimedEvent
+                              ? 'rounded-sm px-0.5 py-0.5 text-slate-700 hover:bg-slate-100/80 dark:text-slate-100 dark:hover:bg-slate-800/70'
+                              : 'rounded-md px-1.5 py-0.5 text-white hover:brightness-95'
                           }`}
-                          style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `3px solid ${eventColor}` }}
-                          title={event.summary + ageSuffix}
+                          style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
+                          title={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
                         >
-                          <div className="truncate">{event.summary}{ageSuffix}</div>
+                          {isTimedEvent ? (
+                            <div className="flex w-full">
+                              <div className={`inline-flex min-w-0 items-center gap-1 ${isRtl ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full"
+                                  style={{ backgroundColor: eventColor }}
+                                />
+                                <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                  {timeLabel}
+                                </span>
+                                <span className="min-w-0 truncate">{chipLabel}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="truncate">{chipLabel}</div>
+                          )}
                         </div>
                       );
                     })}
@@ -269,8 +315,15 @@ export function ScheduleCalendarView({
                       className={`flex w-full items-start gap-3 rounded-2xl border px-3 py-2 text-right transition-all ${
                         isHebCal
                           ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
-                          : 'border-slate-100 bg-slate-50/80 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/70 dark:hover:bg-slate-800'
+                          : 'border-transparent hover:brightness-[0.98]'
                       }`}
+                      style={
+                        isHebCal
+                          ? undefined
+                          : {
+                              backgroundColor: hexToRgba(eventColor, 0.18),
+                            }
+                      }
                     >
                       <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventColor }} />
                       <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
@@ -370,7 +423,14 @@ export function DayEventsPopover({
                     ? 'border-transparent text-white hover:brightness-95'
                     : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
                 }`}
-                style={isHebCal ? { backgroundColor: eventColor } : { borderRight: `4px solid ${eventColor}` }}
+                style={
+                  isHebCal
+                    ? { backgroundColor: eventColor }
+                    : {
+                        backgroundColor: hexToRgba(eventColor, 0.22),
+                        boxShadow: `inset 3px 0 0 ${eventColor}`,
+                      }
+                }
               >
                 <div className="px-2 py-1.5">
                   <div className="truncate text-[10px] font-bold leading-4">{event.summary}{ageSuffix}</div>

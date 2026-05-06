@@ -235,6 +235,19 @@ export default function MyCalendar() {
     !hasLoadedCalendarData;
   const isMonthLoading = isScheduleLoading;
 
+  const formatEventTimeRange = (event) => {
+    if (!event?.start?.dateTime) return '';
+
+    const locale = isRtl ? 'he-IL' : 'en-US';
+    const formatOptions = { hour: '2-digit', minute: '2-digit' };
+    const startLabel = new Date(event.start.dateTime).toLocaleTimeString(locale, formatOptions);
+
+    if (!event?.end?.dateTime) return startLabel;
+
+    const endLabel = new Date(event.end.dateTime).toLocaleTimeString(locale, formatOptions);
+    return `${startLabel} - ${endLabel}`;
+  };
+
   return (
     <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
@@ -432,9 +445,18 @@ export default function MyCalendar() {
                     const currentHebrewYear = new HDate().getFullYear();
                     const age = (originalYear && currentHebrewYear) ? (currentHebrewYear - originalYear) : 0;
                     const ageSuffix = isHebCal ? ` (${age})` : '';
+                    const timeRange = formatEventTimeRange(selectedEvent);
                     return (
                       <>
                         <h3 className="text-2xl font-bold text-[#0038A8] dark:text-blue-400">{selectedEvent.summary}{ageSuffix}</h3>
+                        {timeRange && (
+                          <div
+                            data-testid="event-time-range"
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                          >
+                            {timeRange}
+                          </div>
+                        )}
                         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || t('noDescription')}</div>
                       </>
                     );
