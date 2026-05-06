@@ -321,7 +321,7 @@ export default function AddEvent({
 
   return (
     <div
-      className={`${embedded ? 'flex h-[min(100dvh-1.5rem,960px)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.75rem] bg-slate-50 shadow-2xl dark:bg-slate-900 md:h-[min(92vh,960px)] md:rounded-[2rem]' : 'min-h-screen bg-slate-50 dark:bg-slate-900'} font-sans ${isRtl ? 'text-right' : 'text-left'}`}
+      className={`${embedded ? 'flex h-[100dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[1.75rem] bg-slate-50 shadow-2xl dark:bg-slate-900 md:h-[min(92vh,960px)] md:rounded-[2rem]' : 'min-h-screen bg-slate-50 dark:bg-slate-900'} font-sans ${isRtl ? 'text-right' : 'text-left'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
       {!embedded && (
@@ -363,7 +363,7 @@ export default function AddEvent({
       )}
 
       <main className={`${embedded ? 'overflow-auto px-4 py-4 md:px-6 md:py-5' : 'p-4 md:p-8 overflow-auto'} flex-1`}>
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="mx-auto w-full max-w-4xl space-y-6">
           <div className="flex flex-col gap-1 mb-2">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
               {showPreview ? t('preview') : t('addEventTitle')}
@@ -373,7 +373,7 @@ export default function AddEvent({
             </p>
           </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+        <div className={`overflow-hidden ${embedded ? 'border-0 bg-transparent shadow-none rounded-none md:rounded-2xl md:border md:border-slate-100 md:bg-white md:shadow-sm dark:md:bg-slate-800 dark:md:border-slate-700' : 'rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800'}`}>
           {!showPreview ? (
             <>
               <div className="flex border-b border-slate-100 dark:border-slate-700">
@@ -391,7 +391,7 @@ export default function AddEvent({
                 </button>
               </div>
 
-              <div className="p-6 md:p-8">
+              <div className={`${embedded ? 'px-4 pb-6 pt-4 md:p-8' : 'p-6 md:p-8'}`}>
                 {tab === 'manual' ? (
                   <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePreview(); }}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

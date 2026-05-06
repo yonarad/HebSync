@@ -370,23 +370,23 @@ export default function MyCalendar() {
       />
 
       {isAddEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-sm md:items-center md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
           <div
             className="absolute inset-0"
             onClick={handleRequestCloseAddEventModal}
             aria-hidden="true"
             data-testid="add-event-modal-backdrop"
           />
-          <div className="pointer-events-none relative z-10 flex max-h-full w-full justify-center">
+          <div className="pointer-events-none relative z-10 flex h-full max-h-full w-full justify-center md:h-auto">
             <button
               type="button"
               onClick={handleRequestCloseAddEventModal}
-              className={`pointer-events-auto absolute top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/85 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 ${isRtl ? 'left-3 md:left-5' : 'right-3 md:right-5'}`}
+              className={`pointer-events-auto absolute top-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/85 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 ${isRtl ? 'left-4 md:left-5' : 'right-4 md:right-5'}`}
               aria-label={t('close')}
             >
               <X className="h-5 w-5" />
             </button>
-            <div className="pointer-events-auto">
+            <div className="pointer-events-auto flex h-full w-full justify-center md:h-auto md:w-auto">
               <AddEvent
                 embedded
                 onClose={handleRequestCloseAddEventModal}
