@@ -59,6 +59,7 @@ const renderAddEvent = (initialEntries = ['/add-event']) => {
 
 describe('AddEvent Component', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should render the form headers', () => {
@@ -69,8 +70,7 @@ describe('AddEvent Component', () => {
 
   it('should not have any calendar selected by default', async () => {
     renderAddEvent();
-    const selectAllBtn = await screen.findByText('selectAll');
-    expect(selectAllBtn).toBeInTheDocument();
+    expect(await screen.findByText('selectTargetCalendars')).toBeInTheDocument();
     // Check that no checkbox is checked
     const checkboxes = screen.getAllByRole('checkbox');
     const calendarCheckboxes = checkboxes.filter(cb => !cb.name || cb.name === 'calendar-selection'); // filters out the gregorian toggle
@@ -84,6 +84,21 @@ describe('AddEvent Component', () => {
   it('should show Hebrew/Gregorian toggle option', () => {
     renderAddEvent();
     expect(screen.getByText('enterGregorian')).toBeInTheDocument();
+  });
+
+  it('should require selecting at least one calendar before opening preview', async () => {
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderAddEvent();
+
+    fireEvent.change(screen.getAllByRole('textbox')[0], {
+      target: { value: 'Birthday' },
+    });
+
+    fireEvent.click(screen.getByText('showPreview'));
+
+    expect(window.alert).toHaveBeenCalledWith('errorNoCalendar');
+    expect(screen.queryByText('preview')).not.toBeInTheDocument();
   });
 
   it('should prefill the clicked day as a Gregorian date when opened from the calendar', async () => {
@@ -130,7 +145,7 @@ describe('AddEvent Component', () => {
       target: { value: 'Birthday' },
     });
 
-    await screen.findByText('selectAll');
+    await screen.findByText('selectTargetCalendars');
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[checkboxes.length - 1]);
 
@@ -150,7 +165,7 @@ describe('AddEvent Component', () => {
       target: { value: 'Birthday' },
     });
 
-    await screen.findByText('selectAll');
+    await screen.findByText('selectTargetCalendars');
     const checkboxes = screen.getAllByRole('checkbox');
     fireEvent.click(checkboxes[checkboxes.length - 1]);
 

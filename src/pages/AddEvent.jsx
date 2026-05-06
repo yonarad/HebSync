@@ -194,14 +194,6 @@ export default function AddEvent({
     );
   };
 
-  const selectAllCalendars = () => {
-    setSelectedCalendarIds(calendars.map(c => c.id));
-  };
-
-  const deselectAllCalendars = () => {
-    setSelectedCalendarIds([]);
-  };
-
   const show30thFallback = !isGregorianEntry && day === 30 && ['Cheshvan', 'Kislev', 'Adar I'].includes(month);
 
   // Generate list of years for the dropdown
@@ -212,7 +204,11 @@ export default function AddEvent({
       alert("נא להזין את שם האירוע");
       return;
     }
-    
+    if (selectedCalendarIds.length === 0) {
+      alert(t('errorNoCalendar'));
+      return;
+    }
+
     let targetYear, targetMonth, targetDay;
     if (isGregorianEntry) {
       if (!convertedHDate) return;
@@ -570,11 +566,6 @@ export default function AddEvent({
                         <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                           <div className="flex justify-between items-center">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('selectTargetCalendars')}</label>
-                            <div className="flex gap-2">
-                              <button type="button" onClick={selectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('selectAll')}</button>
-                              <span className="text-slate-300 text-[10px]">|</span>
-                              <button type="button" onClick={deselectAllCalendars} className="text-[10px] font-bold text-slate-500 hover:text-[#0038A8] transition-colors">{t('clearAll')}</button>
-                            </div>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {calendars.map(cal => (
@@ -644,22 +635,22 @@ export default function AddEvent({
 
               <div className="mt-6 min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="max-h-[min(52vh,32rem)] overflow-auto">
-                  <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} border-collapse min-w-[500px]`}>
+                  <table className={`w-full table-fixed ${isRtl ? 'text-right' : 'text-left'} border-collapse`}>
                     <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-900">
                       <tr className="text-slate-600 dark:text-slate-400 text-sm font-bold">
-                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewYear')}</th>
-                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('hebrewDate')}</th>
-                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('gregorianDate')}</th>
-                        <th className="p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">{t('notes')}</th>
+                        <th aria-hidden="true" className="w-10 p-3 md:p-4 border-b border-slate-200 dark:border-slate-700 text-xs md:text-sm"></th>
+                        <th className="w-[32%] p-3 md:p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap text-xs md:text-sm">{t('hebrewDate')}</th>
+                        <th className="w-[30%] p-3 md:p-4 border-b border-slate-200 dark:border-slate-700 whitespace-nowrap text-xs md:text-sm">{t('gregorianDate')}</th>
+                        <th className="w-[38%] p-3 md:p-4 border-b border-slate-200 dark:border-slate-700 text-xs md:text-sm">{t('notes')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {previewData.map((occ, idx) => (
                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800">
-                          <td className="p-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{isRtl ? formatHebrewYear(occ.hebrewYear) : occ.hebrewYear}</td>
-                          <td className="p-4 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap">{occ.hebrewDate}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{occ.gregorianDate}</td>
-                          <td className="p-4 text-xs font-medium text-amber-600 dark:text-amber-400">{occ.note}</td>
+                          <td className="p-3 md:p-4 text-slate-400 dark:text-slate-500 whitespace-nowrap text-xs md:text-sm">{idx + 1}</td>
+                          <td className="p-3 md:p-4 text-slate-700 dark:text-slate-300 font-bold whitespace-nowrap text-xs md:text-sm">{occ.hebrewDate}</td>
+                          <td className="p-3 md:p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap text-xs md:text-sm">{occ.gregorianDate}</td>
+                          <td className="p-3 md:p-4 text-[11px] md:text-xs font-medium text-amber-600 dark:text-amber-400 break-words">{occ.note}</td>
                         </tr>
                       ))}
                     </tbody>
