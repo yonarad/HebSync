@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut } from 'lucide-react';
+import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut, GripHorizontal } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear } from '../utils/hebcal';
@@ -21,6 +21,7 @@ export default function AddEvent({
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
   const hasAppliedPrefillRef = useRef(false);
+  const notesRef = useRef(null);
   const prefillDate = prefillDateProp ?? location.state?.prefillDate ?? null;
 
   // Color palette for calendars
@@ -109,6 +110,12 @@ export default function AddEvent({
     if (prefillDate.hebrewMonth) setMonth(prefillDate.hebrewMonth);
     if (prefillDate.hebrewDay) setDay(Number(prefillDate.hebrewDay));
   }, [prefillDate]);
+
+  useEffect(() => {
+    if (!notesRef.current) return;
+    notesRef.current.style.height = 'auto';
+    notesRef.current.style.height = `${Math.max(notesRef.current.scrollHeight, 48)}px`;
+  }, [notes]);
 
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {
@@ -414,13 +421,19 @@ export default function AddEvent({
 
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('description')}</label>
-                      <textarea 
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder={isRtl ? "הוסף פרטים נוספים שיופיעו ביומן..." : "Add more details for the calendar..."} 
-                        rows="2"
-                        className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 transition-all outline-none dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8] resize-none"
-                      />
+                      <div className="relative">
+                        <textarea
+                          ref={notesRef}
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder={t('descriptionPlaceholder')}
+                          rows="1"
+                          className="w-full min-h-12 resize-none overflow-hidden rounded-xl border border-slate-200 p-3 pb-7 transition-all outline-none focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8]"
+                        />
+                        <span className={`pointer-events-none absolute bottom-2 text-slate-300 dark:text-slate-600 ${isRtl ? 'left-3' : 'right-3'}`}>
+                          <GripHorizontal className="h-4 w-4" />
+                        </span>
+                      </div>
                     </div>
 
                     <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-6 dark:bg-slate-900/50 dark:border-slate-700">
@@ -429,7 +442,7 @@ export default function AddEvent({
                           <CalendarIcon className="w-5 h-5 text-[#0038A8]" />
                           {t('originalEventDate')}
                         </h3>
-                        <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-400">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600 md:text-sm dark:text-slate-400">
                           <input 
                             type="checkbox" 
                             checked={isGregorianEntry}
@@ -441,37 +454,37 @@ export default function AddEvent({
                       </div>
                       
                       {!isGregorianEntry ? (
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('sourceYear')}</label>
+                        <div className="grid grid-cols-[1.35fr_1fr_0.8fr] gap-2.5 md:grid-cols-3 md:gap-4">
+                          <div className="space-y-1 md:space-y-2">
+                            <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('sourceYear')}</label>
                             <select 
                               value={year}
                               onChange={(e) => setYear(e.target.value)}
-                              className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
+                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:bg-slate-800 dark:border-slate-600"
                             >
                               {yearOptions.map(y => (
                                 <option key={y} value={y}>{isRtl ? formatHebrewYear(y) : y}</option>
                               ))}
                             </select>
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('month')}</label>
+                          <div className="space-y-1 md:space-y-2">
+                            <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('month')}</label>
                             <select 
                               value={month}
                               onChange={(e) => setMonth(e.target.value)}
-                              className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
+                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:bg-slate-800 dark:border-slate-600"
                             >
                               {availableMonths.map(m => (
                                 <option key={m.id} value={m.id}>{isRtl ? m.label : m.id}</option>
                               ))}
                             </select>
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('day')}</label>
+                          <div className="space-y-1 md:space-y-2">
+                            <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('day')}</label>
                             <select 
                               value={day}
                               onChange={(e) => setDay(parseInt(e.target.value, 10))}
-                              className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600 font-medium"
+                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:bg-slate-800 dark:border-slate-600"
                             >
                               {Array.from({length: daysInMonth}).map((_, i) => (
                                 <option key={i+1} value={i+1}>
@@ -483,21 +496,21 @@ export default function AddEvent({
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('gregorianDate')}</label>
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+                            <div className="space-y-1.5 md:space-y-2">
+                              <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('gregorianDate')}</label>
                               <input 
                                 type="date" 
                                 value={gregDate}
                                 onChange={(e) => setGregDate(e.target.value)}
-                                className="w-full p-3 rounded-lg border border-slate-200 outline-none focus:border-[#0038A8] dark:bg-slate-800 dark:border-slate-600"
+                                className="w-full rounded-lg border border-slate-200 p-2.5 text-sm outline-none focus:border-[#0038A8] md:p-3 dark:bg-slate-800 dark:border-slate-600"
                               />
                             </div>
                             <div className="flex flex-col justify-end pb-1">
                               <button 
                                 type="button"
                                 onClick={() => setAfterSunset(!afterSunset)}
-                                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all ${afterSunset ? 'bg-[#0038A8]/10 border-[#0038A8] text-[#0038A8]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition-all md:p-3 ${afterSunset ? 'bg-[#0038A8]/10 border-[#0038A8] text-[#0038A8]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                               >
                                 {afterSunset ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                                 {afterSunset ? t('afterSunset') : (isRtl ? 'לפני השקיעה' : 'Before Sunset')}
