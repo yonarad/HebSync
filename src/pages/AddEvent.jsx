@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut, GripHorizontal } from 'lucide-react';
+import { ArrowLeft, Upload, Download, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut, GripHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
@@ -419,14 +419,14 @@ export default function AddEvent({
 
     return (
       <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
-        <div className="flex items-center justify-between">
+        <div>
           <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('selectTargetCalendars')}</label>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {calendars.map((cal) => (
             <label
               key={cal.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all ${
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all ${isRtl ? 'flex-row-reverse text-right' : ''} ${
                 selectedCalendarIds.includes(cal.id)
                   ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'
                   : 'border-slate-100 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
@@ -439,7 +439,7 @@ export default function AddEvent({
                 onChange={() => toggleCalendar(cal.id)}
                 className="h-4 w-4 rounded text-[#0038A8]"
               />
-              <span className="truncate text-sm font-medium text-slate-700 dark:text-slate-200" title={cal.summary}>
+              <span className={`flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200 ${isRtl ? 'text-right' : 'text-left'}`} title={cal.summary}>
                 {cal.summary}
               </span>
             </label>
@@ -980,100 +980,57 @@ export default function AddEvent({
                       />
 
                       <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-900/40 md:p-6">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div className="flex flex-col gap-5">
                           <div className="space-y-3">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#0038A8] dark:bg-[#0038A8]/20 dark:text-blue-400">
-                              <Upload className="h-7 w-7" />
-                            </div>
                             <div>
                               <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('bulkImportTitle', { defaultValue: 'ייבוא אירועים מרוכז' })}</h3>
                               <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400">
-                                {t('bulkImportBody', { defaultValue: 'הורד את תבנית ה-Excel, מלא את הגיליון Events, וכאן בהמשך נוכל להעלות אותו לתצוגה מקדימה ולייבוא.' })}
+                                {t('bulkImportBody', { defaultValue: 'הורד את תבנית ה-Excel, מלא את הגיליון Events בלבד, ואז העלה כאן את הקובץ לתצוגה מקדימה.' })}
                               </p>
                             </div>
                           </div>
-                          <a
-                            href={importTemplatePath}
-                            download
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
-                          >
-                            <Upload className="h-4 w-4" />
-                            {t('downloadImportTemplate', { defaultValue: 'הורדת תבנית Excel' })}
-                          </a>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
-                          <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
-                            {t('bulkImportTemplateReady', { defaultValue: 'התבנית מוכנה' })}
-                          </p>
-                          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                            {t('bulkImportEventsSheetOnly', { defaultValue: 'HebSync יקרא רק את הגיליון הראשון, Events. שאר הגיליונות הם גיליונות עזר בתבנית ולא חלק מנתוני הייבוא.' })}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl border border-amber-100 bg-amber-50/80 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
-                          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
-                            {t('bulkImportCalendarsTitle', { defaultValue: 'בחירת יומנים בממשק' })}
-                          </p>
-                          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                            {t('bulkImportCalendarsHint', { defaultValue: 'הקובץ לא מכיל סימון יומנים. כל פעולת ייבוא תחול על אותו סט יומנים שבחרת למטה, יומן אחד או יותר.' })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900/20">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">
-                              {t('bulkImportUploadTitle', { defaultValue: 'העלאת קובץ מוכן' })}
-                            </p>
-                            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                              {t('bulkImportUploadBody', { defaultValue: 'בחר כאן את קובץ ה-Excel שמילאת מתוך התבנית. בשלב הזה אנחנו רק שומרים את הבחירה לקראת תצוגה מקדימה.' })}
-                            </p>
+                          <div className={`flex flex-col gap-3 sm:flex-row ${isRtl ? 'sm:justify-end' : 'sm:justify-start'}`}>
+                            <a
+                              href={importTemplatePath}
+                              download
+                              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
+                            >
+                              <Download className="h-4 w-4" />
+                              {t('downloadImportTemplate', { defaultValue: 'הורדת תבנית למילוי' })}
+                            </a>
+                            <button
+                              type="button"
+                              onClick={openImportFilePicker}
+                              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                            >
+                              <Upload className="h-4 w-4" />
+                              {t('bulkImportUploadTitle', { defaultValue: 'העלאת קובץ ממולא' })}
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={openImportFilePicker}
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                          >
-                            <Upload className="h-4 w-4" />
-                            {t('bulkImportChooseFile', { defaultValue: 'בחירת קובץ Excel' })}
-                          </button>
-                        </div>
 
-                        <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-800/60">
-                          {selectedImportFile ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="font-bold text-slate-800 dark:text-slate-100">
-                                {t('bulkImportSelectedFile', { defaultValue: 'קובץ שנבחר:' })} {selectedImportFile.name}
-                              </span>
-                              <span className="text-slate-500 dark:text-slate-400">
-                                {t('bulkImportSelectedFileHint', { defaultValue: 'הקובץ נשמר כרגע לבחינה במסך, ועדיין לא נוצרו ממנו אירועים.' })}
-                              </span>
+                          <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/20">
+                            <div className="min-w-0">
+                              {selectedImportFile ? (
+                                <span className="block truncate font-bold text-slate-800 dark:text-slate-100">
+                                  {t('bulkImportSelectedFile', { defaultValue: 'קובץ שנבחר:' })} {selectedImportFile.name}
+                                </span>
+                              ) : (
+                                <span className="text-slate-500 dark:text-slate-400">
+                                  {t('bulkImportNoFileYet', { defaultValue: 'לא נבחר קובץ' })}
+                                </span>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-slate-500 dark:text-slate-400">
-                              {t('bulkImportNoFileYet', { defaultValue: 'עדיין לא נבחר קובץ.' })}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                          <button
-                            type="button"
-                            onClick={parseImportWorkbook}
-                            disabled={!selectedImportFile || isImportParsing}
-                            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isImportParsing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-                            {t('bulkImportPreviewButton', { defaultValue: 'תצוגה מקדימה לקובץ' })}
-                          </button>
-                          <div className="text-sm text-slate-500 dark:text-slate-400">
-                            {t('bulkImportPreviewHint', { defaultValue: 'נקרא רק את הגיליון הראשון, Events, ונבדוק את תקינות השורות לפני יצירה.' })}
+                            <button
+                              type="button"
+                              onClick={parseImportWorkbook}
+                              disabled={!selectedImportFile || isImportParsing}
+                              className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 ${isRtl ? 'self-start' : 'self-start'}`}
+                            >
+                              {isImportParsing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                              {t('bulkImportPreviewButton', { defaultValue: 'תצוגה מקדימה לקובץ' })}
+                            </button>
                           </div>
                         </div>
-
                         {importPreviewError ? (
                           <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-200">
                             {importPreviewError}
@@ -1176,7 +1133,12 @@ export default function AddEvent({
                       </div>
 
 
-                      {renderCalendarSelection()}
+                      <div className="space-y-2">
+                        <div className="text-sm text-slate-500 dark:text-slate-400">
+                          {t('bulkImportCalendarsHint', { defaultValue: 'הקובץ לא מכיל סימון יומנים. כל פעולת ייבוא תחול על אותו סט יומנים שבחרת כאן.' })}
+                        </div>
+                        {renderCalendarSelection()}
+                      </div>
                     </div>
                   </>
                 )}
