@@ -14,6 +14,7 @@ import {
   isAuthError,
   isHebSyncCalendar,
   revokeAccess,
+  SCOPE_MODES,
   usesAllCalendarsMode,
 } from '../utils/googleApi';
 import { resolveCalendarColor } from '../utils/googleCalendarColors';
@@ -220,6 +221,21 @@ export default function useMyCalendarData({ t }) {
     setShowLoginModal(true);
   };
 
+  const handleDisableEditing = async () => {
+    if (!window.confirm(t('switchToReadOnlyConfirm'))) return;
+
+    setIsLoading(true);
+    await revokeAccess();
+    setIsAuthenticated(false);
+    setScopeMode(null);
+    setCalendars([]);
+    setSelectedCalendarIds([]);
+    setCalendarEvents([]);
+    setMyEvents([]);
+    setIsLoading(false);
+    authenticateWithGoogle(SCOPE_MODES.READ_ONLY);
+  };
+
   const handleCreateCalendar = async () => {
     const name = window.prompt(t('newCalendarPrompt'));
     if (!name) return;
@@ -265,6 +281,7 @@ export default function useMyCalendarData({ t }) {
     getCalendarColor,
     handleChangePermissions,
     handleCreateCalendar,
+    handleDisableEditing,
     handleLogin,
     handleRefreshCalendars,
     hasLoadedCalendarData,

@@ -38,6 +38,7 @@ export default function MyCalendar() {
     getCalendarColor,
     handleChangePermissions,
     handleCreateCalendar,
+    handleDisableEditing,
     handleLogin,
     handleRefreshCalendars,
     hasLoadedCalendarData,
@@ -287,6 +288,7 @@ export default function MyCalendar() {
           menuLabel={menuLabel}
           t={t}
           handleChangePermissions={handleChangePermissions}
+          handleDisableEditing={handleDisableEditing}
           isAllCalendarsMode={isAllCalendarsMode}
           hasWriteAccess={hasWriteAccess}
           promptForEditingUpgrade={promptForEditingUpgrade}
