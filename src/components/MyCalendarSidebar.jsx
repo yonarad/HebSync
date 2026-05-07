@@ -232,8 +232,8 @@ export default function MyCalendarSidebar({
               <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
                 <Upload className="h-4 w-4 opacity-50" />
                 <div>
-                  <p className="text-[10px] font-bold">{t('importCsv')}</p>
-                  <p className="text-[9px] italic opacity-70">{t('comingSoon')}</p>
+                  <p className="text-[10px] font-bold">{t('bulkImportTitle', { defaultValue: 'ייבוא אירועים מרוכז' })}</p>
+                  <p className="text-[9px] italic opacity-70">{t('downloadImportTemplate', { defaultValue: 'הורדת תבנית Excel' })}</p>
                 </div>
               </div>
             </div>

@@ -38,6 +38,8 @@ export const HEBREW_MONTHS = [
   { id: 'Elul', label: 'אלול' },
 ];
 
+export const FLEXIBLE_30TH_MONTHS = ['Cheshvan', 'Kislev', 'Adar I'];
+
 /**
  * Returns the relevant months for a specific Hebrew year.
  * Handles leap years (Adar I, Adar II) vs non-leap years (Adar).
@@ -67,6 +69,57 @@ export function getMonthsForYear(year) {
   ];
   
   return [...baseMonths, ...leapMonths, ...endMonths];
+}
+
+export function doesHebrewMonthExistInYear(year, monthName) {
+  const yearNumber = parseInt(year, 10);
+  if (!Number.isFinite(yearNumber)) {
+    return false;
+  }
+
+  return getMonthsForYear(yearNumber).some((month) => month.id === monthName);
+}
+
+export function validateHebrewDateForYear(year, monthName, day) {
+  const yearNumber = parseInt(year, 10);
+  const dayNumber = parseInt(day, 10);
+
+  if (!Number.isFinite(yearNumber) || yearNumber <= 0) {
+    return { isValid: false, reason: 'invalid_year' };
+  }
+
+  if (!Number.isFinite(dayNumber) || dayNumber <= 0) {
+    return { isValid: false, reason: 'invalid_day' };
+  }
+
+  if (!doesHebrewMonthExistInYear(yearNumber, monthName)) {
+    return {
+      isValid: false,
+      reason: 'month_not_in_year',
+      isLeapYear: HDate.isLeapYear(yearNumber),
+    };
+  }
+
+  const maxDay = getDaysInHebrewMonth(yearNumber, monthName);
+  const isFlexible30th = dayNumber === 30 && FLEXIBLE_30TH_MONTHS.includes(monthName);
+
+  if (dayNumber > maxDay) {
+    return {
+      isValid: false,
+      reason: isFlexible30th ? 'missing_flexible_30th' : 'day_out_of_range',
+      isLeapYear: HDate.isLeapYear(yearNumber),
+      maxDay,
+      isFlexible30th,
+    };
+  }
+
+  return {
+    isValid: true,
+    reason: 'ok',
+    isLeapYear: HDate.isLeapYear(yearNumber),
+    maxDay,
+    isFlexible30th,
+  };
 }
 
 /**

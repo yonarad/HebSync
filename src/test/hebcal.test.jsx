@@ -6,6 +6,8 @@ import {
   getMonthsForYear,
   generateRdates,
   getPreviewDates,
+  doesHebrewMonthExistInYear,
+  validateHebrewDateForYear,
 } from '../utils/hebcal';
 import { HDate } from '@hebcal/core';
 
@@ -108,6 +110,43 @@ describe('Hebcal Utils', () => {
         expect(m.id).toBeTruthy();
         expect(m.label).toBeTruthy();
       });
+    });
+  });
+
+  describe('doesHebrewMonthExistInYear', () => {
+    it('returns true for Adar I in a leap year', () => {
+      expect(doesHebrewMonthExistInYear(5784, 'Adar I')).toBe(true);
+    });
+
+    it('returns false for Adar I in a non-leap year', () => {
+      expect(doesHebrewMonthExistInYear(5783, 'Adar I')).toBe(false);
+    });
+  });
+
+  describe('validateHebrewDateForYear', () => {
+    it('accepts a valid date in the source year', () => {
+      const result = validateHebrewDateForYear(5784, 'Nisan', 15);
+      expect(result.isValid).toBe(true);
+      expect(result.reason).toBe('ok');
+    });
+
+    it('rejects a month that does not exist in the source year', () => {
+      const result = validateHebrewDateForYear(5783, 'Adar I', 10);
+      expect(result.isValid).toBe(false);
+      expect(result.reason).toBe('month_not_in_year');
+    });
+
+    it('rejects 30 Cheshvan when the source year has only 29 days in Cheshvan', () => {
+      const result = validateHebrewDateForYear(5784, 'Cheshvan', 30);
+      expect(result.isValid).toBe(false);
+      expect(result.reason).toBe('missing_flexible_30th');
+      expect(result.isFlexible30th).toBe(true);
+    });
+
+    it('rejects an out-of-range day in a regular short month', () => {
+      const result = validateHebrewDateForYear(5784, 'Iyyar', 30);
+      expect(result.isValid).toBe(false);
+      expect(result.reason).toBe('day_out_of_range');
     });
   });
 

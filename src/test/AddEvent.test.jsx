@@ -154,7 +154,10 @@ describe('AddEvent Component', () => {
     expect(await screen.findByText('preview')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('confirmAndSync'));
-    expect(await screen.findByText('reauthorize')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(googleApi.createHebcalEvent).toHaveBeenCalled();
+      expect(screen.getByText('reauthorize')).toBeInTheDocument();
+    });
   });
 
   it('should ask for an editing upgrade before syncing in all-calendars view mode', async () => {
@@ -175,5 +178,14 @@ describe('AddEvent Component', () => {
 
     fireEvent.click(screen.getByText('allowEditingToContinue'));
     expect(await screen.findByText('upgrade')).toBeInTheDocument();
+  });
+
+  it('should show an excel file picker in the import tab', async () => {
+    renderAddEvent();
+
+    fireEvent.click(screen.getByText('uploadWorkbook'));
+
+    expect(screen.getByText('bulkImportChooseFile')).toBeInTheDocument();
+    expect(screen.getByText('bulkImportNoFileYet')).toBeInTheDocument();
   });
 });
