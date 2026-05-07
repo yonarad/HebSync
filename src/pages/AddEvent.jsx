@@ -136,6 +136,10 @@ export default function AddEvent({
   const [importPreviewRows, setImportPreviewRows] = useState([]);
   const [importPreviewError, setImportPreviewError] = useState('');
   const [importFallbackSelections, setImportFallbackSelections] = useState({});
+  const [isMobileLayout, setIsMobileLayout] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
   
   // State for 30th day fallback
   const [fallback30th, setFallback30th] = useState('29th'); // '29th', '1st', 'skip'
@@ -183,6 +187,18 @@ export default function AddEvent({
     notesRef.current.style.height = 'auto';
     notesRef.current.style.height = `${Math.max(notesRef.current.scrollHeight, 48)}px`;
   }, [notes]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const updateLayoutMode = () => {
+      setIsMobileLayout(window.innerWidth < 768);
+    };
+
+    updateLayoutMode();
+    window.addEventListener('resize', updateLayoutMode);
+    return () => window.removeEventListener('resize', updateLayoutMode);
+  }, []);
 
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {
@@ -487,6 +503,52 @@ export default function AddEvent({
   };
 
   const getImportFallbackSelection = (rowNumber) => importFallbackSelections[rowNumber] ?? '';
+
+  const renderImportRowStatus = (row) => {
+    if (row.needsFallbackDecision) {
+      return (
+        <div className="space-y-2">
+          <div className={`rounded-lg px-2 py-1 text-xs font-medium ${
+            getImportFallbackSelection(row.rowNumber)
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+              : 'bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200'
+          }`}>
+            {getImportFallbackSelection(row.rowNumber)
+              ? t('bulkImportRowDecisionSelected', { defaultValue: 'נבחר טיפול לתאריך המיוחד' })
+              : t('bulkImportRowNeedsDecision', { defaultValue: 'נדרש לבחור טיפול לתאריך מיוחד' })}
+          </div>
+          <select
+            value={getImportFallbackSelection(row.rowNumber)}
+            onChange={(event) => updateImportFallbackSelection(row.rowNumber, event.target.value)}
+            className="w-full rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#0038A8] dark:border-amber-900/30 dark:bg-slate-900 dark:text-slate-200"
+          >
+            <option value="">{t('bulkImportFallbackSelect', { defaultValue: 'בחר טיפול' })}</option>
+            <option value="29th">{t('bulkImportFallback29', { defaultValue: 'להעביר ל-כ״ט באותו חודש' })}</option>
+            <option value="1st">{t('bulkImportFallback1st', { defaultValue: 'לדחות ל-א׳ בחודש הבא' })}</option>
+            <option value="skip">{t('bulkImportFallbackSkip', { defaultValue: 'לדלג על אותה שנה' })}</option>
+          </select>
+        </div>
+      );
+    }
+
+    if (getImportRowStatus(row) === 'valid') {
+      return (
+        <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+          {t('bulkImportRowValid', { defaultValue: 'תקין לתצוגה' })}
+        </span>
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        {row.issues.map((issue) => (
+          <div key={issue} className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            {issue}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const importValidCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'valid').length;
   const importNeedsDecisionCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'needs_decision').length;
@@ -1066,6 +1128,49 @@ export default function AddEvent({
                                 {t('bulkImportInvalidRows', { defaultValue: 'שגויות' })}: {importInvalidCount}
                               </div>
                             </div>
+                            {isMobileLayout ? (
+                            <div className="max-h-80 overflow-auto">
+                              <div className="divide-y divide-slate-200 dark:divide-slate-800">
+                                {importPreviewRows.map((row) => (
+                                  <div key={`${row.rowNumber}-${row.title}`} className="space-y-3 bg-white px-4 py-4 dark:bg-slate-900/70">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0 space-y-1">
+                                        <div className="text-xs font-bold text-slate-400 dark:text-slate-500">#{row.displayIndex}</div>
+                                        <div className="break-words text-sm font-bold text-slate-900 dark:text-slate-100">{row.title || '-'}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">{row.categoryLabel || '-'}</div>
+                                      </div>
+                                      {getImportRowStatus(row) === 'invalid' ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeImportPreviewRow(row.rowNumber)}
+                                          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 transition-all hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200"
+                                          aria-label={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
+                                          title={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                    <div className="grid gap-3 text-sm text-slate-700 dark:text-slate-200">
+                                      <div>
+                                        <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('hebrewDate')}</div>
+                                        <div className="break-words">{row.dayLabel} {row.monthLabel}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">{row.sourceYearLabel}</div>
+                                      </div>
+                                      <div>
+                                        <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('occurrences')}</div>
+                                        <div>{row.occurrences}</div>
+                                      </div>
+                                      <div>
+                                        <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('notes')}</div>
+                                        {renderImportRowStatus(row)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            ) : (
                             <div className="max-h-80 overflow-auto">
                               <table className={`w-full table-fixed border-collapse ${isRtl ? 'text-right' : 'text-left'}`}>
                                 <thead className="sticky top-0 bg-white dark:bg-slate-900">
@@ -1145,6 +1250,7 @@ export default function AddEvent({
                                 </tbody>
                               </table>
                             </div>
+                            )}
                           </div>
                         ) : null}
 
