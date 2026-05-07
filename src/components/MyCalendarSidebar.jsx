@@ -1,4 +1,4 @@
-import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Eye, PencilLine, RefreshCw, Shield, Upload, X } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Eye, Info, PencilLine, RefreshCw, Shield, X } from 'lucide-react';
 
 function CalendarGroup({
   title,
@@ -112,6 +112,7 @@ export default function MyCalendarSidebar({
   selectCalendarsByIds,
   deselectCalendarsByIds,
   toggleCalendar,
+  handleOpenLanding,
 }) {
   return (
     <>
@@ -246,13 +247,19 @@ export default function MyCalendarSidebar({
 
           <div className="mt-auto space-y-4 border-t border-slate-100 pt-4 dark:border-slate-800">
             <div className="space-y-2 rounded-xl bg-blue-50/20 p-3 dark:bg-blue-900/10">
-              <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
-                <Upload className="h-4 w-4 opacity-50" />
+              <button
+                type="button"
+                onClick={handleOpenLanding}
+                className="flex w-full items-start gap-3 rounded-lg text-start text-blue-700 transition-colors hover:text-[#0038A8] dark:text-blue-300 dark:hover:text-blue-200"
+              >
+                <Info className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
                 <div>
-                  <p className="text-[10px] font-bold">{t('bulkImportTitle', { defaultValue: 'ייבוא אירועים מרוכז' })}</p>
-                  <p className="text-[9px] italic opacity-70">{t('downloadImportTemplate', { defaultValue: 'הורדת תבנית Excel' })}</p>
+                  <p className="text-[10px] font-bold">{t('aboutHebSync', { defaultValue: 'אודות HebSync' })}</p>
+                  <p className="text-[9px] leading-4 opacity-80">
+                    {t('aboutHebSyncHint', { defaultValue: 'הסבר על האפליקציה, אופן העבודה והגדרות החיבור הראשוניות.' })}
+                  </p>
                 </div>
-              </div>
+              </button>
             </div>
             <div className="text-[9px] font-medium leading-tight text-slate-400">
               {t('thanksTo')} <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] hover:underline dark:text-blue-400">Hebcal</a>

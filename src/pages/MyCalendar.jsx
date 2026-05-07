@@ -137,6 +137,10 @@ export default function MyCalendar() {
     navigate('/');
   };
 
+  const handleOpenLanding = () => {
+    navigate('/?about=1');
+  };
+
   const handleOverflowDayOpen = (dayObj, event) => {
     const rect = event.currentTarget.getBoundingClientRect();
     setOverflowDay({
@@ -313,6 +317,7 @@ export default function MyCalendar() {
           selectCalendarsByIds={selectCalendarsByIds}
           deselectCalendarsByIds={deselectCalendarsByIds}
           toggleCalendar={toggleCalendar}
+          handleOpenLanding={handleOpenLanding}
         />
 
         <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileSpreadsheet, Info, Shield, Sparkles } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -76,6 +76,7 @@ const VALUE_PROPS = [
 
 export default function Home() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
   const [isSessionResolved, setIsSessionResolved] = useState(false);
@@ -83,6 +84,7 @@ export default function Home() {
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const isRtl = i18n.language === 'he';
   const locale = isRtl ? 'he' : 'en';
+  const isAboutView = new URLSearchParams(location.search).get('about') === '1';
 
   useEffect(() => {
     let isMounted = true;
@@ -91,14 +93,14 @@ export default function Home() {
       .then((session) => {
         if (!isMounted) return;
 
-        if (session) {
+        if (session && !isAboutView) {
           setIsAuthenticated(true);
           setIsSessionResolved(true);
           navigate('/calendar', { replace: true });
           return;
         }
 
-        setIsAuthenticated(false);
+        setIsAuthenticated(!!session);
         setIsSessionResolved(true);
       })
       .catch(() => {
@@ -110,7 +112,7 @@ export default function Home() {
     return () => {
       isMounted = false;
     };
-  }, [navigate]);
+  }, [isAboutView, navigate]);
 
   const handleInstall = async () => {
     await promptInstall();
