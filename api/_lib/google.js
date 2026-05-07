@@ -22,7 +22,8 @@ const SCOPE_MODE_MAP = {
     'openid',
     'email',
     'profile',
-    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/calendar.app.created',
+    'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
     'https://www.googleapis.com/auth/calendar.events',
   ],
 };
@@ -37,7 +38,7 @@ export function buildGoogleConsentUrl({ clientId, redirectUri, state, scopeMode 
   url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('access_type', 'offline');
-  url.searchParams.set('include_granted_scopes', 'true');
+  url.searchParams.set('include_granted_scopes', 'false');
   url.searchParams.set('prompt', 'consent');
   url.searchParams.set('scope', getScopesForMode(scopeMode).join(' '));
   url.searchParams.set('state', state);
