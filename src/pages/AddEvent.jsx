@@ -792,7 +792,7 @@ export default function AddEvent({
             <ArrowLeft className={`w-5 h-5 ${isRtl ? '' : 'rotate-180'}`} />
           </button>
           
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/calendar')}>
             <Logo className="w-8 h-8" />
             <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight dark:text-white">
               <span className="text-[#0038A8] dark:text-blue-400">Heb</span>Sync
@@ -800,7 +800,6 @@ export default function AddEvent({
           </div>
 
           <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
-            <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('home')}</button>
             <button onClick={() => navigate('/calendar')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('myCalendar')}</button>
           </nav>
         </div>

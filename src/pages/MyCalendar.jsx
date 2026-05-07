@@ -256,7 +256,7 @@ export default function MyCalendar() {
           <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/calendar')}>
             <Logo className="w-8 h-8" />
             <h1 className="text-lg md:text-xl font-black tracking-tight dark:text-white" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>
               <span className="text-[#0038A8] dark:text-blue-400">{t('appNameFirst')}</span>
@@ -264,7 +264,6 @@ export default function MyCalendar() {
             </h1>
           </div>
           <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
-            <button onClick={() => navigate('/')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg dark:text-slate-400">{t('home')}</button>
             <button onClick={() => navigate('/calendar')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">{t('myCalendar')}</button>
           </nav>
         </div>

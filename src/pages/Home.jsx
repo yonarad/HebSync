@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Download, Eye, Info, Shield } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileSpreadsheet, Info, Shield, Sparkles } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { authenticateWithGoogle, fetchSession, getAccessToken, SCOPE_MODES } from '../utils/googleApi';
@@ -29,33 +29,88 @@ const CONNECT_OPTIONS = [
   },
 ];
 
+const VALUE_PROPS = [
+  {
+    icon: CalendarDays,
+    titleKey: 'landingValueSyncTitle',
+    descriptionKey: 'landingValueSyncBody',
+    defaultTitle: {
+      en: 'Hebrew dates that stay in sync',
+      he: 'תאריכים עבריים שנשארים מסונכרנים',
+    },
+    defaultDescription: {
+      en: 'Birthdays, anniversaries, memorial dates, and custom Hebrew events continue appearing in your calendar years ahead.',
+      he: 'ימי הולדת, ימי נישואין, אזכרות ואירועים עבריים מותאמים ממשיכים להופיע ביומן שלך גם בשנים הבאות.',
+    },
+    accentClassName: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300',
+  },
+  {
+    icon: FileSpreadsheet,
+    titleKey: 'landingValueImportTitle',
+    descriptionKey: 'landingValueImportBody',
+    defaultTitle: {
+      en: 'Bulk import from Excel',
+      he: 'ייבוא מרוכז מאקסל',
+    },
+    defaultDescription: {
+      en: 'Upload a workbook, review the parsed rows, and confirm only after you see exactly what will be created.',
+      he: 'מעלים חוברת, בודקים את השורות שפוענחו, ומאשרים רק אחרי שרואים בדיוק מה הולך להיווצר.',
+    },
+    accentClassName: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-300',
+  },
+  {
+    icon: Shield,
+    titleKey: 'landingValueControlTitle',
+    descriptionKey: 'landingValueControlBody',
+    defaultTitle: {
+      en: 'Gradual access and calendar control',
+      he: 'שליטה ביומנים והרשאות מדורגות',
+    },
+    defaultDescription: {
+      en: 'Start with safer access, choose whether to work only in HebSync calendars or in existing calendars too, and upgrade editing only when needed.',
+      he: 'אפשר להתחיל בגישה בטוחה יותר, לבחור אם לעבוד רק עם יומני HebSync או גם עם יומנים קיימים, ולשדרג עריכה רק כשבאמת צריך.',
+    },
+    accentClassName: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300',
+  },
+];
+
 export default function Home() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
+  const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [selectedMode, setSelectedMode] = useState(SCOPE_MODES.APP_CREATED);
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const isRtl = i18n.language === 'he';
+  const locale = isRtl ? 'he' : 'en';
 
   useEffect(() => {
     let isMounted = true;
 
     fetchSession()
       .then((session) => {
-        if (isMounted) {
-          setIsAuthenticated(!!session);
+        if (!isMounted) return;
+
+        if (session) {
+          setIsAuthenticated(true);
+          setIsSessionResolved(true);
+          navigate('/calendar', { replace: true });
+          return;
         }
+
+        setIsAuthenticated(false);
+        setIsSessionResolved(true);
       })
       .catch(() => {
-        if (isMounted) {
-          setIsAuthenticated(false);
-        }
+        if (!isMounted) return;
+        setIsAuthenticated(false);
+        setIsSessionResolved(true);
       });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [navigate]);
 
   const handleInstall = async () => {
     await promptInstall();
@@ -66,6 +121,10 @@ export default function Home() {
       alert(`${t('errorSyncFailed')}: ${err.message || ''}`);
     });
   };
+
+  if (!isSessionResolved) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_45%,#f8fafc_100%)] px-4 py-8 dark:bg-slate-950 md:px-6 md:py-10">
@@ -104,36 +163,80 @@ export default function Home() {
           <div className="grid w-full gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <section className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl shadow-slate-200/70 backdrop-blur md:p-8 dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-none">
               <p className="text-sm font-black uppercase tracking-[0.24em] text-slate-400">
-                {t('connectCalendarEyebrow')}
+                {t('landingEyebrow', { defaultValue: 'Hebrew dates for real life' })}
               </p>
               <h2
                 className="mt-4 text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-6xl"
                 style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}
               >
-                <span className="text-[#0038A8] dark:text-blue-400">{t('homeTitleFirst')}</span>
-                <span>{t('homeTitleSecond')}</span>
+                {t('landingHeroTitle', {
+                  defaultValue: 'תאריכים עבריים שנשארים מסונכרנים עם היומן שלך',
+                })}
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 md:text-lg">
-                {t('permissionScreenSubtitle')}
+                {t('landingHeroBody', {
+                  defaultValue: 'HebSync עוזר לנהל ימי הולדת, אזכרות, ימי נישואין ואירועים עבריים חוזרים בלי לחשב כל שנה מחדש. בוחרים יומן, מייבאים או יוצרים אירועים, ומקבלים תצוגה מקדימה לפני שהכול נכתב ליומן.',
+                })}
               </p>
+
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {VALUE_PROPS.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div
+                      key={item.titleKey}
+                      className="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/85 p-4 dark:border-slate-800 dark:bg-slate-800/60"
+                    >
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${item.accentClassName}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="mt-4 text-lg font-black tracking-tight text-slate-900 dark:text-white">
+                        {t(item.titleKey, { defaultValue: item.defaultTitle[locale] })}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        {t(item.descriptionKey, { defaultValue: item.defaultDescription[locale] })}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
 
               <div className="mt-8 rounded-[1.75rem] bg-slate-50 p-5 dark:bg-slate-800/60">
                 <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
-                  {t('howAccessWorks')}
+                  {t('landingHowItWorksEyebrow', { defaultValue: 'How it works' })}
                 </p>
                 <h3 className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                  {t('permissionInfoTitle')}
+                  {t('landingHowItWorksTitle', { defaultValue: 'A short, safe setup and then the calendar becomes the center' })}
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                  {t('permissionInfoBody')}
+                  {t('landingHowItWorksBody', {
+                    defaultValue: 'בפעם הראשונה בוחרים איך HebSync יתחבר ליומנים שלך. משם העבודה השוטפת קורית במסך היומן: צפייה, יצירה, ייבוא, ועדכון אירועים חוזרים במקום אחד.',
+                  })}
                 </p>
-                <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                    {t('permissionInfoTrustTitle')}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    {t('permissionInfoTrustBody')}
-                  </p>
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl border border-blue-100 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                      <Sparkles className="h-4 w-4 text-[#0038A8] dark:text-blue-300" />
+                      {t('landingChecklistOneTitle', { defaultValue: 'What you can do here' })}
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      {t('landingChecklistOneBody', {
+                        defaultValue: 'להבין איך האפליקציה עובדת, להתקין אותה, ולבחור את מודל הגישה שמתאים לך לפני שמתחילים.',
+                      })}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-100 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
+                      {t('landingChecklistTwoTitle', { defaultValue: 'What happens next' })}
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      {t('landingChecklistTwoBody', {
+                        defaultValue: 'אחרי החיבור הראשוני נכנסים למסך היומן, ושם מנהלים את כל הזרימה היומית בלי צורך לחזור לכאן כל הזמן.',
+                      })}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -158,10 +261,10 @@ export default function Home() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
-                    {t('connectCalendarEyebrow')}
+                    {t('landingConnectEyebrow', { defaultValue: 'Connect once' })}
                   </p>
                   <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    {t('permissionScreenTitle')}
+                    {t('landingConnectTitle', { defaultValue: 'Choose how HebSync should connect to your calendars' })}
                   </h3>
                 </div>
                 {isAuthenticated && (
@@ -177,7 +280,9 @@ export default function Home() {
 
               {!isAuthenticated && (
                 <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  {t('permissionModalBody')}
+                  {t('landingConnectBody', {
+                    defaultValue: 'אפשר להתחיל רק עם יומני HebSync, או לחבר גם יומנים קיימים. הגישה לעריכה תתבקש רק כשבאמת צריך לבצע שינוי.',
+                  })}
                 </p>
               )}
 
