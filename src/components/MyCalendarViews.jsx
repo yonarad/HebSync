@@ -47,7 +47,7 @@ export function CalendarToolbar({
   return (
     <section className="px-1 py-0">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className={`flex w-full items-center gap-1.5 md:gap-2.5 ${isRtl ? 'justify-end' : 'justify-start'} md:w-auto`}>
+        <div className="flex w-full items-center justify-start gap-1.5 md:w-auto md:gap-2.5">
           <button
             type="button"
             onClick={() => setViewHDate(new HDate())}
@@ -75,13 +75,13 @@ export function CalendarToolbar({
             <h2 className="text-[1.6rem] font-black tracking-tight text-slate-900 dark:text-slate-50 md:text-[1.85rem]" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>
               {hMonthNameHebrew} {hYear}
             </h2>
-            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 md:text-xs">
+            <p className={`text-[11px] font-medium md:text-xs ${showGregorian ? 'text-slate-400 dark:text-slate-500' : 'invisible'}`}>
               {gMonthRange} {viewHDate.greg().getFullYear()}
             </p>
           </div>
         </div>
 
-        <div className={`flex w-full flex-wrap items-center gap-2 ${isRtl ? 'justify-end md:justify-start' : 'justify-start md:justify-end'} md:w-auto`}>
+        <div className="flex w-full items-center justify-between gap-2 md:w-auto md:flex-wrap md:justify-end">
           <div className="inline-flex rounded-full border border-slate-300 bg-white p-0.5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <button
               type="button"
@@ -162,8 +162,8 @@ export function MonthCalendarView({
                     gregorianDay: dayObj.gDay,
                   })}
                 >
-                  <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-center text-center md:justify-start md:text-right' : 'justify-center text-center md:justify-end md:text-left'}`}>
-                    <div className={`flex w-full items-center gap-0 ${isRtl ? 'justify-center md:justify-start' : 'justify-center md:justify-end'}`}>
+                  <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-start text-right' : 'justify-end text-left'}`}>
+                    <div className={`flex w-full items-baseline gap-px ${isRtl ? 'justify-start' : 'justify-end'}`}>
                       <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:px-1.5 md:text-sm ${
                         dayObj.isToday
                           ? 'bg-[#1a73e8] text-white shadow-sm'
@@ -172,7 +172,7 @@ export function MonthCalendarView({
                         {dayObj.hDayGematriya}
                       </span>
                       {showGregorian && (
-                        <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
+                        <span className="text-[9px] font-medium leading-none text-slate-400 dark:text-slate-500 md:text-[10px]">
                           ({dayObj.gDay})
                         </span>
                       )}
