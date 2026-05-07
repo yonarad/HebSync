@@ -153,8 +153,8 @@ export default function MyCalendarSidebar({
           <div className="flex min-h-0 flex-1 flex-col space-y-4">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100"><CalendarIcon className="h-4 w-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100"><CalendarIcon className="h-4 w-4 text-[#0038A8]" /> {t('myCalendars')}</h2>
                   <button
                     type="button"
                     onClick={handleRefreshCalendars}
@@ -169,11 +169,13 @@ export default function MyCalendarSidebar({
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${isFetchingGoogle ? 'animate-spin' : ''}`} />
                   </button>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
                   <button
-                    onClick={hasWriteAccess ? handleCreateCalendar : promptForEditingUpgrade}
+                    onClick={handleCreateCalendar}
                     className="shrink-0 rounded bg-blue-50 px-2 py-1 text-[10px] font-bold text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300"
                   >
-                    + {hasWriteAccess ? t('new') : t('allowCalendarCreation')}
+                    + {t('new')}
                   </button>
                 </div>
               </div>
