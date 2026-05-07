@@ -5,6 +5,18 @@ import AddEvent from '../pages/AddEvent';
 import * as googleApi from '../utils/googleApi';
 import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
 
+let mockSheetRows = [];
+
+vi.mock('xlsx', () => ({
+  read: vi.fn(() => ({
+    SheetNames: ['Events'],
+    Sheets: { Events: { __mock: true } },
+  })),
+  utils: {
+    sheet_to_json: vi.fn(() => mockSheetRows),
+  },
+}));
+
 vi.mock('../utils/googleApi', () => ({
   GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
   getAccessToken: vi.fn(() => 'mock-token'),
@@ -58,9 +70,21 @@ const renderAddEvent = (initialEntries = ['/add-event']) => {
   );
 };
 
+const BULK_IMPORT_HEADERS = ['שם האירוע', 'קטגוריה', 'הערות', 'שנת מקור', 'חודש', 'יום', 'מופעים'];
+
+const setMockWorkbookRows = (rows) => {
+  mockSheetRows = [BULK_IMPORT_HEADERS, ...rows];
+};
+
+const makeMockWorkbookFile = () => ({
+  name: 'events.xlsx',
+  arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+});
+
 describe('AddEvent Component', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    mockSheetRows = [];
   });
 
   it('should render the form headers', () => {
@@ -181,11 +205,67 @@ describe('AddEvent Component', () => {
   });
 
   it('should show an excel file picker in the import tab', async () => {
-    renderAddEvent();
+    const { container } = renderAddEvent();
 
     fireEvent.click(screen.getByText('uploadWorkbook'));
 
-    expect(screen.getByText('bulkImportChooseFile')).toBeInTheDocument();
+    expect(screen.getByText('bulkImportUploadTitle')).toBeInTheDocument();
     expect(screen.getByText('bulkImportNoFileYet')).toBeInTheDocument();
+    expect(screen.queryByText('bulkImportPreviewButton')).not.toBeInTheDocument();
+
+    const fileInput = container.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, { target: { files: [makeMockWorkbookFile()] } });
+
+    expect(await screen.findByText('bulkImportPreviewButton')).toBeInTheDocument();
+  });
+
+  it('should keep import disabled for special dates until a fallback is selected', async () => {
+    setMockWorkbookRows([
+      ['יום הולדת א', 'יום הולדת', '', '5784', 'חשוון', 'ל', '2'],
+    ]);
+
+    const { container } = renderAddEvent();
+    fireEvent.click(screen.getByText('uploadWorkbook'));
+
+    const fileInput = container.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, { target: { files: [makeMockWorkbookFile()] } });
+
+    fireEvent.click(await screen.findByText('bulkImportPreviewButton'));
+    expect(await screen.findByText('bulkImportRowNeedsDecision')).toBeInTheDocument();
+
+    const checkboxes = await screen.findAllByRole('checkbox');
+    fireEvent.click(checkboxes[checkboxes.length - 1]);
+
+    const importButton = await screen.findByText('bulkImportConfirmButton');
+    expect(importButton).toBeDisabled();
+
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '29th' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('bulkImportRowDecisionSelected')).toBeInTheDocument();
+      expect(importButton).not.toBeDisabled();
+    });
+  });
+
+  it('should allow removing invalid import rows', async () => {
+    setMockWorkbookRows([
+      ['אירוע שגוי', 'יום הולדת', '', '5784', 'ניסן', '40', '1'],
+    ]);
+
+    const { container } = renderAddEvent();
+    fireEvent.click(screen.getByText('uploadWorkbook'));
+
+    const fileInput = container.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, { target: { files: [makeMockWorkbookFile()] } });
+
+    fireEvent.click(await screen.findByText('bulkImportPreviewButton'));
+    expect(await screen.findByText('התאריך לא קיים בשנת המקור')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'bulkImportRemoveRow' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('אירוע שגוי')).not.toBeInTheDocument();
+      expect(screen.queryByText('bulkImportPreviewResults')).not.toBeInTheDocument();
+    });
   });
 });

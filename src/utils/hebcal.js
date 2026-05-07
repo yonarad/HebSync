@@ -172,6 +172,14 @@ export function generateRdates(startHebrewYear, monthName, day, maxOccurrences =
     if (targetDay === 30 && daysInMonth === 29) {
       if (fallback30th === '29th') {
         targetDay = 29;
+        try {
+          const eventHDate = new HDate(targetDay, targetMonth, year);
+          const formatted = formatToRdateUTC(eventHDate.greg());
+          if (!rdates.includes(formatted)) {
+            rdates.push(formatted);
+            createdThisYear = true;
+          }
+        } catch (e) {}
       } else if (fallback30th === '1st') {
         const tempDate = new HDate(29, targetMonth, year);
         const nextDay = tempDate.next();

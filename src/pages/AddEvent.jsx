@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Download, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut, GripHorizontal } from 'lucide-react';
+import { ArrowLeft, Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut, GripHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
@@ -461,7 +461,7 @@ export default function AddEvent({
   };
 
   const getImportRowStatus = (row) => {
-    if (row.needsFallbackDecision) {
+    if (row.needsFallbackDecision && !getImportFallbackSelection(row.rowNumber)) {
       return 'needs_decision';
     }
 
@@ -475,10 +475,29 @@ export default function AddEvent({
     }));
   };
 
+  const removeImportPreviewRow = (rowNumber) => {
+    setImportPreviewRows((prev) => prev
+      .filter((row) => row.rowNumber !== rowNumber)
+      .map((row, index) => ({ ...row, displayIndex: index + 1 })));
+    setImportFallbackSelections((prev) => {
+      const next = { ...prev };
+      delete next[rowNumber];
+      return next;
+    });
+  };
+
+  const getImportFallbackSelection = (rowNumber) => importFallbackSelections[rowNumber] ?? '';
+
   const importValidCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'valid').length;
   const importNeedsDecisionCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'needs_decision').length;
   const importInvalidCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'invalid').length;
-  const importExecutableRows = importPreviewRows.filter((row) => getImportRowStatus(row) !== 'invalid');
+  const importExecutableRows = importPreviewRows.filter((row) => getImportRowStatus(row) === 'valid');
+  const canConfirmImport =
+    importPreviewRows.length > 0 &&
+    importInvalidCount === 0 &&
+    importNeedsDecisionCount === 0 &&
+    importExecutableRows.length > 0 &&
+    selectedCalendarIds.length > 0;
 
   const parseImportWorkbook = async () => {
     if (!selectedImportFile) {
@@ -559,9 +578,7 @@ export default function AddEvent({
           const needsFallbackDecision = validation?.reason === 'missing_flexible_30th';
 
           if (validation && !validation.isValid) {
-            if (validation.reason === 'missing_flexible_30th') {
-              issues.push(isRtl ? 'תאריך מיוחד שדורש בחירת טיפול' : 'Special date requires fallback handling');
-            } else {
+            if (validation.reason !== 'missing_flexible_30th') {
               issues.push(isRtl ? 'התאריך לא קיים בשנת המקור' : 'Date does not exist in source year');
             }
           }
@@ -587,13 +604,7 @@ export default function AddEvent({
         .filter(Boolean);
 
       setImportPreviewRows(parsedRows);
-      setImportFallbackSelections(
-        Object.fromEntries(
-          parsedRows
-            .filter((row) => row.needsFallbackDecision)
-            .map((row) => [row.rowNumber, '29th'])
-        )
-      );
+      setImportFallbackSelections({});
 
       if (parsedRows.length === 0) {
         setImportPreviewError(isRtl ? 'לא נמצאו שורות אירועים בגיליון Events.' : 'No event rows were found in the Events sheet.');
@@ -989,7 +1000,7 @@ export default function AddEvent({
                               </p>
                             </div>
                           </div>
-                          <div className={`flex flex-col gap-3 sm:flex-row ${isRtl ? 'sm:justify-end' : 'sm:justify-start'}`}>
+                          <div className={`flex flex-col gap-3 sm:flex-row ${isRtl ? 'sm:justify-start' : 'sm:justify-start'}`}>
                             <a
                               href={importTemplatePath}
                               download
@@ -1008,7 +1019,7 @@ export default function AddEvent({
                             </button>
                           </div>
 
-                          <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/20">
+                          <div className={`rounded-xl border border-dashed border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/20 ${selectedImportFile ? 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' : ''}`}>
                             <div className="min-w-0">
                               {selectedImportFile ? (
                                 <span className="block truncate font-bold text-slate-800 dark:text-slate-100">
@@ -1020,15 +1031,17 @@ export default function AddEvent({
                                 </span>
                               )}
                             </div>
-                            <button
-                              type="button"
-                              onClick={parseImportWorkbook}
-                              disabled={!selectedImportFile || isImportParsing}
-                              className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60 ${isRtl ? 'self-start' : 'self-start'}`}
-                            >
-                              {isImportParsing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-                              {t('bulkImportPreviewButton', { defaultValue: 'תצוגה מקדימה לקובץ' })}
-                            </button>
+                            {selectedImportFile ? (
+                              <button
+                                type="button"
+                                onClick={parseImportWorkbook}
+                                disabled={isImportParsing}
+                                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {isImportParsing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                                {t('bulkImportPreviewButton', { defaultValue: 'תצוגה מקדימה לקובץ' })}
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                         {importPreviewError ? (
@@ -1057,45 +1070,53 @@ export default function AddEvent({
                               <table className={`w-full table-fixed border-collapse ${isRtl ? 'text-right' : 'text-left'}`}>
                                 <thead className="sticky top-0 bg-white dark:bg-slate-900">
                                   <tr className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                                    <th className="w-14 border-b border-slate-200 px-3 py-2 dark:border-slate-700">#</th>
-                                    <th className="w-[26%] border-b border-slate-200 px-3 py-2 dark:border-slate-700">{t('eventName')}</th>
-                                    <th className="w-[16%] border-b border-slate-200 px-3 py-2 dark:border-slate-700">{t('category')}</th>
-                                    <th className="w-[18%] border-b border-slate-200 px-3 py-2 dark:border-slate-700">{t('hebrewDate')}</th>
-                                    <th className="w-[12%] border-b border-slate-200 px-3 py-2 dark:border-slate-700">{t('occurrences')}</th>
-                                    <th className="w-[28%] border-b border-slate-200 px-3 py-2 dark:border-slate-700">{t('notes')}</th>
+                                    <th className="w-12 border-b border-slate-200 px-2 py-2 dark:border-slate-700">#</th>
+                                    <th className="w-[23%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('eventName')}</th>
+                                    <th className="w-[15%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('category')}</th>
+                                    <th className="w-[18%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('hebrewDate')}</th>
+                                    <th className="w-[11%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('occurrences')}</th>
+                                    <th className="w-[23%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('notes')}</th>
+                                    <th className="w-12 border-b border-slate-200 px-2 py-2 dark:border-slate-700"></th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {importPreviewRows.map((row) => (
                                     <tr key={`${row.rowNumber}-${row.title}`} className="align-top text-sm text-slate-700 dark:text-slate-200">
-                                      <td className="border-b border-slate-100 px-3 py-3 dark:border-slate-800">{row.displayIndex}</td>
-                                      <td className="border-b border-slate-100 px-3 py-3 font-medium dark:border-slate-800">{row.title || '-'}</td>
-                                      <td className="border-b border-slate-100 px-3 py-3 dark:border-slate-800">{row.categoryLabel || '-'}</td>
-                                      <td className="border-b border-slate-100 px-3 py-3 dark:border-slate-800">
+                                      <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">{row.displayIndex}</td>
+                                      <td className="border-b border-slate-100 px-2 py-3 font-medium dark:border-slate-800">{row.title || '-'}</td>
+                                      <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">{row.categoryLabel || '-'}</td>
+                                      <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">
                                         <div>{row.dayLabel} {row.monthLabel}</div>
                                         <div className="text-xs text-slate-500 dark:text-slate-400">{row.sourceYearLabel}</div>
                                       </td>
-                                      <td className="border-b border-slate-100 px-3 py-3 dark:border-slate-800">{row.occurrences}</td>
-                                      <td className="border-b border-slate-100 px-3 py-3 dark:border-slate-800">
-                                        {getImportRowStatus(row) === 'valid' ? (
-                                          <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                            {t('bulkImportRowValid', { defaultValue: 'תקין לתצוגה' })}
-                                          </span>
-                                        ) : getImportRowStatus(row) === 'needs_decision' ? (
+                                      <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">{row.occurrences}</td>
+                                      <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">
+                                        {row.needsFallbackDecision ? (
                                           <div className="space-y-2">
-                                            <div className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                                              {t('bulkImportRowNeedsDecision', { defaultValue: 'נדרש לבחור טיפול לתאריך מיוחד' })}
+                                            <div className={`rounded-lg px-2 py-1 text-xs font-medium ${
+                                              getImportFallbackSelection(row.rowNumber)
+                                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                                : 'bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200'
+                                            }`}>
+                                              {getImportFallbackSelection(row.rowNumber)
+                                                ? t('bulkImportRowDecisionSelected', { defaultValue: 'נבחר טיפול לתאריך המיוחד' })
+                                                : t('bulkImportRowNeedsDecision', { defaultValue: 'נדרש לבחור טיפול לתאריך מיוחד' })}
                                             </div>
                                             <select
-                                              value={importFallbackSelections[row.rowNumber] ?? '29th'}
+                                              value={getImportFallbackSelection(row.rowNumber)}
                                               onChange={(event) => updateImportFallbackSelection(row.rowNumber, event.target.value)}
                                               className="w-full rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#0038A8] dark:border-amber-900/30 dark:bg-slate-900 dark:text-slate-200"
                                             >
+                                              <option value="">{t('bulkImportFallbackSelect', { defaultValue: 'בחר טיפול' })}</option>
                                               <option value="29th">{t('bulkImportFallback29', { defaultValue: 'להעביר ל-כ״ט באותו חודש' })}</option>
                                               <option value="1st">{t('bulkImportFallback1st', { defaultValue: 'לדחות ל-א׳ בחודש הבא' })}</option>
                                               <option value="skip">{t('bulkImportFallbackSkip', { defaultValue: 'לדלג על אותה שנה' })}</option>
                                             </select>
                                           </div>
+                                        ) : getImportRowStatus(row) === 'valid' ? (
+                                          <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                            {t('bulkImportRowValid', { defaultValue: 'תקין לתצוגה' })}
+                                          </span>
                                         ) : (
                                           <div className="space-y-1">
                                             {row.issues.map((issue) => (
@@ -1106,6 +1127,19 @@ export default function AddEvent({
                                           </div>
                                         )}
                                       </td>
+                                      <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">
+                                        {getImportRowStatus(row) === 'invalid' ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => removeImportPreviewRow(row.rowNumber)}
+                                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 transition-all hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200"
+                                            aria-label={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
+                                            title={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        ) : null}
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -1114,22 +1148,6 @@ export default function AddEvent({
                           </div>
                         ) : null}
 
-                        {importPreviewRows.length > 0 ? (
-                          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="text-sm text-slate-500 dark:text-slate-400">
-                              {t('bulkImportConfirmHint', { defaultValue: 'רק שורות תקינות או שורות עם טיפול שנבחר יישלחו ליצירה.' })}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={handleConfirmImport}
-                              disabled={isLoading || importExecutableRows.length === 0}
-                              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                              {t('bulkImportConfirmButton', { defaultValue: 'אישור ייבוא מוכן' })}
-                            </button>
-                          </div>
-                        ) : null}
                       </div>
 
 
@@ -1139,6 +1157,29 @@ export default function AddEvent({
                         </div>
                         {renderCalendarSelection()}
                       </div>
+
+                      {importPreviewRows.length > 0 ? (
+                        <div className="flex flex-col gap-3">
+                          <div className="text-sm text-slate-500 dark:text-slate-400">
+                            {selectedCalendarIds.length === 0
+                              ? t('bulkImportConfirmHintCalendars', { defaultValue: 'בחר לפחות יומן אחד לפני הייבוא.' })
+                              : importInvalidCount > 0
+                              ? t('bulkImportConfirmHintInvalid', { defaultValue: 'הסר שורות שגויות לפני הייבוא.' })
+                              : importNeedsDecisionCount > 0
+                                ? t('bulkImportConfirmHintDecision', { defaultValue: 'בחר טיפול לכל תאריך מיוחד לפני הייבוא.' })
+                                : t('bulkImportConfirmHint', { defaultValue: 'כל השורות מוכנות לייבוא.' })}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleConfirmImport}
+                            disabled={isLoading || !canConfirmImport}
+                            className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 ${isRtl ? 'self-start' : 'self-start'}`}
+                          >
+                            {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                            {t('bulkImportConfirmButton', { defaultValue: 'ייבוא האירועים' })}
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                   </>
                 )}
