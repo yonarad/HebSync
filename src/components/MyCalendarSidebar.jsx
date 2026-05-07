@@ -134,33 +134,33 @@ export default function MyCalendarSidebar({
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
                 {isAllCalendarsMode ? <><Eye className="h-3 w-3 text-blue-500" /> {t('permissionAllCalendars')}</> : <><Shield className="h-3 w-3 text-emerald-500" /> {t('permissionHebsyncOnly')}</>}
               </div>
-              <div className={`mt-2 flex flex-col gap-1.5 ${isRtl ? 'items-end text-right' : 'items-start text-left'}`}>
-                <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+              <div className={`mt-2 ${isRtl ? 'text-right' : 'text-left'}`}>
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
                   {isAllCalendarsMode
                     ? hasWriteAccess
                       ? t('editingEnabledStatus')
                       : t('viewingOnlyStatus')
                     : t('hebSyncOnlyStatus')}
-                </p>
-                {isAllCalendarsMode && (
-                  hasWriteAccess ? (
-                    <button
-                      onClick={handleDisableEditing}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      {t('disableEditing')}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={promptForEditingUpgrade}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 px-2.5 py-1.5 text-[10px] font-bold text-[#0038A8] transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
-                    >
-                      <PencilLine className="h-3.5 w-3.5" />
-                      {t('enableEditing')}
-                    </button>
-                  )
-                )}
+                  {isAllCalendarsMode && (
+                    hasWriteAccess ? (
+                      <button
+                        onClick={handleDisableEditing}
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <Eye className="h-3 w-3" />
+                        {t('disableEditing')}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={promptForEditingUpgrade}
+                        className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#0038A8] transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
+                      >
+                        <PencilLine className="h-3 w-3" />
+                        {t('enableEditing')}
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           </div>
