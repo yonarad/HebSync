@@ -42,8 +42,8 @@ export async function GET(request) {
     const connection = await upsertGoogleConnection({
       googleUserId: identity.googleUserId,
       email: identity.email,
-      name: identity.name,
-      picture: identity.picture,
+      name: null,
+      picture: null,
       scopeMode: statePayload.scopeMode || 'app_created',
       refreshToken: tokens.refresh_token,
       accessToken: tokens.access_token,

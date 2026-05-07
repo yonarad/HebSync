@@ -8,22 +8,22 @@ const SCOPE_MODE_MAP = {
   app_created: [
     'openid',
     'email',
-    'profile',
     'https://www.googleapis.com/auth/calendar.app.created',
     'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
   ],
   read_only: [
     'openid',
     'email',
-    'profile',
+    'https://www.googleapis.com/auth/calendar.app.created',
+    'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
     'https://www.googleapis.com/auth/calendar.readonly',
   ],
   all_events: [
     'openid',
     'email',
-    'profile',
     'https://www.googleapis.com/auth/calendar.app.created',
     'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+    'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events',
   ],
 };
@@ -123,8 +123,6 @@ export function parseIdToken(idToken) {
   return {
     googleUserId: payload.sub,
     email: payload.email || null,
-    name: payload.name || null,
-    picture: payload.picture || null,
   };
 }
 

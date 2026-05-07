@@ -1,5 +1,5 @@
 import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../../_lib/auth.js';
-import { authorizedGoogleFetch } from '../../_lib/google-calendar.js';
+import { authorizedGoogleFetch, googleApiErrorResponse } from '../../_lib/google-calendar.js';
 import { json } from '../../_lib/response.js';
 
 export async function POST(request) {
@@ -46,6 +46,6 @@ export async function POST(request) {
     return json({ items: results.flat() });
   } catch (error) {
     console.error('Failed to fetch events in range:', error);
-    return json({ error: error.message || 'Failed to fetch calendar events' }, { status: 500 });
+    return googleApiErrorResponse(error, 'Failed to fetch calendar events');
   }
 }

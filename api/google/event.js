@@ -1,5 +1,5 @@
 import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../_lib/auth.js';
-import { authorizedGoogleFetch } from '../_lib/google-calendar.js';
+import { authorizedGoogleFetch, googleApiErrorResponse } from '../_lib/google-calendar.js';
 import { json } from '../_lib/response.js';
 
 function getEventUrl(calendarId, eventId) {
@@ -43,7 +43,7 @@ export async function PATCH(request) {
     return json(await response.json());
   } catch (error) {
     console.error('Failed to update event:', error);
-    return json({ error: error.message || 'Failed to update event' }, { status: 500 });
+    return googleApiErrorResponse(error, 'Failed to update event');
   }
 }
 
@@ -79,6 +79,6 @@ export async function DELETE(request) {
     return json({ success: true });
   } catch (error) {
     console.error('Failed to delete event:', error);
-    return json({ error: error.message || 'Failed to delete event' }, { status: 500 });
+    return googleApiErrorResponse(error, 'Failed to delete event');
   }
 }

@@ -1,5 +1,5 @@
 import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../_lib/auth.js';
-import { authorizedGoogleFetch, listCalendars } from '../_lib/google-calendar.js';
+import { authorizedGoogleFetch, googleApiErrorResponse, listCalendars } from '../_lib/google-calendar.js';
 import { json } from '../_lib/response.js';
 
 const APP_SIGNATURE = 'ID:hebcal-sync-app';
@@ -15,7 +15,7 @@ export async function GET(request) {
     return json({ items: calendars, scopeMode: session.scope_mode });
   } catch (error) {
     console.error('Failed to load calendars:', error);
-    return json({ error: error.message || 'Failed to fetch calendars' }, { status: 500 });
+    return googleApiErrorResponse(error, 'Failed to fetch calendars');
   }
 }
 
@@ -57,6 +57,6 @@ export async function POST(request) {
     return json(await response.json(), { status: 201 });
   } catch (error) {
     console.error('Failed to create calendar:', error);
-    return json({ error: error.message || 'Failed to create calendar' }, { status: 500 });
+    return googleApiErrorResponse(error, 'Failed to create calendar');
   }
 }

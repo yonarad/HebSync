@@ -1,5 +1,5 @@
 import { requireSession } from '../_lib/auth.js';
-import { authorizedGoogleFetch } from '../_lib/google-calendar.js';
+import { authorizedGoogleFetch, googleApiErrorResponse } from '../_lib/google-calendar.js';
 import { json } from '../_lib/response.js';
 
 export async function GET(request) {
@@ -19,7 +19,6 @@ export async function GET(request) {
     return json(await response.json());
   } catch (error) {
     console.error('Failed to fetch Google calendar colors:', error);
-    return json({ error: error.message || 'Failed to fetch Google calendar colors' }, { status: 500 });
+    return googleApiErrorResponse(error, 'Failed to fetch Google calendar colors');
   }
 }
-
