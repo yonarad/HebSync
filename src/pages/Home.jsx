@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileSpreadsheet, Info, Shield, Sparkles } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import { authenticateWithGoogle, fetchSession, getAccessToken, SCOPE_MODES } from '../utils/googleApi';
+import { authenticateWithGoogle, fetchSession, getAccessToken, SCOPE_MODES, usesAllCalendarsMode } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
 import useInstallPrompt from '../hooks/useInstallPrompt';
 
@@ -81,10 +81,17 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
   const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [selectedMode, setSelectedMode] = useState(SCOPE_MODES.APP_CREATED);
+  const [activeMode, setActiveMode] = useState(null);
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const isRtl = i18n.language === 'he';
   const locale = isRtl ? 'he' : 'en';
   const isAboutView = new URLSearchParams(location.search).get('about') === '1';
+  const activeOptionId = activeMode
+    ? usesAllCalendarsMode(activeMode)
+      ? SCOPE_MODES.READ_ONLY
+      : SCOPE_MODES.APP_CREATED
+    : null;
+  const selectedMatchesActive = isAuthenticated && activeOptionId === selectedMode;
 
   useEffect(() => {
     let isMounted = true;
@@ -95,17 +102,25 @@ export default function Home() {
 
         if (session && !isAboutView) {
           setIsAuthenticated(true);
+          setActiveMode(session.scopeMode || null);
           setIsSessionResolved(true);
           navigate('/calendar', { replace: true });
           return;
         }
 
         setIsAuthenticated(!!session);
+        setActiveMode(session?.scopeMode || null);
+        if (session?.scopeMode) {
+          setSelectedMode(
+            usesAllCalendarsMode(session.scopeMode) ? SCOPE_MODES.READ_ONLY : SCOPE_MODES.APP_CREATED,
+          );
+        }
         setIsSessionResolved(true);
       })
       .catch(() => {
         if (!isMounted) return;
         setIsAuthenticated(false);
+        setActiveMode(null);
         setIsSessionResolved(true);
       });
 
@@ -116,12 +131,6 @@ export default function Home() {
 
   const handleInstall = async () => {
     await promptInstall();
-  };
-
-  const handleContinue = () => {
-    authenticateWithGoogle(selectedMode, undefined, (err) => {
-      alert(`${t('errorSyncFailed')}: ${err.message || ''}`);
-    });
   };
 
   if (!isSessionResolved) {
@@ -269,15 +278,6 @@ export default function Home() {
                     {t('landingConnectTitle', { defaultValue: 'Choose how HebSync should connect to your calendars' })}
                   </h3>
                 </div>
-                {isAuthenticated && (
-                  <button
-                    onClick={() => navigate('/calendar')}
-                    className="group flex items-center gap-2 rounded-2xl bg-[#0038A8] px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
-                  >
-                    {t('enterCalendar')}
-                    <ArrowLeft className={`h-4 w-4 transition-transform ${isRtl ? 'group-hover:-translate-x-1' : 'rotate-180 group-hover:translate-x-1'}`} />
-                  </button>
-                )}
               </div>
 
               {!isAuthenticated && (
@@ -294,20 +294,19 @@ export default function Home() {
                   const isSelected = selectedMode === option.id;
 
                   return (
-                    <button
+                    <div
                       key={option.id}
-                      type="button"
                       onClick={() => setSelectedMode(option.id)}
                       className={`relative w-full rounded-[1.75rem] border-2 p-5 text-start transition-all ${option.accentClassName} ${
                         isSelected
-                          ? 'ring-2 ring-[#0038A8]/15 dark:ring-blue-400/15'
-                          : ''
-                      }`}
+                          ? 'ring-2 ring-[#0038A8]/20 dark:ring-blue-400/20 shadow-[0_20px_45px_-30px_rgba(0,56,168,0.45)]'
+                          : 'hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-34px_rgba(15,23,42,0.35)]'
+                      } cursor-pointer`}
                     >
                       {isSelected && (
                         <CheckCircle2 className={`absolute top-5 ${isRtl ? 'left-5' : 'right-5'} h-5 w-5 text-[#0038A8] dark:text-blue-300`} />
                       )}
-                      <div className="flex gap-4">
+                      <div className="flex w-full gap-4 text-start">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-800">
                           <Icon className={`h-6 w-6 ${option.iconClassName}`} />
                         </div>
@@ -316,6 +315,16 @@ export default function Home() {
                             <h4 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
                               {t(option.titleKey)}
                             </h4>
+                            {isAuthenticated && activeOptionId === option.id && (
+                              <span className="rounded-full bg-[#0038A8]/10 px-2.5 py-1 text-[11px] font-black text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300">
+                                {t('activeConnectionMethod', { defaultValue: 'שיטת החיבור הפעילה' })}
+                              </span>
+                            )}
+                            {!isSelected && (
+                              <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold text-slate-400 ring-1 ring-slate-200 dark:bg-slate-900/70 dark:text-slate-500 dark:ring-slate-700">
+                                {t('tapToSelect', { defaultValue: 'הקש לבחירה' })}
+                              </span>
+                            )}
                             {option.badgeKey && (
                               <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-black text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
                                 {t(option.badgeKey)}
@@ -332,7 +341,35 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                    </button>
+                      <div className="pt-4">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedMode(option.id);
+                            if (isAuthenticated && activeOptionId === option.id) {
+                              navigate('/calendar');
+                              return;
+                            }
+                            authenticateWithGoogle(option.id, undefined, (err) => {
+                              alert(`${t('errorSyncFailed')}: ${err.message || ''}`);
+                            });
+                          }}
+                          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-all ${
+                            isAuthenticated && activeOptionId === option.id
+                              ? 'bg-[#0038A8] text-white shadow-lg shadow-blue-900/20 hover:bg-blue-800'
+                              : 'bg-white text-[#0038A8] ring-1 ring-[#0038A8]/20 shadow-sm hover:bg-blue-50 dark:bg-slate-900'
+                          }`}
+                        >
+                          {isAuthenticated && activeOptionId === option.id
+                            ? t('enterCalendar')
+                            : isAuthenticated
+                              ? t('connectUsingThisMethod', { defaultValue: 'התחבר באמצעות השיטה הזו' })
+                              : t('continue')}
+                          <ArrowLeft className={`h-4 w-4 ${isRtl ? '' : 'rotate-180'}`} />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -360,15 +397,6 @@ export default function Home() {
                   {t('orSelectOther')}
                 </p>
               ) : null}
-
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                <button
-                  onClick={handleContinue}
-                  className="rounded-2xl bg-[#0038A8] px-6 py-3.5 text-base font-black text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
-                >
-                  {t('continue')}
-                </button>
-              </div>
             </section>
           </div>
         </div>
