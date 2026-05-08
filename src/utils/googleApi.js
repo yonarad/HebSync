@@ -1,6 +1,7 @@
 import { formatHebrewYear } from './hebcal';
 
 export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
+export const AUTH_STATE_STORAGE_KEY = 'gcal_auth_state';
 export const SCOPE_MODES = {
   APP_CREATED: 'app_created',
   READ_ONLY: 'read_only',
@@ -9,7 +10,7 @@ export const SCOPE_MODES = {
 
 const AUTH_ERROR_CODE = 'AUTH_EXPIRED';
 const APP_SIGNATURE = 'ID:hebcal-sync-app';
-const SESSION_STORAGE_KEY = 'gcal_session';
+let inMemoryCsrfToken = null;
 
 export function isHebSyncCalendar(calendar) {
   return Boolean(
@@ -31,32 +32,35 @@ function notifyAuthExpired() {
   return createAuthError();
 }
 
-function getStoredSession() {
-  const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+function getStoredAuthState() {
+  const raw = localStorage.getItem(AUTH_STATE_STORAGE_KEY);
   if (!raw) return null;
 
   try {
     return JSON.parse(raw);
   } catch {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(AUTH_STATE_STORAGE_KEY);
     return null;
   }
 }
 
-function setStoredSession(session) {
-  if (!session) {
+function setStoredAuthState(session) {
+  if (!session?.scopeMode) {
     logout();
     return;
   }
 
-  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-  if (session.scopeMode) {
-    localStorage.setItem('gcal_scope_mode', session.scopeMode);
-  }
+  localStorage.setItem(
+    AUTH_STATE_STORAGE_KEY,
+    JSON.stringify({
+      authenticated: true,
+      scopeMode: session.scopeMode,
+    }),
+  );
 }
 
 function getCsrfToken() {
-  return getStoredSession()?.csrfToken || null;
+  return inMemoryCsrfToken;
 }
 
 export function isAuthError(error) {
@@ -137,7 +141,7 @@ export function authenticateWithGoogle(scopeMode, onSuccess, onError) {
 }
 
 export function getScopeMode() {
-  return getStoredSession()?.scopeMode || localStorage.getItem('gcal_scope_mode');
+  return getStoredAuthState()?.scopeMode || null;
 }
 
 export function usesAllCalendarsMode(scopeMode = getScopeMode()) {
@@ -149,7 +153,7 @@ export function canEditCalendars(scopeMode = getScopeMode()) {
 }
 
 export function getAccessToken() {
-  return getStoredSession() ? 'server-session' : null;
+  return getStoredAuthState()?.authenticated ? 'server-session' : null;
 }
 
 export async function fetchSession() {
@@ -168,7 +172,8 @@ export async function fetchSession() {
 
   const data = await response.json();
   if (data?.authenticated && data?.user) {
-    setStoredSession(data.user);
+    inMemoryCsrfToken = data.user.csrfToken || null;
+    setStoredAuthState(data.user);
     return data.user;
   }
 
@@ -177,8 +182,8 @@ export async function fetchSession() {
 }
 
 export function logout() {
-  localStorage.removeItem(SESSION_STORAGE_KEY);
-  localStorage.removeItem('gcal_scope_mode');
+  inMemoryCsrfToken = null;
+  localStorage.removeItem(AUTH_STATE_STORAGE_KEY);
   localStorage.removeItem('gcal_app_calendar_id');
 }
 
@@ -187,6 +192,18 @@ export async function revokeAccess() {
     await authorizedFetch('/api/auth/logout', { method: 'POST' }, 'Failed to revoke access');
   } catch (error) {
     console.error('Failed to revoke token:', error);
+  } finally {
+    logout();
+  }
+}
+
+export async function deleteAccountData() {
+  try {
+    await authorizedFetch(
+      '/api/auth/account',
+      { method: 'DELETE' },
+      'Failed to delete account data',
+    );
   } finally {
     logout();
   }
@@ -201,7 +218,7 @@ export async function fetchAllCalendars() {
   const data = await response.json();
   const items = data.items || [];
 
-  const mode = data.scopeMode || localStorage.getItem('gcal_scope_mode');
+  const mode = data.scopeMode || getScopeMode();
   if (mode === 'app_created') {
     return items.filter(isHebSyncCalendar);
   }

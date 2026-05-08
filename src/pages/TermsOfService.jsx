@@ -81,7 +81,7 @@ export default function TermsOfService() {
             title: 'ביטול, ניתוק ומחיקה',
             body: [
               `אפשר להפסיק להשתמש בשירות בכל עת. שאלות על מחיקת מידע או מחיקת רשומות חשבון אפשר לשלוח ל-${LEGAL_DETAILS.privacyEmail}.`,
-              'ניתוק מתוך האפליקציה מבטל גישה ל-Google ומסיים את ה-session הפעיל.',
+              'ניתוק מתוך האפליקציה מבטל גישה ל-Google ומסיים את ה-session הפעיל. מחיקה מלאה מתוך האפליקציה מוחקת גם את רשומת החיבור השמורה של HebSync.',
             ],
           },
           {
@@ -156,7 +156,7 @@ export default function TermsOfService() {
             title: 'Cancellation, disconnect, and deletion',
             body: [
               `Users may stop using the service at any time. Questions about data deletion or account-record deletion can be sent to ${LEGAL_DETAILS.privacyEmail}.`,
-              'Disconnecting through the app revokes Google access and ends the active session.',
+              'Disconnecting through the app revokes Google access and ends the active session. Full deletion through the app also removes the saved HebSync connection record.',
             ],
           },
           {

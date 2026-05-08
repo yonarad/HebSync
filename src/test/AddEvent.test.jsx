@@ -34,6 +34,7 @@ vi.mock('../utils/googleApi', () => ({
   fetchSession: vi.fn(() => Promise.resolve({ scopeMode: 'all_events' })),
   authenticateWithGoogle: vi.fn(),
   revokeAccess: vi.fn(),
+  logout: vi.fn(),
   createHebcalEvent: vi.fn(),
   isAuthError: vi.fn((error) => error?.code === 'AUTH_EXPIRED'),
 }));

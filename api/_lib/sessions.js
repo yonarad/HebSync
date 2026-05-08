@@ -32,10 +32,6 @@ export async function getSessionByToken(token) {
       s.id,
       s.google_connection_id,
       s.expires_at,
-      c.google_user_id,
-      c.email,
-      c.display_name,
-      c.picture_url,
       c.scope_mode
     FROM user_sessions s
     JOIN google_connections c ON c.id = s.google_connection_id

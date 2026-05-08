@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
               'רמת ההרשאה שנבחרה ב-HebSync: יומני HebSync בלבד, צפייה ביומנים קיימים, או עריכת אירועים כשנדרשת הרשאה כזו.',
               'מטא-דאטה של יומנים ואירועים שנדרש כדי להציג יומנים, לצפות באירועים, וליצור או לעדכן אירועים לפי הפעולות שהמשתמש בוחר.',
               'Cookies הכרחיים ל-authentication ולשמירה על session מאובטח.',
-              'נתוני צד-לקוח ב-localStorage לצורך שמירת מצב התחברות וסנכרון בין טאבים.',
+              'נתוני צד-לקוח מינימליים ב-localStorage לצורך שמירת מצב התחברות בסיסי, רמת הרשאה, וסנכרון בין טאבים. מידע זה אינו כולל פרופיל משתמש מלא או CSRF token.',
             ],
           },
           {
@@ -83,7 +83,7 @@ export default function PrivacyPolicy() {
               'Cookie זמני של OAuth state נשמר עד 10 דקות לצורך השלמת תהליך החיבור ל-Google.',
               'Access token ו-refresh token נשמרים בצד השרת כדי לאפשר גישה מאובטחת ל-Google Calendar. בעת ניתוק, הטוקנים מבוטלים וה-session-ים הפעילים נמחקים.',
               'נתוני localStorage נשמרים בדפדפן עד לניתוק, ניקוי ידני או מחיקת נתוני האתר.',
-              'רשומת חיבור בסיסית עשויה להישמר גם אחרי ניתוק עד בקשת מחיקה, ולכן לפני עלייה לפרודקשן מומלץ להגדיר מדיניות retention ומחיקה יזומה.',
+              'ניתוק מבטל את גישת Google ומסיים sessions פעילים. מחיקה מלאה מתוך האפליקציה מוחקת גם את רשומת החיבור השמורה ממסד הנתונים.',
             ],
           },
           {
@@ -96,7 +96,7 @@ export default function PrivacyPolicy() {
           {
             title: 'Cookies ואחסון מקומי',
             body: [
-              'האפליקציה משתמשת ב-cookies הכרחיים לצורך התחברות מאובטחת ושמירת session, וב-localStorage לצורך מצב התחברות ומצב הרשאות.',
+              'האפליקציה משתמשת ב-cookies הכרחיים לצורך התחברות מאובטחת ושמירת session, וב-localStorage מינימלי לצורך מצב התחברות בסיסי ומצב הרשאות.',
               'אם יתווספו בעתיד analytics, advertising cookies או כלי tracking לא הכרחיים, יהיה צורך לעדכן את המדיניות ולשקול מנגנון consent בהתאם לדין החל.',
             ],
           },
@@ -104,7 +104,7 @@ export default function PrivacyPolicy() {
             title: 'זכויות פרטיות ובקשות מחיקה',
             body: [
               `אם GDPR חל עליך, ייתכן שיש לך זכויות כמו גישה, תיקון, מחיקה, הגבלת עיבוד והתנגדות. לבקשות כאלה אפשר לפנות ל-${LEGAL_DETAILS.privacyEmail}.`,
-              'ניתוק דרך האפליקציה מבטל את הרשאת Google ומוחק את ה-session הפעיל, אבל לא בהכרח מוחק כל מטא-דאטה שנשמר בשרת. לכן חשוב להוסיף גם מסלול מחיקה מלא או טיפול ידני בבקשות מחיקה.',
+              'האפליקציה כוללת גם מסלול מחיקה מלא שמבטל את גישת Google, מוחק sessions פעילים, ומוחק את רשומת החיבור השמורה של HebSync ממסד הנתונים.',
             ],
           },
           {
@@ -143,7 +143,7 @@ export default function PrivacyPolicy() {
               'The permission mode selected in HebSync: HebSync-only calendars, existing-calendar view mode, or event editing when explicitly enabled.',
               'Calendar and event metadata needed to display calendars, review events, and create or update events the user asks HebSync to manage.',
               'Strictly necessary authentication cookies used to maintain a secure server session.',
-              'Client-side localStorage entries used to keep session state and sync authentication state across tabs.',
+              'Minimal client-side localStorage entries used to keep basic authentication state, permission mode, and cross-tab sync. This local storage does not include a full user profile or a CSRF token.',
             ],
           },
           {
@@ -174,7 +174,7 @@ export default function PrivacyPolicy() {
               'The temporary OAuth state cookie is retained for up to 10 minutes while completing Google sign-in.',
               'Server-side access and refresh tokens are retained so the service can securely call Google Calendar. On disconnect, those tokens are revoked or cleared and active sessions are removed.',
               'Client-side localStorage entries remain in the browser until logout, manual clearing, or site data removal.',
-              'A basic connection record may remain after disconnect unless a deletion request is processed, so production use should define and enforce an explicit retention policy.',
+              'Disconnecting revokes Google access and ends active sessions. Full deletion from within the app also removes the saved HebSync connection record from the database.',
             ],
           },
           {
@@ -187,7 +187,7 @@ export default function PrivacyPolicy() {
           {
             title: 'Cookies and local storage',
             body: [
-              'HebSync uses strictly necessary cookies for authentication and session management, and uses localStorage to remember session and permission mode state in the browser.',
+              'HebSync uses strictly necessary cookies for authentication and session management, and uses minimal localStorage to remember basic sign-in state and permission mode in the browser.',
               'If analytics, advertising cookies, or non-essential trackers are added later, this policy should be updated and a consent mechanism may become necessary depending on applicable law.',
             ],
           },
@@ -195,7 +195,7 @@ export default function PrivacyPolicy() {
             title: 'Privacy rights and deletion requests',
             body: [
               `If GDPR or similar privacy laws apply to you, you may have rights such as access, correction, deletion, restriction, and objection. Requests can be sent to ${LEGAL_DETAILS.privacyEmail}.`,
-              'Disconnecting the app revokes Google access and clears the active session, but may not remove all metadata stored on the server. A production-ready service should provide a full deletion path or a manual deletion process.',
+              'HebSync includes a full in-app deletion path that revokes Google access, clears active sessions, and deletes the saved HebSync connection record from the database.',
             ],
           },
           {

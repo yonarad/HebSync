@@ -45,6 +45,7 @@ vi.mock('../utils/googleApi', () => ({
     ALL_EVENTS: 'all_events',
   },
   revokeAccess: vi.fn(),
+  deleteAccountData: vi.fn(),
   createNewCalendar: vi.fn(),
   createHebcalEvent: vi.fn(),
   deleteEvent: vi.fn(),

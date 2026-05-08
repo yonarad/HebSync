@@ -16,10 +16,6 @@ export async function GET(request) {
   return json({
     authenticated: true,
     user: {
-      googleUserId: session.google_user_id,
-      email: session.email,
-      name: session.display_name,
-      picture: session.picture_url,
       scopeMode: session.scope_mode,
       csrfToken: createCsrfToken(sessionToken),
     },

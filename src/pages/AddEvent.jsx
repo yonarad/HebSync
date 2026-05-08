@@ -7,7 +7,7 @@ import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear, validateHebrewDateForYear } from '../utils/hebcal';
 import { resolveCalendarColor } from '../utils/googleCalendarColors';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
+import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, logout, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -406,7 +406,7 @@ export default function AddEvent({
     } catch (e) {
       console.error("Submission error:", e);
       if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
-        localStorage.removeItem('gcal_token');
+        logout();
         if (window.confirm("פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?")) {
           setLoginModalMode('reauthorize');
           setShowLoginModal(true);

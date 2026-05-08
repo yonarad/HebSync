@@ -212,6 +212,14 @@ export async function clearGoogleConnectionAuth(connectionId) {
   `;
 }
 
+export async function deleteGoogleConnection(connectionId) {
+  const sql = getSql();
+  await sql`
+    DELETE FROM google_connections
+    WHERE id = ${connectionId}
+  `;
+}
+
 export async function getValidGoogleAccessToken(connectionId) {
   const connection = await getConnectionById(connectionId);
   if (!connection) {

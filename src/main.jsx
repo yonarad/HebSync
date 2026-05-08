@@ -48,7 +48,7 @@ if ('serviceWorker' in navigator) {
 
 // Sync authentication state across tabs
 window.addEventListener('storage', (event) => {
-  if (event.key === 'gcal_session') {
+  if (event.key === 'gcal_auth_state') {
     if (!event.newValue) {
       // Session was removed (logout in another tab)
       window.dispatchEvent(new CustomEvent('gcal-auth-expired'))

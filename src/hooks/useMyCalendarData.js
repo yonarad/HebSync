@@ -11,6 +11,7 @@ import {
   fetchSession,
   GCAL_AUTH_EXPIRED_EVENT,
   getAccessToken,
+  getScopeMode,
   isAuthError,
   isHebSyncCalendar,
   revokeAccess,
@@ -28,7 +29,7 @@ export default function useMyCalendarData({ t }) {
   const [hasLoadedCalendarData, setHasLoadedCalendarData] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState('connect');
-  const [scopeMode, setScopeMode] = useState(localStorage.getItem('gcal_scope_mode'));
+  const [scopeMode, setScopeMode] = useState(getScopeMode());
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
   const [viewHDate, setViewHDate] = useState(new HDate());
