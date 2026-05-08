@@ -14,6 +14,7 @@ import { CalendarToolbar, MonthCalendarView, ScheduleCalendarView, DayEventsPopo
 import MyCalendarSidebar from '../components/MyCalendarSidebar';
 import useMyCalendarData from '../hooks/useMyCalendarData';
 import useCalendarEventActions from '../hooks/useCalendarEventActions';
+import useInstallPrompt from '../hooks/useInstallPrompt';
 
 const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
 
@@ -31,6 +32,7 @@ export default function MyCalendar() {
   const closeDayEventsLabel = t('closeDayEvents');
   const dayEventsDialogLabel = t('dayEventsDialog');
   const discardEventConfirmLabel = t('discardEventConfirm');
+  const { canInstall, promptInstall } = useInstallPrompt();
 
   const {
     calendarEvents,
@@ -287,11 +289,27 @@ export default function MyCalendar() {
         </div>
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
+          {canInstall ? (
+            <button
+              type="button"
+              onClick={promptInstall}
+              className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            >
+              {t('installApp')}
+            </button>
+          ) : null}
           {!isAuthenticated ? (
             <button onClick={handleLogin} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-[#0038A8] rounded-lg font-bold dark:bg-blue-900/30 dark:text-blue-300"><LogIn className="w-4 h-4" />{t('login')}</button>
           ) : (
             <div className="flex items-center gap-2 md:gap-4">
-              <button onClick={handleRevoke} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20" title={t('disconnect')}><LogOut className="w-5 h-5" /></button>
+              <button
+                onClick={handleRevoke}
+                className="flex items-center gap-2 rounded-lg p-2 text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 md:px-4 md:py-2"
+                title={t('disconnect')}
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden md:inline">{t('disconnect')}</span>
+              </button>
             </div>
           )}
         </div>
