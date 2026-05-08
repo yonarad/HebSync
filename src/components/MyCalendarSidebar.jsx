@@ -1,3 +1,4 @@
+import LegalLinks from './LegalLinks';
 import { Calendar as CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, Eye, Info, PencilLine, RefreshCw, Shield, X } from 'lucide-react';
 
 function CalendarGroup({
@@ -264,6 +265,10 @@ export default function MyCalendarSidebar({
             <div className="text-[9px] font-medium leading-tight text-slate-400">
               {t('thanksTo')} <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] hover:underline dark:text-blue-400">Hebcal</a>
             </div>
+            <LegalLinks
+              className="flex items-center gap-2 text-[10px]"
+              linkClassName="font-bold text-[#0038A8] hover:underline dark:text-blue-400"
+            />
           </div>
         </div>
       </aside>

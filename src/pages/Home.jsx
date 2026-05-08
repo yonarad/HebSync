@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileSpreadsheet, Info, Shield, Sparkles } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import LegalLinks from '../components/LegalLinks';
 import { authenticateWithGoogle, fetchSession, getAccessToken, SCOPE_MODES, usesAllCalendarsMode } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
 import useInstallPrompt from '../hooks/useInstallPrompt';
@@ -403,6 +404,10 @@ export default function Home() {
 
         <footer className="pb-2 pt-4 text-center text-[11px] font-medium text-slate-400">
           <p>{t('copyright', { year: new Date().getFullYear() })}</p>
+          <LegalLinks
+            className="mt-2 flex items-center justify-center gap-2"
+            linkClassName="font-bold text-[#0038A8] hover:underline dark:text-blue-400"
+          />
           <p className="mt-1">
             {t('thanksTo')}{' '}
             <a
