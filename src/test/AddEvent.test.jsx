@@ -63,10 +63,10 @@ vi.mock('../components/LoginModal', () => ({
     isOpen ? <div data-testid="login-modal">{mode}</div> : null
 }));
 
-const renderAddEvent = (initialEntries = ['/add-event']) => {
+const renderAddEvent = (props = {}) => {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <AddEvent />
+    <MemoryRouter>
+      <AddEvent {...props} />
     </MemoryRouter>
   );
 };
@@ -128,19 +128,14 @@ describe('AddEvent Component', () => {
   });
 
   it('should prefill the clicked day as a Gregorian date when opened from the calendar', async () => {
-    renderAddEvent([
-      {
-        pathname: '/add-event',
-        state: {
-          prefillDate: {
-            gregorianDate: '2026-05-07',
-            hebrewYear: '5786',
-            hebrewMonth: 'Iyyar',
-            hebrewDay: 20,
-          },
-        },
+    renderAddEvent({
+      prefillDate: {
+        gregorianDate: '2026-05-07',
+        hebrewYear: '5786',
+        hebrewMonth: 'Iyyar',
+        hebrewDay: 20,
       },
-    ]);
+    });
 
     await waitFor(() => {
       const gregorianToggle = screen.getByRole('checkbox', { name: 'enterGregorian' });
@@ -183,6 +178,27 @@ describe('AddEvent Component', () => {
       expect(googleApi.createHebcalEvent).toHaveBeenCalled();
       expect(screen.getByText('reauthorize')).toBeInTheDocument();
     });
+  });
+
+  it('should hide read-only calendars by default and reveal them as disabled when toggled', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      { id: 'cal1', summary: 'Personal', accessRole: 'owner' },
+      { id: 'cal2', summary: 'Team Calendar', accessRole: 'reader' },
+    ]);
+
+    renderAddEvent();
+
+    expect(await screen.findByText('Personal')).toBeInTheDocument();
+    expect(screen.queryByText('Team Calendar')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'showReadOnlyCalendars' }));
+
+    expect(await screen.findByText('Team Calendar')).toBeInTheDocument();
+    expect(screen.getByText('readOnlyCalendarBadge')).toBeInTheDocument();
+
+    const teamCheckbox = screen.getAllByRole('checkbox').find((checkbox) => checkbox.disabled);
+    expect(teamCheckbox).toBeDefined();
+    expect(teamCheckbox.checked).toBe(false);
   });
 
   it('should ask for an editing upgrade before syncing in all-calendars view mode', async () => {

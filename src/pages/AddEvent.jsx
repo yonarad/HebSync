@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, LogOut, GripHorizontal } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, GripHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear, validateHebrewDateForYear } from '../utils/hebcal';
 import { resolveCalendarColor } from '../utils/googleCalendarColors';
@@ -10,13 +9,11 @@ import { HDate, gematriya } from '@hebcal/core';
 import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, logout, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
 
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '../components/LanguageSwitcher';
 
 export default function AddEvent({
-  embedded = false,
-  onClose = null,
+  onClose = () => {},
   onComplete = null,
-  prefillDate: prefillDateProp = null,
+  prefillDate = null,
 }) {
   const BULK_IMPORT_COLUMNS = ['שם האירוע', 'קטגוריה', 'הערות', 'שנת מקור', 'חודש', 'יום', 'מופעים'];
   const HEBREW_NUMBER_MAP = {
@@ -53,13 +50,11 @@ export default function AddEvent({
   };
   const importTemplatePath = '/templates/hebsync-events-import-template.xlsx';
   const navigate = useNavigate();
-  const location = useLocation();
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
   const hasAppliedPrefillRef = useRef(false);
   const notesRef = useRef(null);
   const importFileInputRef = useRef(null);
-  const prefillDate = prefillDateProp ?? location.state?.prefillDate ?? null;
 
   const getCalendarColor = (calendarId) => {
     const calendar = calendars.find(c => c.id === calendarId);
@@ -114,6 +109,7 @@ export default function AddEvent({
   const [scopeMode, setScopeMode] = useState(getScopeMode());
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
+  const [showReadOnlyCalendars, setShowReadOnlyCalendars] = useState(false);
   const currentHDate = new HDate();
   const currentHebrewYear = currentHDate.getFullYear();
   
@@ -152,6 +148,8 @@ export default function AddEvent({
   // Computed Hebrew date from Gregorian
   const convertedHDate = isGregorianEntry && gregDate ? gregorianToHebrew(new Date(gregDate), afterSunset) : null;
   const hasWriteAccess = canEditCalendars(scopeMode);
+  const writableCalendars = calendars.filter((calendar) => ['owner', 'writer'].includes(calendar.accessRole));
+  const readOnlyCalendars = calendars.filter((calendar) => !['owner', 'writer'].includes(calendar.accessRole));
 
   const handleClose = () => {
     if (showPreview) {
@@ -159,12 +157,7 @@ export default function AddEvent({
       return;
     }
 
-    if (onClose) {
-      onClose();
-      return;
-    }
-
-    navigate('/calendar');
+    onClose();
   };
 
   useEffect(() => {
@@ -265,10 +258,8 @@ export default function AddEvent({
         fetchAllCalendars(),
         fetchGoogleCalendarColors().catch(() => null),
       ]);
-      // Filter to only calendars where the user has write access
-      const writableCals = cals.filter(c => c.accessRole === 'owner' || c.accessRole === 'writer');
       // Assign colors to calendars
-      const calendarsWithColors = writableCals.map((cal, index) => ({
+      const calendarsWithColors = cals.map((cal, index) => ({
         ...cal,
         color: resolveCalendarColor(cal, index, googleColors),
       }));
@@ -400,8 +391,6 @@ export default function AddEvent({
       alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
       if (onComplete) {
         await onComplete();
-      } else {
-        navigate('/calendar');
       }
     } catch (e) {
       console.error("Submission error:", e);
@@ -433,34 +422,85 @@ export default function AddEvent({
       return null;
     }
 
+    const renderCalendarOption = (cal, { disabled = false, readOnly = false } = {}) => (
+      <label
+        key={cal.id}
+        className={`flex items-center gap-3 rounded-xl border p-3 transition-all ${isRtl ? 'flex-row-reverse text-right' : ''} ${
+          disabled
+            ? 'cursor-not-allowed border-slate-200 bg-slate-100/80 opacity-75 dark:border-slate-700 dark:bg-slate-800/70'
+            : 'cursor-pointer'
+        } ${
+          !disabled && selectedCalendarIds.includes(cal.id)
+            ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'
+            : !disabled
+              ? 'border-slate-100 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
+              : ''
+        }`}
+      >
+        <div className="h-4 w-4 flex-shrink-0 rounded-full" style={{ backgroundColor: cal.color }}></div>
+        <input
+          type="checkbox"
+          checked={selectedCalendarIds.includes(cal.id)}
+          onChange={() => toggleCalendar(cal.id)}
+          disabled={disabled}
+          className="h-4 w-4 rounded text-[#0038A8] disabled:cursor-not-allowed disabled:opacity-60"
+        />
+        <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+          <span
+            className={`block truncate text-sm font-medium ${
+              disabled ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'
+            }`}
+            title={cal.summary}
+          >
+            {cal.summary}
+          </span>
+          {readOnly ? (
+            <span className="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+              {t('readOnlyCalendarBadge', { defaultValue: isRtl ? 'לצפייה בלבד' : 'View only' })}
+            </span>
+          ) : null}
+        </div>
+      </label>
+    );
+
     return (
       <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
         <div>
           <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('selectTargetCalendars')}</label>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {calendars.map((cal) => (
-            <label
-              key={cal.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all ${isRtl ? 'flex-row-reverse text-right' : ''} ${
-                selectedCalendarIds.includes(cal.id)
-                  ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'
-                  : 'border-slate-100 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
-              }`}
-            >
-              <div className="h-4 w-4 flex-shrink-0 rounded-full" style={{ backgroundColor: cal.color }}></div>
+        {writableCalendars.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
+            {t('noWritableCalendars', { defaultValue: isRtl ? 'אין יומנים עם הרשאת כתיבה כרגע. אפשר להציג גם יומנים לצפייה בלבד.' : 'There are no writable calendars right now. You can also show view-only calendars.' })}
+          </div>
+        ) : null}
+        {writableCalendars.length > 0 ? (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {writableCalendars.map((cal) => renderCalendarOption(cal))}
+          </div>
+        ) : null}
+        {readOnlyCalendars.length > 0 ? (
+          <div className="space-y-2">
+            <label className={`flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-300 ${isRtl ? 'flex-row-reverse justify-end' : ''}`}>
               <input
                 type="checkbox"
-                checked={selectedCalendarIds.includes(cal.id)}
-                onChange={() => toggleCalendar(cal.id)}
+                checked={showReadOnlyCalendars}
+                onChange={(event) => setShowReadOnlyCalendars(event.target.checked)}
                 className="h-4 w-4 rounded text-[#0038A8]"
               />
-              <span className={`flex-1 truncate text-sm font-medium text-slate-700 dark:text-slate-200 ${isRtl ? 'text-right' : 'text-left'}`} title={cal.summary}>
-                {cal.summary}
-              </span>
+              <span>{t('showReadOnlyCalendars', { defaultValue: isRtl ? 'הצג גם יומנים לצפייה בלבד' : 'Show view-only calendars too' })}</span>
             </label>
-          ))}
-        </div>
+            {showReadOnlyCalendars ? (
+              <>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {t('readOnlyCalendarHint', { defaultValue: isRtl ? 'אין לך הרשאה ליצור אירועים ביומנים האלו.' : 'You do not have permission to create events in these calendars.' })}
+                </p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {readOnlyCalendars.map((cal) => renderCalendarOption(cal, { disabled: true, readOnly: true }))}
+                </div>
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     );
   };
@@ -779,47 +819,10 @@ export default function AddEvent({
 
   return (
     <div
-      className={`${embedded ? 'flex h-[100dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[1.75rem] bg-slate-50 shadow-2xl dark:bg-slate-900 md:h-[min(92vh,960px)] md:rounded-[2rem]' : 'min-h-screen bg-slate-50 dark:bg-slate-900'} font-sans ${isRtl ? 'text-right' : 'text-left'}`}
+      className={`flex h-[100dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[1.75rem] bg-slate-50 shadow-2xl dark:bg-slate-900 md:h-[min(92vh,960px)] md:rounded-[2rem] font-sans ${isRtl ? 'text-right' : 'text-left'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
-      {!embedded && (
-      <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30 sticky top-0">
-        <div className="flex items-center gap-4 md:gap-6">
-          <button 
-            onClick={handleClose}
-            className="p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400"
-          >
-            <ArrowLeft className={`w-5 h-5 ${isRtl ? '' : 'rotate-180'}`} />
-          </button>
-          
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/calendar')}>
-            <Logo className="w-8 h-8" />
-            <h1 className="text-lg md:text-xl font-black text-slate-900 tracking-tight dark:text-white">
-              <span className="text-[#0038A8] dark:text-blue-400">Heb</span>Sync
-            </h1>
-          </div>
-
-          <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
-            <button onClick={() => navigate('/calendar')} className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-[#0038A8] rounded-lg hover:bg-slate-50 transition-all dark:text-slate-400">{t('myCalendar')}</button>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-          {getAccessToken() && (
-            <button
-              onClick={handleRevoke}
-              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all dark:text-red-400 dark:hover:bg-red-900/20"
-              title={t('disconnect')}
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      </header>
-      )}
-
-      <main className={`${embedded ? 'overflow-auto px-4 py-4 md:px-6 md:py-5' : 'p-4 md:p-8 overflow-auto'} flex-1`}>
+      <main className="flex-1 overflow-auto px-4 py-4 md:px-6 md:py-5">
         <div className="mx-auto w-full max-w-4xl space-y-6">
           <div className="flex flex-col gap-1 mb-2">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
@@ -830,7 +833,7 @@ export default function AddEvent({
             </p>
           </div>
 
-        <div className={`overflow-hidden ${embedded ? 'border-0 bg-transparent shadow-none rounded-none md:rounded-2xl md:border md:border-slate-100 md:bg-white md:shadow-sm dark:md:bg-slate-800 dark:md:border-slate-700' : 'rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800'}`}>
+        <div className="overflow-hidden border-0 bg-transparent shadow-none rounded-none md:rounded-2xl md:border md:border-slate-100 md:bg-white md:shadow-sm dark:md:bg-slate-800 dark:md:border-slate-700">
           {!showPreview ? (
             <>
               <div className="flex border-b border-slate-100 dark:border-slate-700">
@@ -848,7 +851,7 @@ export default function AddEvent({
                 </button>
               </div>
 
-              <div className={`${embedded ? 'px-4 pb-6 pt-4 md:p-8' : 'p-6 md:p-8'}`}>
+              <div className="px-4 pb-6 pt-4 md:p-8">
                 {tab === 'manual' ? (
                   <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePreview(); }}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

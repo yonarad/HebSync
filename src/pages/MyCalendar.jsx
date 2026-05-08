@@ -422,7 +422,6 @@ export default function MyCalendar() {
             </button>
             <div className="pointer-events-auto flex h-full w-full justify-center md:h-auto md:w-auto">
               <AddEvent
-                embedded
                 onClose={handleRequestCloseAddEventModal}
                 onComplete={handleAddEventComplete}
                 prefillDate={createPrefillDate}

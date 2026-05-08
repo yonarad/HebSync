@@ -41,18 +41,6 @@
           "type": "image/png"
         }
       ]
-    },
-    {
-      "name": "Add Event",
-      "short_name": "Add",
-      "url": "/add-event",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
     }
   ]
 }

@@ -14,30 +14,34 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     if (import.meta.env.PROD) {
       const registration = await navigator.serviceWorker.register('/sw.js')
-      
-      // Check for updates
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available
-              if (confirm('יש גרסה חדשה זמינה! האם לרענן את הדף?')) {
-                window.location.reload()
-              }
-            }
-          })
-        }
-      })
-      
-      // Check if there's a waiting worker
-      if (registration.waiting) {
-        if (confirm('יש גרסה חדשה זמינה! האם לרענן את הדף?')) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+      let hasPendingRefresh = false
+      const updatePrompt = 'יש גרסה חדשה זמינה. האם לרענן את הדף?'
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hasPendingRefresh) {
           window.location.reload()
         }
+      })
+
+      await registration.update()
+
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        if (!newWorker) return
+
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller && window.confirm(updatePrompt)) {
+            hasPendingRefresh = true
+            registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
+          }
+        })
+      })
+
+      if (registration.waiting && window.confirm(updatePrompt)) {
+        hasPendingRefresh = true
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' })
       }
-      
+
       return
     }
 
