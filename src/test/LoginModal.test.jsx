@@ -49,6 +49,18 @@ describe('LoginModal', () => {
     expect(onSelect).toHaveBeenCalledWith(SCOPE_MODES.READ_ONLY);
   });
 
+  it('can open with the requested option preselected', () => {
+    const onSelect = vi.fn();
+    renderModal({
+      onSelect,
+      initialSelectedMode: SCOPE_MODES.READ_ONLY,
+    });
+
+    fireEvent.click(screen.getByText('continue'));
+
+    expect(onSelect).toHaveBeenCalledWith(SCOPE_MODES.READ_ONLY);
+  });
+
   it('shows reconnect copy in reauthorize mode', () => {
     renderModal({ mode: 'reauthorize' });
     expect(screen.getByText('permissionReconnectTitle')).toBeInTheDocument();
@@ -63,5 +75,12 @@ describe('LoginModal', () => {
     fireEvent.click(screen.getByText('permissionUpgradeCta'));
 
     expect(onSelect).toHaveBeenCalledWith(SCOPE_MODES.ALL_EVENTS);
+  });
+
+  it('keeps the overlay and panel scrollable for small viewports', () => {
+    renderModal();
+
+    expect(screen.getByTestId('login-modal-overlay')).toHaveClass('overflow-y-auto');
+    expect(screen.getByTestId('login-modal-panel')).toHaveClass('max-md:max-h-[calc(100dvh-1.5rem)]');
   });
 });

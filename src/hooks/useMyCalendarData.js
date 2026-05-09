@@ -29,6 +29,7 @@ export default function useMyCalendarData({ t }) {
   const [hasLoadedCalendarData, setHasLoadedCalendarData] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState('connect');
+  const [loginModalInitialScopeMode, setLoginModalInitialScopeMode] = useState(SCOPE_MODES.APP_CREATED);
   const [scopeMode, setScopeMode] = useState(getScopeMode());
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
@@ -191,6 +192,7 @@ export default function useMyCalendarData({ t }) {
 
   const handleLogin = () => {
     setLoginModalMode('connect');
+    setLoginModalInitialScopeMode(SCOPE_MODES.APP_CREATED);
     setShowLoginModal(true);
   };
 
@@ -214,11 +216,13 @@ export default function useMyCalendarData({ t }) {
       setScopeMode(null);
       setIsLoading(false);
       setLoginModalMode('connect');
+      setLoginModalInitialScopeMode(SCOPE_MODES.APP_CREATED);
       setShowLoginModal(true);
       return;
     }
 
     setLoginModalMode('connect');
+    setLoginModalInitialScopeMode(SCOPE_MODES.READ_ONLY);
     setShowLoginModal(true);
   };
 
@@ -297,6 +301,7 @@ export default function useMyCalendarData({ t }) {
     loadCalendarData,
     loadCalendars,
     loadEvents,
+    loginModalInitialScopeMode,
     loginModalMode,
     myEvents,
     onLoginSelect,
@@ -309,6 +314,7 @@ export default function useMyCalendarData({ t }) {
     setHasLoadedCalendarData,
     setIsAuthenticated,
     setLoginModalMode,
+    setLoginModalInitialScopeMode,
     setMyEvents,
     setSelectedCalendarIds,
     setShowGregorian,

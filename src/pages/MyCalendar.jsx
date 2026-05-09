@@ -52,6 +52,7 @@ export default function MyCalendar() {
     isFetchingGoogle,
     loadCalendarData,
     loadEvents,
+    loginModalInitialScopeMode,
     loginModalMode,
     myEvents,
     onLoginSelect,
@@ -404,7 +405,13 @@ export default function MyCalendar() {
         </main>
       </div>
 
-      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onSelect={onLoginSelect} mode={loginModalMode} />
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSelect={onLoginSelect}
+        mode={loginModalMode}
+        initialSelectedMode={loginModalInitialScopeMode}
+      />
 
       <DayEventsPopover
         overflowDay={overflowDay}
