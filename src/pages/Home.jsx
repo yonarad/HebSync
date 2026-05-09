@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileSpreadsheet, Info, Shield, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileSpreadsheet, Info, Shield, Sparkles } from 'lucide-react';
 import Logo from '../components/Logo';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import LegalLinks from '../components/LegalLinks';
@@ -86,13 +86,27 @@ export default function Home() {
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const isRtl = i18n.language === 'he';
   const locale = isRtl ? 'he' : 'en';
-  const isAboutView = new URLSearchParams(location.search).get('about') === '1';
+  const searchParams = new URLSearchParams(location.search);
+  const isAboutView = searchParams.get('about') === '1';
+  const authError = searchParams.get('authError');
+  const authErrorDetail = searchParams.get('authErrorDetail');
   const activeOptionId = activeMode
     ? usesAllCalendarsMode(activeMode)
       ? SCOPE_MODES.READ_ONLY
       : SCOPE_MODES.APP_CREATED
     : null;
   const selectedMatchesActive = isAuthenticated && activeOptionId === selectedMode;
+  const authErrorMessage = (() => {
+    if (!authError) return null;
+    if (authError === 'invalid_auth_state') return t('authErrorInvalidState');
+    if (authError === 'google_oauth_error') {
+      return authErrorDetail === 'access_denied'
+        ? t('authErrorAccessDenied')
+        : t('authErrorGoogleOauth');
+    }
+    if (authError === 'authentication_failed') return t('authErrorAuthenticationFailed');
+    return t('authErrorGeneric');
+  })();
 
   useEffect(() => {
     let isMounted = true;
@@ -277,6 +291,20 @@ export default function Home() {
                   </h3>
                 </div>
               </div>
+
+              {authErrorMessage ? (
+                <div className="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50/90 px-4 py-3.5 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/80 text-amber-700 shadow-sm dark:bg-slate-900/70 dark:text-amber-300">
+                      <AlertTriangle className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black">{t('authErrorTitle')}</p>
+                      <p className="mt-1 text-sm leading-6">{authErrorMessage}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               {!isAuthenticated && (
                 <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
