@@ -277,7 +277,7 @@ export function ScheduleCalendarView({
           {scheduleDays.map((dayObj) => (
             <section
               key={dayObj.gDate.toISOString()}
-              className="grid grid-cols-[60px_minmax(0,1fr)] gap-2.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[86px_minmax(0,1fr)] md:gap-4"
+              className="grid grid-cols-[44px_minmax(0,1fr)] gap-0.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[60px_minmax(0,1fr)] md:gap-1"
             >
               <button
                 type="button"
@@ -288,15 +288,17 @@ export function ScheduleCalendarView({
                   gregorianDay: dayObj.gDay,
                 })}
               >
-                <div className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-black md:h-10 md:w-10 md:text-base ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
+                <div className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-black md:h-9 md:w-9 md:text-[15px] ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
                   {dayObj.isToday ? dayObj.gDay : dayObj.hDayGematriya}
                 </div>
                 <div className="mt-1 text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
                   {t(`days.${dayObj.weekday}`)}
                 </div>
-                <div className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
-                  {showGregorian ? `${dayObj.gMonthLabel} ${dayObj.gDay}` : hMonthNameHebrew}
-                </div>
+                {showGregorian ? (
+                  <div className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
+                    {dayObj.gMonthLabel} {dayObj.gDay}
+                  </div>
+                ) : null}
               </button>
 
               <div className="space-y-1.5">
@@ -318,7 +320,7 @@ export function ScheduleCalendarView({
                       key={`${event.id || event.summary}-${idx}`}
                       type="button"
                       onClick={() => handleEventClick(event)}
-                      className={`flex w-full items-start gap-3 rounded-2xl border px-3 py-2 text-right transition-all ${
+                        className={`flex w-full items-start gap-2 rounded-2xl border px-2.5 py-2 text-right transition-all ${
                         isHebCal
                           ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
                           : 'border-transparent hover:brightness-[0.98]'
