@@ -144,10 +144,7 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Logo className="h-11 w-11 drop-shadow-xl" />
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
-                {t('calendarSetup')}
-              </p>
+            <div className="pt-0.5">
               <h1
                 className="text-xl font-black tracking-tight text-slate-900 dark:text-white"
                 style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}
