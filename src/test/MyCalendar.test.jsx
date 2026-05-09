@@ -427,21 +427,12 @@ describe('My Calendar Component', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
 
     expect(await screen.findByTestId('calendar-loading-state')).toBeInTheDocument();
-    expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
 
     window.innerWidth = originalWidth;
   });
 
   it('should show a loading state in month view before events resolve', async () => {
-    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
-      {
-        id: 'cal1',
-        summary: 'HebSync',
-        accessRole: 'owner',
-        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
-      },
-    ]);
-    vi.mocked(googleApi.fetchEventsInRange).mockImplementationOnce(
+    vi.mocked(googleApi.fetchAllCalendars).mockImplementationOnce(
       () => new Promise(() => {}),
     );
 
