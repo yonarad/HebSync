@@ -450,6 +450,20 @@ describe('My Calendar Component', () => {
     expect(await screen.findByTestId('calendar-loading-state')).toBeInTheDocument();
   });
 
+  it('should not get stuck in loading when the user has no calendars', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([]);
+
+    renderDashboard();
+
+    expect(await screen.findByText('noCalendarsAvailable')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId('calendar-loading-state')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Schedule' }));
+    expect(await screen.findByText('No events in this view.')).toBeInTheDocument();
+  });
+
   it('should select only HebSync calendars by default', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
       {

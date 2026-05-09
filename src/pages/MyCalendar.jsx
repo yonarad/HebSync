@@ -253,7 +253,6 @@ export default function MyCalendar() {
   const isScheduleLoading =
     isCalendarLoading ||
     (isAuthenticated && isFetchingGoogle) ||
-    (isAuthenticated && selectedCalendarIds.length === 0) ||
     !hasLoadedCalendarData;
   const isMonthLoading = isScheduleLoading;
 
