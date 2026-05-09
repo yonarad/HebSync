@@ -114,7 +114,6 @@ export default function MyCalendarSidebar({
   deselectCalendarsByIds,
   toggleCalendar,
   handleOpenLanding,
-  handleDeleteAccountData,
 }) {
   return (
     <>
@@ -263,19 +262,6 @@ export default function MyCalendarSidebar({
                 </div>
               </button>
             </div>
-            <button
-              type="button"
-              onClick={handleDeleteAccountData}
-              className="flex w-full items-start gap-3 rounded-xl border border-rose-200 bg-rose-50/70 p-3 text-start text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-900/10 dark:text-rose-300 dark:hover:bg-rose-900/20"
-            >
-              <Info className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
-              <div>
-                <p className="text-[10px] font-bold">{t('deleteAccountData')}</p>
-                <p className="text-[9px] leading-4 opacity-80">
-                  {t('deleteAccountDataHint')}
-                </p>
-              </div>
-            </button>
             <div className="text-[9px] font-medium leading-tight text-slate-400">
               {t('thanksTo')} <a href="https://github.com/hebcal/hebcal-es6" target="_blank" rel="noopener noreferrer" className="text-[#0038A8] hover:underline dark:text-blue-400">Hebcal</a>
             </div>

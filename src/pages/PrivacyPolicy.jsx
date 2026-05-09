@@ -1,5 +1,8 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LegalPageLayout from '../components/LegalPageLayout';
 import { LEGAL_DETAILS, hasPlaceholderLegalDetails } from '../config/legal';
+import { deleteAccountData, getAccessToken } from '../utils/googleApi';
 import { useTranslation } from 'react-i18next';
 
 function Section({ title, children }) {
@@ -24,9 +27,12 @@ function List({ items }) {
 }
 
 export default function PrivacyPolicy() {
-  const { i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { i18n, t } = useTranslation();
   const isHebrew = i18n.language === 'he';
   const placeholderWarning = hasPlaceholderLegalDetails();
+  const [isDeletingAccountData, setIsDeletingAccountData] = useState(false);
+  const isAuthenticated = !!getAccessToken();
 
   const content = isHebrew
     ? {
@@ -214,6 +220,23 @@ export default function PrivacyPolicy() {
         ],
       };
 
+  const handleDeleteAccountData = async () => {
+    if (!window.confirm(t('deleteAccountDataConfirm'))) return;
+
+    setIsDeletingAccountData(true);
+
+    try {
+      await deleteAccountData();
+      navigate('/?about=1');
+      window.alert(t('deleteAccountDataSuccess'));
+    } catch (error) {
+      console.error('Failed to delete account data:', error);
+      window.alert(t('deleteAccountDataError'));
+    } finally {
+      setIsDeletingAccountData(false);
+    }
+  };
+
   return (
     <LegalPageLayout title={content.title} subtitle={content.subtitle}>
       {placeholderWarning && (
@@ -230,6 +253,27 @@ export default function PrivacyPolicy() {
           {section.list ? <List items={section.list} /> : null}
         </Section>
       ))}
+
+      {isAuthenticated ? (
+        <section className="rounded-3xl border border-rose-200 bg-rose-50/80 p-5 dark:border-rose-900/30 dark:bg-rose-900/10">
+          <h3 className="text-xl font-black tracking-tight text-rose-900 dark:text-rose-100">
+            {t('deleteAccountData')}
+          </h3>
+          <p className="mt-3 text-sm leading-7 text-rose-800/90 dark:text-rose-200/90 md:text-[15px]">
+            {t('deleteAccountDataHint')}
+          </p>
+          <button
+            type="button"
+            onClick={handleDeleteAccountData}
+            disabled={isDeletingAccountData}
+            className="mt-4 inline-flex items-center rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-rose-700 disabled:cursor-wait disabled:opacity-70 dark:bg-rose-500 dark:hover:bg-rose-400"
+          >
+            {isDeletingAccountData
+              ? (isHebrew ? 'מוחק נתונים...' : 'Deleting data...')
+              : t('deleteAccountData')}
+          </button>
+        </section>
+      ) : null}
     </LegalPageLayout>
   );
 }
