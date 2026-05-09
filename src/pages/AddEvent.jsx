@@ -833,7 +833,7 @@ export default function AddEvent({
             </p>
           </div>
 
-        <div className="overflow-hidden border-0 bg-transparent shadow-none rounded-none md:rounded-2xl md:border md:border-slate-100 md:bg-white md:shadow-sm dark:md:bg-slate-800 dark:md:border-slate-700">
+        <div className="overflow-hidden rounded-none border-0 bg-transparent shadow-none dark:bg-slate-900 md:rounded-2xl md:border md:border-slate-100 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800">
           {!showPreview ? (
             <>
               <div className="flex border-b border-slate-100 dark:border-slate-700">
@@ -862,7 +862,7 @@ export default function AddEvent({
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
                           placeholder={isRtl ? "לדוגמה: יום הולדת של דוד" : "e.g. David's Birthday"} 
-                          className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 transition-all outline-none dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8]"
+                          className="w-full rounded-xl border border-slate-200 p-3 text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-[#0038A8]"
                         />
                       </div>
                       <div className="space-y-2">
@@ -870,7 +870,7 @@ export default function AddEvent({
                         <select 
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
-                          className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8]">
+                          className="w-full rounded-xl border border-slate-200 bg-white p-3 text-slate-900 transition-all outline-none focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-[#0038A8]">
                           <option value="birthday">{t('birthday')}</option>
                           <option value="anniversary">{t('anniversary')}</option>
                           <option value="memorial">{t('memorial')}</option>
@@ -888,7 +888,7 @@ export default function AddEvent({
                           onChange={(e) => setNotes(e.target.value)}
                           placeholder={t('descriptionPlaceholder')}
                           rows="1"
-                          className="w-full min-h-12 resize-none overflow-hidden rounded-xl border border-slate-200 p-3 pb-7 transition-all outline-none focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:bg-slate-900 dark:border-slate-600 dark:focus:ring-[#0038A8]"
+                          className="w-full min-h-12 resize-none overflow-hidden rounded-xl border border-slate-200 p-3 pb-7 text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-[#0038A8]"
                         />
                         <span className={`pointer-events-none absolute bottom-2 text-slate-300 dark:text-slate-600 ${isRtl ? 'left-3' : 'right-3'}`}>
                           <GripHorizontal className="h-4 w-4" />
@@ -920,7 +920,7 @@ export default function AddEvent({
                             <select 
                               value={year}
                               onChange={(e) => setYear(e.target.value)}
-                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:bg-slate-800 dark:border-slate-600"
+                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium text-slate-900 outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                             >
                               {yearOptions.map(y => (
                                 <option key={y} value={y}>{isRtl ? formatHebrewYear(y) : y}</option>
@@ -932,7 +932,7 @@ export default function AddEvent({
                             <select 
                               value={month}
                               onChange={(e) => setMonth(e.target.value)}
-                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:bg-slate-800 dark:border-slate-600"
+                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium text-slate-900 outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                             >
                               {availableMonths.map(m => (
                                 <option key={m.id} value={m.id}>{isRtl ? m.label : m.id}</option>
@@ -944,7 +944,7 @@ export default function AddEvent({
                             <select 
                               value={day}
                               onChange={(e) => setDay(parseInt(e.target.value, 10))}
-                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:bg-slate-800 dark:border-slate-600"
+                              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium text-slate-900 outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                             >
                               {Array.from({length: daysInMonth}).map((_, i) => (
                                 <option key={i+1} value={i+1}>
@@ -963,7 +963,7 @@ export default function AddEvent({
                                 type="date" 
                                 value={gregDate}
                                 onChange={(e) => setGregDate(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 p-2.5 text-sm outline-none focus:border-[#0038A8] md:p-3 dark:bg-slate-800 dark:border-slate-600"
+                                className="w-full rounded-lg border border-slate-200 p-2.5 text-sm text-slate-900 outline-none focus:border-[#0038A8] md:p-3 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                               />
                             </div>
                             <div className="flex flex-col justify-end pb-1">
@@ -999,15 +999,15 @@ export default function AddEvent({
                             {isRtl ? 'בחלק מהשנים העבריות חודש זה הוא "חסר" (בן 29 ימים בלבד), ולכן התאריך ל׳ לא קיים בהן. בחר כיצד תרצה לנהוג בשנים אלו:' : 'In some Hebrew years, this month is "short" (only 29 days), so the 30th doesn\'t exist. Choose how to handle these years:'}
                           </p>
                           <div className="grid grid-cols-1 gap-3">
-                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
+                            <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
                               <input type="radio" name="fallback" checked={fallback30th === '29th'} onChange={() => setFallback30th('29th')} className="w-4 h-4 text-[#0038A8]" />
                               <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'הקדמה ל-כ״ט באותו חודש' : 'Move to 29th of the same month'}</span>
                             </label>
-                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
+                            <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
                               <input type="radio" name="fallback" checked={fallback30th === '1st'} onChange={() => setFallback30th('1st')} className="w-4 h-4 text-[#0038A8]" />
                               <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דחייה ל-א׳ בחודש הבא' : 'Move to 1st of the next month'}</span>
                             </label>
-                            <label className="flex items-center gap-3 cursor-pointer p-3 bg-white/50 rounded-xl border border-amber-100 hover:bg-white transition-colors dark:bg-slate-800/40 dark:border-amber-900/30">
+                            <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
                               <input type="radio" name="fallback" checked={fallback30th === 'skip'} onChange={() => setFallback30th('skip')} className="w-4 h-4 text-[#0038A8]" />
                               <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דילוג על השנה (לא ליצור אירוע)' : 'Skip the year (don\'t create event)'}</span>
                             </label>
@@ -1024,7 +1024,7 @@ export default function AddEvent({
                             max="121"
                             value={syncSpan}
                             onChange={(e) => setSyncSpan(Math.min(121, Math.max(1, parseInt(e.target.value, 10) || 1)))}
-                            className="w-24 p-3 rounded-xl border border-slate-200 focus:border-[#0038A8] outline-none bg-white dark:bg-slate-800 dark:border-slate-600 font-bold text-center"
+                            className="w-24 rounded-xl border border-slate-200 bg-white p-3 text-center font-bold text-slate-900 outline-none focus:border-[#0038A8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                           />
                           <span className="text-slate-600 dark:text-slate-400 font-medium">{t('occurrences')}</span>
                         </div>
@@ -1307,7 +1307,7 @@ export default function AddEvent({
                 </div>
               </div>
 
-              <div className="mt-4 min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="mt-4 min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div className="hidden max-h-[min(52vh,32rem)] overflow-auto md:block">
                   <table className={`w-full table-fixed ${isRtl ? 'text-right' : 'text-left'} border-collapse`}>
                     <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-900">
@@ -1330,7 +1330,7 @@ export default function AddEvent({
                     </tbody>
                   </table>
                 </div>
-                <div className="max-h-[min(48dvh,26rem)] overflow-auto md:hidden">
+                <div className="max-h-[min(48dvh,26rem)] overflow-auto bg-white dark:bg-slate-900 md:hidden">
                   <div className="divide-y divide-slate-200 dark:divide-slate-800">
                     {previewData.map((occ, idx) => (
                       <div key={idx} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-3 px-3 py-3">
