@@ -970,7 +970,7 @@ export default function AddEvent({
                               <button 
                                 type="button"
                                 onClick={() => setAfterSunset(!afterSunset)}
-                                className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition-all md:p-3 ${afterSunset ? 'bg-[#0038A8]/10 border-[#0038A8] text-[#0038A8]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition-all md:p-3 ${afterSunset ? 'border-[#0038A8] bg-[#0038A8]/10 text-[#0038A8] dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-300' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
                               >
                                 {afterSunset ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
                                 {afterSunset ? t('afterSunset') : (isRtl ? 'לפני השקיעה' : 'Before Sunset')}

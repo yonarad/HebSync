@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 function Section({ title, children }) {
   return (
     <section>
-      <h3 className="text-xl font-black tracking-tight text-slate-900">{title}</h3>
-      <div className="mt-3 space-y-3 text-sm leading-7 text-slate-600 md:text-[15px]">
+      <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{title}</h3>
+      <div className="mt-3 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300 md:text-[15px]">
         {children}
       </div>
     </section>
@@ -183,7 +183,7 @@ export default function TermsOfService() {
   return (
     <LegalPageLayout title={content.title} subtitle={content.subtitle}>
       {placeholderWarning && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-200">
           {content.warning}
         </div>
       )}

@@ -10,7 +10,7 @@ export default function LegalLinks({ className = '', linkClassName = '' }) {
       <Link to="/privacy" className={linkClassName}>
         {isHebrew ? 'פרטיות' : 'Privacy'}
       </Link>
-      <span className="text-slate-300">|</span>
+      <span className="text-slate-300 dark:text-slate-600">|</span>
       <Link to="/terms" className={linkClassName}>
         {isHebrew ? 'תנאי שימוש' : 'Terms'}
       </Link>
