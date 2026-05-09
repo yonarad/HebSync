@@ -27,6 +27,20 @@ function formatEventTimeLabel(event, locale) {
   });
 }
 
+function CalendarLoadingOverlay({ t }) {
+  return (
+    <div
+      data-testid="calendar-loading-state"
+      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/72 backdrop-blur-[2px] dark:bg-slate-950/68"
+    >
+      <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/92 px-4 py-2 text-sm font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900/92 dark:text-slate-300">
+        <LoaderCircle className="h-4 w-4 animate-spin" />
+        <span>{t('loadingGoogleData')}</span>
+      </div>
+    </div>
+  );
+}
+
 export const MOBILE_HEBREW_WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
 
 export function CalendarToolbar({
@@ -132,7 +146,7 @@ export function MonthCalendarView({
   const timeLocale = isRtl ? 'he-IL' : 'en-US';
 
   return (
-    <>
+    <div className="relative flex h-full flex-1 flex-col">
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
         {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
           const weekdayLabel = t(`days.${idx}`);
@@ -144,13 +158,8 @@ export function MonthCalendarView({
           );
         })}
       </div>
-      {isCalendarLoading ? (
-        <div data-testid="calendar-loading-state" className="flex flex-1 items-center justify-center gap-2 bg-white text-sm font-medium text-slate-400 dark:bg-slate-900 dark:text-slate-500">
-          <LoaderCircle className="h-4 w-4 animate-spin" />
-          <span>{t('loadingGoogleData')}</span>
-        </div>
-      ) : (
-        <div className="flex-1 grid grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900 md:overflow-hidden">
+      <div className="relative flex-1">
+        <div className="grid h-full grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900 md:overflow-hidden">
           {days.map((dayObj, i) => (
             <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
               {dayObj && (
@@ -239,8 +248,9 @@ export function MonthCalendarView({
             </div>
           ))}
         </div>
-      )}
-    </>
+        {isCalendarLoading ? <CalendarLoadingOverlay t={t} /> : null}
+      </div>
+    </div>
   );
 }
 
@@ -256,18 +266,14 @@ export function ScheduleCalendarView({
   handleCreateFromDay,
 }) {
   return (
-    <div className="flex-1 overflow-y-auto bg-white px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
-      {isCalendarLoading ? (
-        <div data-testid="calendar-loading-state" className="flex h-full items-center justify-center gap-2 text-sm font-medium text-slate-400 dark:text-slate-500">
-          <LoaderCircle className="h-4 w-4 animate-spin" />
-          <span>{t('loadingGoogleData')}</span>
-        </div>
-      ) : scheduleDays.length === 0 ? (
-        <div className="flex h-full items-center justify-center text-sm font-medium text-slate-400 dark:text-slate-500">
-          {t('noEventsInView')}
-        </div>
-      ) : (
-        <div className="space-y-3">
+    <div className="relative flex-1 overflow-hidden bg-white dark:bg-slate-900">
+      <div className="h-full overflow-y-auto px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
+        {scheduleDays.length === 0 ? (
+          <div className="flex h-full items-center justify-center text-sm font-medium text-slate-400 dark:text-slate-500">
+            {t('noEventsInView')}
+          </div>
+        ) : (
+          <div className="space-y-3">
           {scheduleDays.map((dayObj) => (
             <section
               key={dayObj.gDate.toISOString()}
@@ -340,8 +346,10 @@ export function ScheduleCalendarView({
               </div>
             </section>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
+      {isCalendarLoading ? <CalendarLoadingOverlay t={t} /> : null}
     </div>
   );
 }
