@@ -269,9 +269,6 @@ export default function MyCalendar() {
               <span className="text-slate-900 dark:text-white">{t('appNameSecond')}</span>
             </h1>
           </div>
-          <nav className={`hidden md:flex items-center gap-2 ${isRtl ? 'border-r pr-6 mr-2' : 'border-l pl-6 ml-2'} border-slate-200 dark:border-slate-700`}>
-            <button onClick={() => navigate('/calendar')} className="px-3 py-2 text-sm font-bold text-[#0038A8] bg-blue-50 rounded-lg dark:bg-blue-900/30 dark:text-blue-300">{t('myCalendar')}</button>
-          </nav>
         </div>
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
