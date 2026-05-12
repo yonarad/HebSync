@@ -75,7 +75,10 @@ vi.mock('react-i18next', () => ({
         viewSchedule: 'Schedule',
         showGregorianDates: 'Show Gregorian dates',
         discardEventConfirm: 'Discard event draft?',
-        noEventsInView: 'No events in this view.',
+        noCalendarsYetInCalendarView: 'No calendars are available yet. Create a calendar from the sidebar to start adding events.',
+        noSelectedCalendarsInCalendarView: 'There are calendars available, but none are selected. Choose one or more calendars from the sidebar.',
+        noEventsInView: 'The selected calendars do not have events in this time range.',
+        deletingEvent: 'Deleting...',
         allDay: 'All day',
         loadingGoogleData: 'Loading Google data...',
         createEventOnDay: `Create an event on day ${options?.hebrewDay ?? ''} (${options?.gregorianDay ?? ''})`,
@@ -115,6 +118,16 @@ const flattenLocaleKeys = (value, prefix = '') => {
   );
 };
 
+const flattenLocaleEntries = (value, prefix = '') => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return [[prefix, value]];
+  }
+
+  return Object.entries(value).flatMap(([key, nestedValue]) =>
+    flattenLocaleEntries(nestedValue, prefix ? `${prefix}.${key}` : key),
+  );
+};
+
 describe('My Calendar Component', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
@@ -133,6 +146,18 @@ describe('My Calendar Component', () => {
         .reduce((acc, part) => acc?.[part], heLocale.translation);
       expect(typeof value).toBe('string');
       expect(value.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it('should not contain suspicious runs of question marks in translations', () => {
+    const allEntries = [
+      ...flattenLocaleEntries(enLocale.translation),
+      ...flattenLocaleEntries(heLocale.translation),
+    ];
+
+    for (const [key, value] of allEntries) {
+      expect(typeof value).toBe('string');
+      expect(value).not.toMatch(/\?{3,}/);
     }
   });
 
@@ -317,6 +342,40 @@ describe('My Calendar Component', () => {
     expect(await screen.findByTestId('event-time-range')).toBeInTheDocument();
   });
 
+  it('should show a deleting state after confirming event deletion', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'evt1',
+        summary: 'Event 1',
+        description: 'Event description',
+        calendarId: 'cal1',
+        start: { dateTime: '2026-05-07T08:00:00.000Z' },
+        end: { dateTime: '2026-05-07T09:00:00.000Z' },
+        extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+      },
+    ]);
+    vi.mocked(googleApi.deleteEvent).mockImplementationOnce(
+      () => new Promise(() => {}),
+    );
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    fireEvent.click(await screen.findByText((content) => content.includes('Event 1')));
+    fireEvent.click(await screen.findByRole('button', { name: 'delete' }));
+
+    expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
+  });
+
   it('should open event details when clicking an external event chip', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
       {
@@ -374,6 +433,31 @@ describe('My Calendar Component', () => {
     expect(await screen.findByRole('button', { name: /Event 1/ })).toBeInTheDocument();
   });
 
+  it('should not show the month empty state when visible events exist', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'evt1',
+        summary: 'Visible Month Event',
+        calendarId: 'cal1',
+        start: { date: '2026-05-07' },
+        extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+      },
+    ]);
+
+    renderDashboard();
+
+    expect(await screen.findByText(/Visible Month Event/)).toBeInTheDocument();
+    expect(screen.queryByText('The selected calendars do not have events in this time range.')).not.toBeInTheDocument();
+  });
+
   it('should default to schedule view on mobile', async () => {
     const originalWidth = window.innerWidth;
     window.innerWidth = 375;
@@ -401,7 +485,7 @@ describe('My Calendar Component', () => {
 
     expect(await screen.findByRole('button', { name: /Mobile Event/ })).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.queryByText('No events in this view.')).not.toBeInTheDocument();
+    expect(screen.queryByText('The selected calendars do not have events in this time range.')).not.toBeInTheDocument();
     });
 
     window.innerWidth = originalWidth;
@@ -452,7 +536,39 @@ describe('My Calendar Component', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Schedule' }));
-    expect(await screen.findByText('No events in this view.')).toBeInTheDocument();
+    expect(await screen.findByText('No calendars are available yet. Create a calendar from the sidebar to start adding events.')).toBeInTheDocument();
+  });
+
+  it('should show a distinct empty state when calendars exist but none are selected', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'Personal',
+        accessRole: 'owner',
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    expect(await screen.findByText('There are calendars available, but none are selected. Choose one or more calendars from the sidebar.')).toBeInTheDocument();
+  });
+
+  it('should show a distinct empty state when selected calendars have no events in range', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    expect(await screen.findByText('The selected calendars do not have events in this time range.')).toBeInTheDocument();
   });
 
   it('should select only HebSync calendars by default', async () => {

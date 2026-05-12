@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogIn, LogOut, X, Menu } from 'lucide-react';
+import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle } from 'lucide-react';
 import { HDate } from '@hebcal/core';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
@@ -51,6 +51,7 @@ export default function MyCalendar() {
     isCalendarLoading,
     isFetchingGoogle,
     loadCalendarData,
+    loadCalendars,
     loadEvents,
     loginModalInitialScopeMode,
     loginModalMode,
@@ -87,6 +88,7 @@ export default function MyCalendar() {
     handleDelete,
     handleEventClick,
     handleUpdate,
+    isDeleting,
     isEditing,
     selectedEvent,
     setEditDesc,
@@ -216,6 +218,10 @@ export default function MyCalendar() {
     await loadEvents();
   };
 
+  const handleCalendarsChanged = async () => {
+    await loadCalendars();
+  };
+
   const handleNextMonth = () => {
     setViewHDate((prev) => getNextMonthHDate(prev));
   };
@@ -241,6 +247,11 @@ export default function MyCalendar() {
     (isAuthenticated && isFetchingGoogle) ||
     !hasLoadedCalendarData;
   const isMonthLoading = isScheduleLoading;
+  const emptyStateMessage = calendars.length === 0
+    ? t('noCalendarsYetInCalendarView')
+    : selectedCalendarIds.length === 0
+      ? t('noSelectedCalendarsInCalendarView')
+      : t('noEventsInView');
 
   const formatEventTimeRange = (event) => {
     if (!event?.start?.dateTime) return '';
@@ -367,6 +378,7 @@ export default function MyCalendar() {
                   handleOverflowDayOpen={handleOverflowDayOpen}
                   handleCreateFromDay={handleCreateFromDay}
                   isCalendarLoading={isMonthLoading}
+                  emptyStateMessage={emptyStateMessage}
                 />
               ) : (
                 <ScheduleCalendarView
@@ -379,6 +391,7 @@ export default function MyCalendar() {
                   handleEventClick={handleEventClick}
                   isCalendarLoading={isScheduleLoading}
                   handleCreateFromDay={handleCreateFromDay}
+                  emptyStateMessage={emptyStateMessage}
                 />
               )}
             </div>
@@ -430,6 +443,7 @@ export default function MyCalendar() {
               <AddEvent
                 onClose={handleRequestCloseAddEventModal}
                 onComplete={handleAddEventComplete}
+                onCalendarsChanged={handleCalendarsChanged}
                 prefillDate={createPrefillDate}
               />
             </div>
@@ -491,7 +505,18 @@ export default function MyCalendar() {
               )}
             </div>
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
-              <button onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)} className={`flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors dark:text-red-400 dark:hover:bg-red-900/20`}><Trash2 className="w-4 h-4" /> {hasWriteAccess ? t('delete') : t('allowDelete')}</button>
+              <button
+                onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)}
+                disabled={isDeleting}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 font-bold transition-colors ${
+                  isDeleting
+                    ? 'cursor-wait bg-red-50 text-red-400 dark:bg-red-900/10 dark:text-red-300'
+                    : 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+                }`}
+              >
+                {isDeleting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                {isDeleting ? t('deletingEvent') : hasWriteAccess ? t('delete') : t('allowDelete')}
+              </button>
               <div className="flex gap-2">
                 {isEditing ? (
                   <><button onClick={() => setIsEditing(false)} className="rounded-xl px-4 py-2 font-bold text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800">{t('cancel')}</button><button onClick={handleUpdate} className="rounded-xl bg-[#0038A8] px-6 py-2 font-bold text-white shadow-md transition-colors hover:bg-blue-800">{t('save')}</button></>

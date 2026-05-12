@@ -36,6 +36,7 @@ vi.mock('../utils/googleApi', () => ({
   revokeAccess: vi.fn(),
   logout: vi.fn(),
   createHebcalEvent: vi.fn(),
+  createNewCalendar: vi.fn(),
   isAuthError: vi.fn((error) => error?.code === 'AUTH_EXPIRED'),
 }));
 
@@ -125,6 +126,53 @@ describe('AddEvent Component', () => {
 
     expect(window.alert).toHaveBeenCalledWith('errorNoCalendar');
     expect(screen.queryByText('preview')).not.toBeInTheDocument();
+  });
+
+  it('should show a clear empty state when no calendars are available', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([]);
+
+    renderAddEvent();
+
+    expect(await screen.findByText('selectTargetCalendars')).toBeInTheDocument();
+    expect(await screen.findByText('noCalendarsForEventCreation')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'createCalendarToContinue' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'refreshCalendars' })).toBeInTheDocument();
+  });
+
+  it('should create a calendar from the empty state and refresh the list', async () => {
+    vi.spyOn(window, 'prompt').mockReturnValue('New Calendar');
+    vi.mocked(googleApi.fetchAllCalendars)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'cal1', summary: 'New Calendar', accessRole: 'owner' }
+      ]);
+
+    renderAddEvent();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'createCalendarToContinue' }));
+
+    await waitFor(() => {
+      expect(googleApi.createNewCalendar).toHaveBeenCalledWith('New Calendar');
+      expect(screen.getByText('New Calendar')).toBeInTheDocument();
+    });
+  });
+
+  it('should notify the parent when a calendar is created from the empty state', async () => {
+    const onCalendarsChanged = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window, 'prompt').mockReturnValue('New Calendar');
+    vi.mocked(googleApi.fetchAllCalendars)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'cal1', summary: 'New Calendar', accessRole: 'owner' }
+      ]);
+
+    renderAddEvent({ onCalendarsChanged });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'createCalendarToContinue' }));
+
+    await waitFor(() => {
+      expect(onCalendarsChanged).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('should prefill the clicked day as a Gregorian date when opened from the calendar', async () => {

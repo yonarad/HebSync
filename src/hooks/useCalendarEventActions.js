@@ -12,6 +12,7 @@ export default function useCalendarEventActions({
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleEventClick = (event) => {
     setSelectedEvent(event);
@@ -26,13 +27,16 @@ export default function useCalendarEventActions({
       return;
     }
     if (!window.confirm(t('deleteEventConfirm'))) return;
+    setIsDeleting(true);
     try {
       await deleteEvent(calendarId, googleEventId);
       setSelectedEvent(null);
-      loadCalendarData();
-      loadEvents();
+      await loadCalendarData();
+      await loadEvents();
     } catch (error) {
       alert(t('deleteEventError'));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -62,6 +66,7 @@ export default function useCalendarEventActions({
     handleDelete,
     handleEventClick,
     handleUpdate,
+    isDeleting,
     isEditing,
     selectedEvent,
     setEditDesc,

@@ -227,6 +227,8 @@
     "allCalendarsGroupLabel": "כל היומנים",
     "selectedCountSuffix": "מסומנים",
     "noCalendarsAvailable": "עדיין אין יומנים זמינים.",
+    "noCalendarsYetInCalendarView": "עדיין אין יומנים זמינים. אפשר ליצור יומן מסרגל הצד כדי להתחיל להוסיף אירועים.",
+    "noSelectedCalendarsInCalendarView": "יש יומנים זמינים, אבל אף יומן לא מסומן. אפשר לבחור יומן אחד או יותר מסרגל הצד.",
     "aboutHebSync": "אודות HebSync",
     "aboutHebSyncHint": "הסבר על האפליקציה, אופן העבודה והגדרות החיבור הראשוניות.",
     "bulkImportAccessHint": "את הייבוא מאקסל פותחים מתוך מסך הוספת אירוע, בלשונית הייבוא.",
@@ -234,7 +236,11 @@
     "createEventOnDay": "יצירת אירוע ביום {{hebrewDay}} ({{gregorianDay}})",
     "viewMonth": "חודש",
     "viewSchedule": "לוח זמנים",
-    "noEventsInView": "אין אירועים בתצוגה הזו.",
-    "allDay": "כל היום"
+    "noEventsInView": "אין אירועים ביומנים המסומנים בטווח הזמן הזה.",
+    "allDay": "כל היום",
+    "noCalendarsForEventCreation": "עדיין אין יומנים זמינים, ולכן אין לאן להוסיף את האירוע. אפשר ליצור יומן חדש ואז לבחור אותו כאן.",
+    "noCalendarsForEventCreationReadOnly": "עדיין אין יומנים זמינים. כדי ליצור יומן ולהמשיך, צריך קודם לאפשר הרשאת יצירת יומנים.",
+    "createCalendarToContinue": "יצירת יומן",
+    "deletingEvent": "מוחק..."
   }
 }

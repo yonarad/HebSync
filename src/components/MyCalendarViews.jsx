@@ -41,6 +41,18 @@ function CalendarLoadingOverlay({ t }) {
   );
 }
 
+function CalendarEmptyState({ message }) {
+  return (
+    <div className="flex h-full items-center justify-center p-6">
+      <div className="max-w-md rounded-3xl border border-dashed border-slate-300 bg-slate-50/90 px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+        <p className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
+          {message}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export const MOBILE_HEBREW_WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
 
 export function CalendarToolbar({
@@ -142,8 +154,10 @@ export function MonthCalendarView({
   handleOverflowDayOpen,
   handleCreateFromDay,
   isCalendarLoading,
+  emptyStateMessage,
 }) {
   const timeLocale = isRtl ? 'he-IL' : 'en-US';
+  const hasVisibleEvents = days.some((dayObj) => dayObj?.events?.length > 0);
 
   return (
     <div className="relative flex h-full flex-1 flex-col">
@@ -248,6 +262,11 @@ export function MonthCalendarView({
             </div>
           ))}
         </div>
+        {!isCalendarLoading && emptyStateMessage && !hasVisibleEvents ? (
+          <div className="pointer-events-none absolute inset-0 z-[5]">
+            <CalendarEmptyState message={emptyStateMessage} />
+          </div>
+        ) : null}
         {isCalendarLoading ? <CalendarLoadingOverlay t={t} /> : null}
       </div>
     </div>
@@ -264,14 +283,13 @@ export function ScheduleCalendarView({
   handleEventClick,
   isCalendarLoading,
   handleCreateFromDay,
+  emptyStateMessage,
 }) {
   return (
     <div className="relative flex-1 overflow-hidden bg-white dark:bg-slate-900">
       <div className="h-full overflow-y-auto px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
         {scheduleDays.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm font-medium text-slate-400 dark:text-slate-500">
-            {t('noEventsInView')}
-          </div>
+          <CalendarEmptyState message={emptyStateMessage || t('noEventsInView')} />
         ) : (
           <div className="space-y-3">
           {scheduleDays.map((dayObj) => (

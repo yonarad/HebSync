@@ -6,13 +6,14 @@ import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
 import { resolveCalendarColor } from '../utils/googleCalendarColors';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, logout, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
+import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, createNewCalendar, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, logout, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
 
 import { useTranslation } from 'react-i18next';
 
 export default function AddEvent({
   onClose = () => {},
   onComplete = null,
+  onCalendarsChanged = null,
   prefillDate = null,
 }) {
   const BULK_IMPORT_COLUMNS = ['שם האירוע', 'קטגוריה', 'הערות', 'שנת מקור', 'חודש', 'יום', 'מופעים'];
@@ -272,6 +273,30 @@ export default function AddEvent({
     }
   };
 
+  const handleCreateCalendar = async () => {
+    if (!hasWriteAccess) {
+      setLoginModalMode('upgrade');
+      setShowLoginModal(true);
+      return;
+    }
+
+    const name = window.prompt(t('newCalendarPrompt'));
+    if (!name) return;
+
+    setIsCalendarLoading(true);
+    try {
+      await createNewCalendar(name);
+      await loadCalendars();
+      if (onCalendarsChanged) {
+        await onCalendarsChanged();
+      }
+    } catch (error) {
+      alert(t('createCalendarError'));
+    } finally {
+      setIsCalendarLoading(false);
+    }
+  };
+
   const toggleCalendar = (id) => {
     setSelectedCalendarIds(prev => 
       prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
@@ -423,7 +448,34 @@ export default function AddEvent({
     }
 
     if (calendars.length === 0) {
-      return null;
+      return (
+        <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+          <div>
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('selectTargetCalendars')}</label>
+          </div>
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/90 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+            <p className="text-sm font-medium leading-6 text-slate-600 dark:text-slate-300">
+              {hasWriteAccess ? t('noCalendarsForEventCreation') : t('noCalendarsForEventCreationReadOnly')}
+            </p>
+            <div className={`mt-4 flex flex-wrap gap-2 ${isRtl ? 'justify-end' : 'justify-start'}`}>
+              <button
+                type="button"
+                onClick={handleCreateCalendar}
+                className="inline-flex items-center justify-center rounded-full bg-[#0038A8] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#002d86]"
+              >
+                {hasWriteAccess ? t('createCalendarToContinue') : t('allowCalendarCreation')}
+              </button>
+              <button
+                type="button"
+                onClick={loadCalendars}
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                {t('refreshCalendars')}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     const renderCalendarOption = (cal, { disabled = false, readOnly = false } = {}) => (
