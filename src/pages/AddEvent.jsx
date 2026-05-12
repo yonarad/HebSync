@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, GripHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import LoginModal from '../components/LoginModal';
-import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear, validateHebrewDateForYear } from '../utils/hebcal';
+import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
 import { resolveCalendarColor } from '../utils/googleCalendarColors';
 import { HDate, gematriya } from '@hebcal/core';
 import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, logout, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
@@ -278,7 +278,7 @@ export default function AddEvent({
     );
   };
 
-  const show30thFallback = !isGregorianEntry && day === 30 && ['Cheshvan', 'Kislev', 'Adar I'].includes(month);
+  const show30thFallback = !isGregorianEntry && requires30thFallbackDecision(month, day);
   const sourceDateValidation = !isGregorianEntry
     ? validateHebrewDateForYear(parseInt(year, 10), month, day)
     : { isValid: true };
@@ -677,7 +677,11 @@ export default function AddEvent({
           const validation = sourceYearValue && monthId && dayValue
             ? validateHebrewDateForYear(sourceYearValue, monthId, dayValue)
             : null;
-          const needsFallbackDecision = validation?.reason === 'missing_flexible_30th';
+          const canResolveWithFallback =
+            validation &&
+            (validation.reason === 'ok' || validation.reason === 'missing_flexible_30th');
+          const needsFallbackDecision =
+            requires30thFallbackDecision(monthId, dayValue) && canResolveWithFallback;
 
           if (validation && !validation.isValid) {
             if (validation.reason !== 'missing_flexible_30th') {

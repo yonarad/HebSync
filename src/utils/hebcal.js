@@ -40,6 +40,11 @@ export const HEBREW_MONTHS = [
 
 export const FLEXIBLE_30TH_MONTHS = ['Cheshvan', 'Kislev', 'Adar I'];
 
+export function requires30thFallbackDecision(monthName, day) {
+  const dayNumber = parseInt(day, 10);
+  return dayNumber === 30 && FLEXIBLE_30TH_MONTHS.includes(monthName);
+}
+
 /**
  * Returns the relevant months for a specific Hebrew year.
  * Handles leap years (Adar I, Adar II) vs non-leap years (Adar).
@@ -101,7 +106,7 @@ export function validateHebrewDateForYear(year, monthName, day) {
   }
 
   const maxDay = getDaysInHebrewMonth(yearNumber, monthName);
-  const isFlexible30th = dayNumber === 30 && FLEXIBLE_30TH_MONTHS.includes(monthName);
+  const isFlexible30th = requires30thFallbackDecision(monthName, dayNumber);
 
   if (dayNumber > maxDay) {
     return {

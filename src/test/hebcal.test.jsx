@@ -6,6 +6,7 @@ import {
   getMonthsForYear,
   generateRdates,
   getPreviewDates,
+  requires30thFallbackDecision,
   doesHebrewMonthExistInYear,
   validateHebrewDateForYear,
 } from '../utils/hebcal';
@@ -147,6 +148,20 @@ describe('Hebcal Utils', () => {
       const result = validateHebrewDateForYear(5784, 'Iyyar', 30);
       expect(result.isValid).toBe(false);
       expect(result.reason).toBe('day_out_of_range');
+    });
+  });
+
+  describe('requires30thFallbackDecision', () => {
+    it('flags Adar I on the 30th for special handling', () => {
+      expect(requires30thFallbackDecision('Adar I', 30)).toBe(true);
+    });
+
+    it('does not flag other days in flexible months', () => {
+      expect(requires30thFallbackDecision('Adar I', 29)).toBe(false);
+    });
+
+    it('does not flag the 30th in non-flexible months', () => {
+      expect(requires30thFallbackDecision('Nisan', 30)).toBe(false);
     });
   });
 

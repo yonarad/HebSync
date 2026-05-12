@@ -49,6 +49,24 @@ export function buildMonthDays(viewHDate, calendarEvents) {
   return days;
 }
 
+export function getHebrewMonthGregorianRange(viewHDate) {
+  const hMonth = viewHDate.getMonthName();
+  const hYear = viewHDate.getFullYear();
+  const firstDay = new HDate(1, hMonth, hYear).greg();
+  const lastDay = new HDate(
+    HDate.daysInMonth(HDate.monthFromName(hMonth), hYear),
+    hMonth,
+    hYear,
+  ).greg();
+  const exclusiveEnd = new Date(lastDay);
+  exclusiveEnd.setDate(exclusiveEnd.getDate() + 1);
+
+  return {
+    timeMin: firstDay.toISOString(),
+    timeMax: exclusiveEnd.toISOString(),
+  };
+}
+
 export function buildScheduleDays(days) {
   return days
     .filter((dayObj) => dayObj?.events?.length)

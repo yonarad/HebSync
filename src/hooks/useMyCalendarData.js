@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { HDate } from '@hebcal/core';
+import { getHebrewMonthGregorianRange } from '../utils/calendarView';
 import {
   authenticateWithGoogle,
   canEditCalendars,
@@ -125,13 +126,10 @@ export default function useMyCalendarData({ t }) {
   const loadCalendarData = async () => {
     setIsCalendarLoading(true);
     try {
-      const hMonth = viewHDate.getMonthName();
-      const hYear = viewHDate.getFullYear();
-      const firstDayH = new HDate(1, hMonth, hYear);
-      const lastDayH = new HDate(HDate.daysInMonth(HDate.monthFromName(hMonth), hYear), hMonth, hYear);
+      const { timeMin, timeMax } = getHebrewMonthGregorianRange(viewHDate);
       const events = await fetchEventsInRange(
-        firstDayH.greg().toISOString(),
-        lastDayH.greg().toISOString(),
+        timeMin,
+        timeMax,
         selectedCalendarIds,
       );
       setCalendarEvents(events);
