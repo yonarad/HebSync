@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ChevronLeft, X } from 'lucide-react';
 import Logo from './Logo';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,83 @@ import LegalLinks from './LegalLinks';
 export default function LegalPageLayout({ title, subtitle, children }) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
+  const location = useLocation();
+  const navigate = useNavigate();
+  const backgroundLocation = location.state?.backgroundLocation;
+  const returnTo = location.state?.returnTo || '/?about=1';
+  const isModal = Boolean(backgroundLocation);
+
+  const handleClose = () => {
+    if (isModal) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(returnTo);
+  };
+
+  if (isModal) {
+    return (
+      <div
+        dir={isRtl ? 'rtl' : 'ltr'}
+        className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm md:px-6 md:py-8"
+      >
+        <div className="absolute inset-0" onClick={handleClose} aria-hidden="true" />
+        <div className="relative flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/95 shadow-2xl dark:border-slate-800 dark:bg-slate-900/95">
+          <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 md:px-8">
+            <div className="flex items-center gap-3">
+              <Logo className="h-11 w-11 drop-shadow-xl" />
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.28em] text-slate-400">
+                  {t('calendarSetup')}
+                </p>
+                <h1
+                  className="text-xl font-black tracking-tight text-slate-900 dark:text-white"
+                  style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}
+                >
+                  <span className="text-[#0038A8] dark:text-blue-400">{t('appNameFirst')}</span>
+                  <span>{t('appNameSecond')}</span>
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <button
+                type="button"
+                onClick={handleClose}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-blue-400 dark:hover:text-blue-300"
+                aria-label={isRtl ? 'סגור' : 'Close'}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-y-auto px-6 py-6 md:px-8 md:py-8">
+            <header className="border-b border-slate-100 pb-6 dark:border-slate-800">
+              <h2
+                className="text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl"
+                style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}
+              >
+                {title}
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300 md:text-base">
+                {subtitle}
+              </p>
+            </header>
+            <div className="mt-8 space-y-8">{children}</div>
+          </div>
+
+          <footer className="border-t border-slate-100 px-6 py-4 text-center text-[11px] font-medium text-slate-400 dark:border-slate-800 md:px-8">
+            <LegalLinks
+              className="flex items-center justify-center gap-2"
+              linkClassName="font-bold text-[#0038A8] hover:underline dark:text-blue-400"
+            />
+          </footer>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -36,11 +113,11 @@ export default function LegalPageLayout({ title, subtitle, children }) {
 
         <div className="mt-6">
           <Link
-            to="/?about=1"
+            to={returnTo}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-blue-400 dark:hover:text-blue-300"
           >
             <ChevronLeft className={`h-4 w-4 ${isRtl ? 'rotate-180' : ''}`} />
-            {isRtl ? 'חזרה לאודות' : 'Back to About'}
+            {isRtl ? 'חזרה' : 'Back'}
           </Link>
         </div>
 
