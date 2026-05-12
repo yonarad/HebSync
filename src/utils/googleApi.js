@@ -1,4 +1,4 @@
-import { formatHebrewYear } from './hebcal';
+import { formatHebrewYear, requires30thFallbackDecision } from './hebcal';
 
 export const GCAL_AUTH_EXPIRED_EVENT = 'gcal-auth-expired';
 export const AUTH_STATE_STORAGE_KEY = 'gcal_auth_state';
@@ -294,6 +294,7 @@ export async function createHebcalEvent(
   rdateString,
   calendarId,
   userDescription = '',
+  options = {},
 ) {
   if (!calendarId) throw new Error('No calendar selected');
 
@@ -308,7 +309,13 @@ export async function createHebcalEvent(
   const originalHebrewYearLabel = Number.isFinite(originalYearNumber)
     ? `שנת מקור: ${formatHebrewYear(originalYearNumber)} - ${originalHebrewYear}`
     : `שנת מקור: ${originalHebrewYear}`;
-  const metadata = `${originalHebrewYearLabel}\nנוצר ע"י "עברי ליומן - HebSync"`;
+  const specialDateMetadata = buildSpecialDateMetadata(options.specialDate);
+  const metadataParts = [originalHebrewYearLabel];
+  if (specialDateMetadata) {
+    metadataParts.push(specialDateMetadata);
+  }
+  metadataParts.push('נוצר ע"י "עברי ליומן - HebSync"');
+  const metadata = metadataParts.join('\n');
   const finalDescription = userDescription
     ? `${userDescription}\n\n---\n${metadata}`
     : metadata;
@@ -385,6 +392,36 @@ export async function deleteEvent(calendarId, googleEventId) {
   );
 
   return true;
+}
+
+const SPECIAL_DATE_MONTH_LABELS = {
+  Cheshvan: 'חשוון',
+  Kislev: 'כסלו',
+  'Adar I': 'אדר א׳',
+};
+
+const SPECIAL_DATE_FALLBACK_LABELS = {
+  '29th': 'בשנים שבהן התאריך לא קיים, האירוע מוקדם לכ״ט באותו חודש.',
+  '1st': 'בשנים שבהן התאריך לא קיים, האירוע נדחה לא׳ בחודש הבא.',
+  skip: 'בשנים שבהן התאריך לא קיים, אותה שנה מדולגת ולא נוצר מופע.',
+};
+
+export function buildSpecialDateMetadata(specialDate) {
+  if (!specialDate) return '';
+
+  const { monthName, day, fallback } = specialDate;
+  if (!requires30thFallbackDecision(monthName, day)) {
+    return '';
+  }
+
+  const monthLabel = SPECIAL_DATE_MONTH_LABELS[monthName] || monthName;
+  const fallbackLabel = SPECIAL_DATE_FALLBACK_LABELS[fallback];
+
+  if (!fallbackLabel) {
+    return `תאריך מיוחד: ל׳ ב${monthLabel}.`;
+  }
+
+  return `תאריך מיוחד: ל׳ ב${monthLabel}\n${fallbackLabel}`;
 }
 
 function chunkRdates(rdates) {

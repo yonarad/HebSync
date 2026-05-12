@@ -384,8 +384,12 @@ export default function AddEvent({
       }
 
       // Create event in all selected calendars
-      await Promise.all(selectedCalendarIds.map(calendarId => 
-        createHebcalEvent(title, category, targetYear, rdateString, calendarId, notes)
+      await Promise.all(selectedCalendarIds.map((calendarId) =>
+        createHebcalEvent(title, category, targetYear, rdateString, calendarId, notes, {
+          specialDate: requires30thFallbackDecision(targetMonth, targetDay)
+            ? { monthName: targetMonth, day: targetDay, fallback: fallback30th }
+            : null,
+        })
       ));
 
       alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
@@ -773,6 +777,11 @@ export default function AddEvent({
                 rdateString,
                 calendarId,
                 row.notes,
+                {
+                  specialDate: requires30thFallbackDecision(row.monthId, row.dayValue)
+                    ? { monthName: row.monthId, day: row.dayValue, fallback }
+                    : null,
+                },
               ),
             ),
           );
