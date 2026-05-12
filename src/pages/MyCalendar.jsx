@@ -6,7 +6,7 @@ import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import AddEvent from './AddEvent';
 import { revokeAccess } from '../utils/googleApi';
-import { buildMonthDays, buildScheduleDays, getHebrewMonthMeta, getNextMonthHDate, getOverflowPopoverLayout, getPrevMonthHDate } from '../utils/calendarView';
+import { buildMonthDays, buildScheduleDays, getEventOccurrenceHebrewYear, getHebrewMonthMeta, getNextMonthHDate, getOverflowPopoverLayout, getPrevMonthHDate } from '../utils/calendarView';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -471,8 +471,8 @@ export default function MyCalendar() {
                     const props = selectedEvent.extendedProperties?.private || {};
                     const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
                     const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
-                    const currentHebrewYear = new HDate().getFullYear();
-                    const age = (originalYear && currentHebrewYear) ? (currentHebrewYear - originalYear) : 0;
+                    const occurrenceHebrewYear = getEventOccurrenceHebrewYear(selectedEvent);
+                    const age = (originalYear && occurrenceHebrewYear) ? (occurrenceHebrewYear - originalYear) : 0;
                     const ageSuffix = isHebCal ? ` (${age})` : '';
                     const timeRange = formatEventTimeRange(selectedEvent);
                     return (

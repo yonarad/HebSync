@@ -67,6 +67,21 @@ export function getHebrewMonthGregorianRange(viewHDate) {
   };
 }
 
+export function getEventOccurrenceHebrewYear(event) {
+  const startValue = event?.start?.dateTime || event?.start?.date;
+  if (!startValue) return null;
+
+  const startDate = event?.start?.date
+    ? new Date(`${startValue}T12:00:00`)
+    : new Date(startValue);
+
+  if (Number.isNaN(startDate.getTime())) {
+    return null;
+  }
+
+  return new HDate(startDate).getFullYear();
+}
+
 export function buildScheduleDays(days) {
   return days
     .filter((dayObj) => dayObj?.events?.length)
