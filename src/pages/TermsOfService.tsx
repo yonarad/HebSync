@@ -1,8 +1,22 @@
+import { type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import LegalPageLayout from '../components/LegalPageLayout';
 import { LEGAL_DETAILS, hasPlaceholderLegalDetails } from '../config/legal';
-import { useTranslation } from 'react-i18next';
 
-function Section({ title, children }) {
+interface SectionContent {
+  title: string;
+  body?: string[];
+  list?: string[];
+}
+
+interface PageContent {
+  title: string;
+  subtitle: string;
+  warning: string;
+  sections: SectionContent[];
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
       <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{title}</h3>
@@ -13,7 +27,7 @@ function Section({ title, children }) {
   );
 }
 
-function List({ items }) {
+function List({ items }: { items: string[] }) {
   return (
     <ul className="list-disc space-y-2 ps-5">
       {items.map((item) => (
@@ -28,7 +42,7 @@ export default function TermsOfService() {
   const isHebrew = i18n.language === 'he';
   const placeholderWarning = hasPlaceholderLegalDetails();
 
-  const content = isHebrew
+  const content: PageContent = isHebrew
     ? {
         title: 'תנאי שימוש',
         subtitle:

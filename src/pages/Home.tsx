@@ -1,14 +1,60 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, Download, Eye, FileSpreadsheet, Info, Shield, Sparkles } from 'lucide-react';
-import Logo from '../components/Logo';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Download,
+  Eye,
+  FileSpreadsheet,
+  Info,
+  Shield,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import LegalLinks from '../components/LegalLinks';
-import { authenticateWithGoogle, fetchSession, getAccessToken, SCOPE_MODES, usesAllCalendarsMode } from '../utils/googleApi';
-import { useTranslation } from 'react-i18next';
+import Logo from '../components/Logo';
 import useInstallPrompt from '../hooks/useInstallPrompt';
+import {
+  authenticateWithGoogle,
+  fetchSession,
+  getAccessToken,
+  SCOPE_MODES,
+  usesAllCalendarsMode,
+} from '../utils/googleApi';
+import type { ScopeMode } from '../types/appTypes';
 
-const CONNECT_OPTIONS = [
+type LocaleCode = 'en' | 'he';
+
+interface ConnectOption {
+  id: ScopeMode;
+  titleKey: string;
+  descriptionKey: string;
+  helperKey?: string;
+  badgeKey?: string;
+  icon: LucideIcon;
+  accentClassName: string;
+  iconClassName: string;
+}
+
+interface LocalizedCopy {
+  en: string;
+  he: string;
+}
+
+interface ValueProp {
+  icon: LucideIcon;
+  titleKey: string;
+  descriptionKey: string;
+  defaultTitle: LocalizedCopy;
+  defaultDescription: LocalizedCopy;
+  accentClassName: string;
+}
+
+const CONNECT_OPTIONS: ConnectOption[] = [
   {
     id: SCOPE_MODES.APP_CREATED,
     titleKey: 'permissionHebsyncOnly',
@@ -30,7 +76,7 @@ const CONNECT_OPTIONS = [
   },
 ];
 
-const VALUE_PROPS = [
+const VALUE_PROPS: ValueProp[] = [
   {
     icon: CalendarDays,
     titleKey: 'landingValueSyncTitle',
@@ -79,13 +125,13 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getAccessToken()));
   const [isSessionResolved, setIsSessionResolved] = useState(false);
-  const [selectedMode, setSelectedMode] = useState(SCOPE_MODES.APP_CREATED);
-  const [activeMode, setActiveMode] = useState(null);
+  const [selectedMode, setSelectedMode] = useState<ScopeMode>(SCOPE_MODES.APP_CREATED);
+  const [activeMode, setActiveMode] = useState<ScopeMode | null>(null);
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const isRtl = i18n.language === 'he';
-  const locale = isRtl ? 'he' : 'en';
+  const locale: LocaleCode = isRtl ? 'he' : 'en';
   const searchParams = new URLSearchParams(location.search);
   const isAboutView = searchParams.get('about') === '1';
   const authError = searchParams.get('authError');
@@ -95,7 +141,6 @@ export default function Home() {
       ? SCOPE_MODES.READ_ONLY
       : SCOPE_MODES.APP_CREATED
     : null;
-  const selectedMatchesActive = isAuthenticated && activeOptionId === selectedMode;
   const authErrorMessage = (() => {
     if (!authError) return null;
     if (authError === 'invalid_auth_state') return t('authErrorInvalidState');
@@ -123,7 +168,7 @@ export default function Home() {
           return;
         }
 
-        setIsAuthenticated(!!session);
+        setIsAuthenticated(Boolean(session));
         setActiveMode(session?.scopeMode || null);
         if (session?.scopeMode) {
           setSelectedMode(
@@ -198,7 +243,8 @@ export default function Home() {
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 md:text-lg">
                 {t('landingHeroBody', {
-                  defaultValue: 'HebSync עוזר לנהל ימי הולדת, אזכרות, ימי נישואין ואירועים עבריים חוזרים בלי לחשב כל שנה מחדש. בוחרים יומן, מייבאים או יוצרים אירועים, ומקבלים תצוגה מקדימה לפני שהכול נכתב ליומן.',
+                  defaultValue:
+                    'HebSync עוזר לנהל ימי הולדת, אזכרות, ימי נישואין ואירועים עבריים חוזרים בלי לחשב כל שנה מחדש. בוחרים יומן, מייבאים או יוצרים אירועים, ומקבלים תצוגה מקדימה לפני שהכול נכתב ליומן.',
                 })}
               </p>
 
@@ -211,14 +257,18 @@ export default function Home() {
                       key={item.titleKey}
                       className="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/85 p-4 dark:border-slate-800 dark:bg-slate-800/60"
                     >
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${item.accentClassName}`}>
+                      <div
+                        className={`flex h-11 w-11 items-center justify-center rounded-2xl ${item.accentClassName}`}
+                      >
                         <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="mt-4 text-lg font-black tracking-tight text-slate-900 dark:text-white">
                         {t(item.titleKey, { defaultValue: item.defaultTitle[locale] })}
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                        {t(item.descriptionKey, { defaultValue: item.defaultDescription[locale] })}
+                        {t(item.descriptionKey, {
+                          defaultValue: item.defaultDescription[locale],
+                        })}
                       </p>
                     </div>
                   );
@@ -230,11 +280,14 @@ export default function Home() {
                   {t('landingHowItWorksEyebrow', { defaultValue: 'How it works' })}
                 </p>
                 <h3 className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-white">
-                  {t('landingHowItWorksTitle', { defaultValue: 'A short, safe setup and then the calendar becomes the center' })}
+                  {t('landingHowItWorksTitle', {
+                    defaultValue: 'A short, safe setup and then the calendar becomes the center',
+                  })}
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                   {t('landingHowItWorksBody', {
-                    defaultValue: 'בפעם הראשונה בוחרים איך HebSync יתחבר ליומנים שלך. משם העבודה השוטפת קורית במסך היומן: צפייה, יצירה, ייבוא, ועדכון אירועים חוזרים במקום אחד.',
+                    defaultValue:
+                      'בפעם הראשונה בוחרים איך HebSync יתחבר ליומנים שלך. משם העבודה השוטפת קורית במסך היומן: צפייה, יצירה, ייבוא, ועדכון אירועים חוזרים במקום אחד.',
                   })}
                 </p>
                 <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -245,7 +298,8 @@ export default function Home() {
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                       {t('landingChecklistOneBody', {
-                        defaultValue: 'להבין איך האפליקציה עובדת, להתקין אותה, ולבחור את מודל הגישה שמתאים לך לפני שמתחילים.',
+                        defaultValue:
+                          'להבין איך האפליקציה עובדת, להתקין אותה, ולבחור את מודל הגישה שמתאים לך לפני שמתחילים.',
                       })}
                     </p>
                   </div>
@@ -256,7 +310,8 @@ export default function Home() {
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                       {t('landingChecklistTwoBody', {
-                        defaultValue: 'אחרי החיבור הראשוני נכנסים למסך היומן, ושם מנהלים את כל הזרימה היומית בלי צורך לחזור לכאן כל הזמן.',
+                        defaultValue:
+                          'אחרי החיבור הראשוני נכנסים למסך היומן, ושם מנהלים את כל הזרימה היומית בלי צורך לחזור לכאן כל הזמן.',
                       })}
                     </p>
                   </div>
@@ -287,7 +342,9 @@ export default function Home() {
                     {t('landingConnectEyebrow', { defaultValue: 'Connect once' })}
                   </p>
                   <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    {t('landingConnectTitle', { defaultValue: 'Choose how HebSync should connect to your calendars' })}
+                    {t('landingConnectTitle', {
+                      defaultValue: 'Choose how HebSync should connect to your calendars',
+                    })}
                   </h3>
                 </div>
               </div>
@@ -309,7 +366,8 @@ export default function Home() {
               {!isAuthenticated && (
                 <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   {t('landingConnectBody', {
-                    defaultValue: 'אפשר להתחיל רק עם יומני HebSync, או לחבר גם יומנים קיימים. הגישה לעריכה תתבקש רק כשבאמת צריך לבצע שינוי.',
+                    defaultValue:
+                      'אפשר להתחיל רק עם יומני HebSync, או לחבר גם יומנים קיימים. הגישה לעריכה תתבקש רק כשבאמת צריך לבצע שינוי.',
                   })}
                 </p>
               )}
@@ -323,14 +381,16 @@ export default function Home() {
                     <div
                       key={option.id}
                       onClick={() => setSelectedMode(option.id)}
-                      className={`relative w-full rounded-[1.75rem] border-2 p-5 text-start transition-all ${option.accentClassName} ${
+                      className={`relative w-full cursor-pointer rounded-[1.75rem] border-2 p-5 text-start transition-all ${option.accentClassName} ${
                         isSelected
-                          ? 'ring-2 ring-[#0038A8]/20 dark:ring-blue-400/20 shadow-[0_20px_45px_-30px_rgba(0,56,168,0.45)]'
+                          ? 'shadow-[0_20px_45px_-30px_rgba(0,56,168,0.45)] ring-2 ring-[#0038A8]/20 dark:ring-blue-400/20'
                           : 'hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-34px_rgba(15,23,42,0.35)]'
-                      } cursor-pointer`}
+                      }`}
                     >
                       {isSelected && (
-                        <CheckCircle2 className={`absolute top-5 ${isRtl ? 'left-5' : 'right-5'} h-5 w-5 text-[#0038A8] dark:text-blue-300`} />
+                        <CheckCircle2
+                          className={`absolute top-5 ${isRtl ? 'left-5' : 'right-5'} h-5 w-5 text-[#0038A8] dark:text-blue-300`}
+                        />
                       )}
                       <div className="flex w-full gap-4 text-start">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-800">
@@ -343,7 +403,9 @@ export default function Home() {
                             </h4>
                             {isAuthenticated && activeOptionId === option.id && (
                               <span className="rounded-full bg-[#0038A8]/10 px-2.5 py-1 text-[11px] font-black text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300">
-                                {t('activeConnectionMethod', { defaultValue: 'שיטת החיבור הפעילה' })}
+                                {t('activeConnectionMethod', {
+                                  defaultValue: 'שיטת החיבור הפעילה',
+                                })}
                               </span>
                             )}
                             {!isSelected && (
@@ -377,20 +439,22 @@ export default function Home() {
                               navigate('/calendar');
                               return;
                             }
-                            authenticateWithGoogle(option.id, undefined, (err) => {
-                              alert(`${t('errorSyncFailed')}: ${err.message || ''}`);
+                            authenticateWithGoogle(option.id, undefined, (err: Error) => {
+                              window.alert(`${t('errorSyncFailed')}: ${err.message || ''}`);
                             });
                           }}
                           className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-all ${
                             isAuthenticated && activeOptionId === option.id
                               ? 'bg-[#0038A8] text-white shadow-lg shadow-blue-900/20 hover:bg-blue-800'
-                              : 'bg-white text-[#0038A8] ring-1 ring-[#0038A8]/20 shadow-sm hover:bg-blue-50 dark:bg-slate-900'
+                              : 'bg-white text-[#0038A8] shadow-sm ring-1 ring-[#0038A8]/20 hover:bg-blue-50 dark:bg-slate-900'
                           }`}
                         >
                           {isAuthenticated && activeOptionId === option.id
                             ? t('enterCalendar')
                             : isAuthenticated
-                              ? t('connectUsingThisMethod', { defaultValue: 'התחבר באמצעות השיטה הזו' })
+                              ? t('connectUsingThisMethod', {
+                                  defaultValue: 'התחבר באמצעות השיטה הזו',
+                                })
                               : t('continue')}
                           <ArrowLeft className={`h-4 w-4 ${isRtl ? '' : 'rotate-180'}`} />
                         </button>

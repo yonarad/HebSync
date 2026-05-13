@@ -1,20 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle } from 'lucide-react';
-import { HDate } from '@hebcal/core';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import AddEvent from './AddEvent';
 import { revokeAccess } from '../utils/googleApi';
-import { buildMonthDays, buildScheduleDays, getEventOccurrenceHebrewYear, getHebrewMonthMeta, getNextMonthHDate, getOverflowPopoverLayout, getPrevMonthHDate } from '../utils/calendarView';
+import {
+  buildMonthDays,
+  buildScheduleDays,
+  getEventOccurrenceHebrewYear,
+  getHebrewMonthMeta,
+  getNextMonthHDate,
+  getOverflowPopoverLayout,
+  getPrevMonthHDate,
+} from '../utils/calendarView';
 
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import { CalendarToolbar, MonthCalendarView, ScheduleCalendarView, DayEventsPopover } from '../components/MyCalendarViews';
+import {
+  CalendarToolbar,
+  MonthCalendarView,
+  ScheduleCalendarView,
+  DayEventsPopover,
+} from '../components/MyCalendarViews';
 import MyCalendarSidebar from '../components/MyCalendarSidebar';
 import useMyCalendarData from '../hooks/useMyCalendarData';
 import useCalendarEventActions from '../hooks/useCalendarEventActions';
 import useInstallPrompt from '../hooks/useInstallPrompt';
+import type {
+  AddEventPrefillDate,
+  GoogleCalendarEvent,
+  OverflowDay,
+  PendingCalendarCreateState,
+} from '../types/appTypes';
 
 const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
 
@@ -55,7 +73,6 @@ export default function MyCalendar() {
     loadEvents,
     loginModalInitialScopeMode,
     loginModalMode,
-    myEvents,
     onLoginSelect,
     otherCalendars,
     promptForEditingUpgrade,
@@ -76,9 +93,9 @@ export default function MyCalendar() {
     viewMode,
   } = useMyCalendarData({ t });
 
-  const [overflowDay, setOverflowDay] = useState(null);
+  const [overflowDay, setOverflowDay] = useState<OverflowDay | null>(null);
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
-  const [createPrefillDate, setCreatePrefillDate] = useState(null);
+  const [createPrefillDate, setCreatePrefillDate] = useState<AddEventPrefillDate | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHebSyncGroupOpen, setIsHebSyncGroupOpen] = useState(true);
   const [isOtherGroupOpen, setIsOtherGroupOpen] = useState(false);
@@ -121,7 +138,7 @@ export default function MyCalendar() {
     sessionStorage.removeItem(PENDING_CREATE_EVENT_KEY);
 
     try {
-      const pendingCreate = JSON.parse(rawPendingCreate);
+      const pendingCreate = JSON.parse(rawPendingCreate) as PendingCalendarCreateState;
       if (pendingCreate?.prefillDate) {
         setCreatePrefillDate(pendingCreate.prefillDate);
         setIsAddEventModalOpen(true);
@@ -135,18 +152,21 @@ export default function MyCalendar() {
     setIsAddEventModalOpen(true);
   }, [hasWriteAccess, isAuthenticated]);
 
-  const handleRevoke = async () => {
+  const handleRevoke = async (): Promise<void> => {
     if (!window.confirm(t('revokeAccessConfirm'))) return;
     await revokeAccess();
     setIsAuthenticated(false);
     navigate('/');
   };
 
-  const handleOpenLanding = () => {
+  const handleOpenLanding = (): void => {
     navigate('/?about=1');
   };
 
-  const handleOverflowDayOpen = (dayObj, event) => {
+  const handleOverflowDayOpen = (
+    dayObj: OverflowDay,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ): void => {
     const rect = event.currentTarget.getBoundingClientRect();
     setOverflowDay({
       ...dayObj,
@@ -159,12 +179,14 @@ export default function MyCalendar() {
     });
   };
 
-  const handleOverflowEventClick = (event) => {
+  const handleOverflowEventClick = (event: GoogleCalendarEvent): void => {
     setOverflowDay(null);
     handleEventClick(event);
   };
 
-  const requestCreatePermissions = (prefillDate = null) => {
+  const requestCreatePermissions = (
+    prefillDate: AddEventPrefillDate | null = null,
+  ): void => {
     sessionStorage.setItem(
       PENDING_CREATE_EVENT_KEY,
       JSON.stringify({ prefillDate }),
@@ -172,11 +194,11 @@ export default function MyCalendar() {
     promptForEditingUpgrade();
   };
 
-  const handleCreateFromDay = (dayObj) => {
+  const handleCreateFromDay = (dayObj: OverflowDay): void => {
     const year = dayObj.gDate.getFullYear();
     const month = String(dayObj.gDate.getMonth() + 1).padStart(2, '0');
     const day = String(dayObj.gDate.getDate()).padStart(2, '0');
-    const prefillDate = {
+    const prefillDate: AddEventPrefillDate = {
       gregorianDate: `${year}-${month}-${day}`,
       hebrewYear: String(dayObj.hYear),
       hebrewMonth: dayObj.hMonthName,
@@ -192,7 +214,7 @@ export default function MyCalendar() {
     setIsAddEventModalOpen(true);
   };
 
-  const handleCreateEvent = () => {
+  const handleCreateEvent = (): void => {
     if (!hasWriteAccess) {
       requestCreatePermissions();
       return;
@@ -202,31 +224,31 @@ export default function MyCalendar() {
     setIsAddEventModalOpen(true);
   };
 
-  const handleCloseAddEventModal = () => {
+  const handleCloseAddEventModal = (): void => {
     setIsAddEventModalOpen(false);
     setCreatePrefillDate(null);
   };
 
-  const handleRequestCloseAddEventModal = () => {
+  const handleRequestCloseAddEventModal = (): void => {
     if (!window.confirm(discardEventConfirmLabel)) return;
     handleCloseAddEventModal();
   };
 
-  const handleAddEventComplete = async () => {
+  const handleAddEventComplete = async (): Promise<void> => {
     handleCloseAddEventModal();
     await loadCalendarData();
     await loadEvents();
   };
 
-  const handleCalendarsChanged = async () => {
+  const handleCalendarsChanged = async (): Promise<void> => {
     await loadCalendars();
   };
 
-  const handleNextMonth = () => {
+  const handleNextMonth = (): void => {
     setViewHDate((prev) => getNextMonthHDate(prev));
   };
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = (): void => {
     setViewHDate((prev) => getPrevMonthHDate(prev));
   };
 
@@ -236,28 +258,33 @@ export default function MyCalendar() {
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900;
   const isMobileViewport = viewportWidth < 768;
   const maxVisibleMonthEvents = isMobileViewport ? 3 : 4;
-  const { overflowPopoverWidth, overflowPopoverMargin, overflowTop, overflowLeft } = getOverflowPopoverLayout({
-    overflowDay,
-    viewportWidth,
-    viewportHeight,
-  });
+  const { overflowPopoverWidth, overflowPopoverMargin, overflowTop, overflowLeft } =
+    getOverflowPopoverLayout({
+      overflowDay,
+      viewportWidth,
+      viewportHeight,
+    });
   const scheduleDays = buildScheduleDays(days);
   const isScheduleLoading =
     isCalendarLoading ||
     (isAuthenticated && isFetchingGoogle) ||
     !hasLoadedCalendarData;
   const isMonthLoading = isScheduleLoading;
-  const emptyStateMessage = calendars.length === 0
-    ? t('noCalendarsYetInCalendarView')
-    : selectedCalendarIds.length === 0
-      ? t('noSelectedCalendarsInCalendarView')
-      : t('noEventsInView');
+  const emptyStateMessage =
+    calendars.length === 0
+      ? t('noCalendarsYetInCalendarView')
+      : selectedCalendarIds.length === 0
+        ? t('noSelectedCalendarsInCalendarView')
+        : t('noEventsInView');
 
-  const formatEventTimeRange = (event) => {
+  const formatEventTimeRange = (event: GoogleCalendarEvent): string => {
     if (!event?.start?.dateTime) return '';
 
     const locale = isRtl ? 'he-IL' : 'en-US';
-    const formatOptions = { hour: '2-digit', minute: '2-digit' };
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+    };
     const startLabel = new Date(event.start.dateTime).toLocaleTimeString(locale, formatOptions);
 
     if (!event?.end?.dateTime) return startLabel;
@@ -474,14 +501,14 @@ export default function MyCalendar() {
               {isEditing ? (
                 <div className="space-y-4">
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full rounded-xl border border-slate-200 p-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('eventName')} />
-                  <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows="4" className="w-full resize-none rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('description')} />
+                  <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={4} className="w-full resize-none rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('description')} />
                 </div>
               ) : (
                 <div className="space-y-4">
                   {(() => {
                     const props = selectedEvent.extendedProperties?.private || {};
                     const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-                    const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
+                    const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
                     const occurrenceHebrewYear = getEventOccurrenceHebrewYear(selectedEvent);
                     const age = (originalYear && occurrenceHebrewYear) ? (occurrenceHebrewYear - originalYear) : 0;
                     const ageSuffix = isHebCal ? ` (${age})` : '';

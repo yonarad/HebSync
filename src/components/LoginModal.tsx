@@ -1,11 +1,40 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Eye, Shield, Unlock, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Eye,
+  Shield,
+  Unlock,
+  X,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SCOPE_MODES } from '../utils/googleApi';
+import type { ScopeMode } from '../types/appTypes';
 
 export { SCOPE_MODES };
 
-const CONNECT_OPTIONS = [
+type LoginModalMode = 'connect' | 'reauthorize' | 'upgrade';
+type SelectableScopeMode = Exclude<ScopeMode, null>;
+
+interface ConnectOption {
+  id: SelectableScopeMode;
+  titleKey: string;
+  descriptionKey: string;
+  helperKey?: string;
+  badgeKey?: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconClassName: string;
+}
+
+interface LoginModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (scopeMode: SelectableScopeMode) => void;
+  mode?: LoginModalMode;
+  initialSelectedMode?: SelectableScopeMode;
+}
+
+const CONNECT_OPTIONS: ConnectOption[] = [
   {
     id: SCOPE_MODES.APP_CREATED,
     titleKey: 'permissionHebsyncOnly',
@@ -29,9 +58,10 @@ export default function LoginModal({
   onSelect,
   mode = 'connect',
   initialSelectedMode = SCOPE_MODES.APP_CREATED,
-}) {
+}: LoginModalProps) {
   const { t, i18n } = useTranslation();
-  const [selectedMode, setSelectedMode] = useState(initialSelectedMode);
+  const [selectedMode, setSelectedMode] =
+    useState<SelectableScopeMode>(initialSelectedMode);
   const isRtl = i18n.language === 'he';
   const isReauth = mode === 'reauthorize';
   const isUpgrade = mode === 'upgrade';
@@ -56,7 +86,7 @@ export default function LoginModal({
 
   if (!isOpen) return null;
 
-  const handleContinue = () => {
+  const handleContinue = (): void => {
     onSelect(isUpgrade ? SCOPE_MODES.ALL_EVENTS : selectedMode);
   };
 

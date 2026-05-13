@@ -20,24 +20,37 @@ import {
   usesAllCalendarsMode,
 } from '../utils/googleApi';
 import { resolveCalendarColor } from '../utils/googleCalendarColors';
+import type {
+  Calendar,
+  CalendarViewMode,
+  GoogleCalendarEvent,
+  MyCalendarEventListItem,
+  ScopeMode,
+} from '../types/appTypes';
 
-export default function useMyCalendarData({ t }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
-  const [myEvents, setMyEvents] = useState([]);
+type LoginModalMode = 'connect' | 'upgrade' | 'reauthorize';
+
+interface UseMyCalendarDataParams {
+  t: (key: string, options?: Record<string, unknown>) => string;
+}
+
+export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!getAccessToken());
+  const [myEvents, setMyEvents] = useState<MyCalendarEventListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoadingCount, setIsGoogleLoadingCount] = useState(0);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [hasLoadedCalendarData, setHasLoadedCalendarData] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginModalMode, setLoginModalMode] = useState('connect');
-  const [loginModalInitialScopeMode, setLoginModalInitialScopeMode] = useState(SCOPE_MODES.APP_CREATED);
-  const [scopeMode, setScopeMode] = useState(getScopeMode());
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
-  const [viewHDate, setViewHDate] = useState(new HDate());
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [loginModalMode, setLoginModalMode] = useState<LoginModalMode>('connect');
+  const [loginModalInitialScopeMode, setLoginModalInitialScopeMode] = useState<Exclude<ScopeMode, null>>(SCOPE_MODES.APP_CREATED);
+  const [scopeMode, setScopeMode] = useState<ScopeMode>(getScopeMode());
+  const [calendars, setCalendars] = useState<Calendar[]>([]);
+  const [selectedCalendarIds, setSelectedCalendarIds] = useState<string[]>([]);
+  const [viewHDate, setViewHDate] = useState<HDate>(new HDate());
+  const [calendarEvents, setCalendarEvents] = useState<GoogleCalendarEvent[]>([]);
   const [showGregorian, setShowGregorian] = useState(true);
-  const [viewMode, setViewMode] = useState(() => {
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(() => {
     if (typeof window === 'undefined') return 'month';
     return window.innerWidth < 768 ? 'schedule' : 'month';
   });
@@ -48,7 +61,7 @@ export default function useMyCalendarData({ t }) {
   const hebSyncCalendars = calendars.filter(isHebSyncCalendar);
   const otherCalendars = calendars.filter((calendar) => !isHebSyncCalendar(calendar));
 
-  const getCalendarColor = (calendarId) => {
+  const getCalendarColor = (calendarId: string): string => {
     const calendar = calendars.find((cal) => cal.id === calendarId);
     return calendar?.color || '#0038A8';
   };
@@ -75,12 +88,12 @@ export default function useMyCalendarData({ t }) {
     };
   }, []);
 
-  const loadCalendars = async () => {
+  const loadCalendars = async (): Promise<void> => {
     setIsGoogleLoadingCount((count) => count + 1);
     try {
       const [fetchedCalendars, googleColors] = await Promise.all([
         fetchAllCalendars(),
-        fetchGoogleCalendarColors().catch(() => null),
+        fetchGoogleCalendarColors().catch((): null => null),
       ]);
       const calendarsWithColors = fetchedCalendars.map((calendar, index) => ({
         ...calendar,
@@ -123,7 +136,7 @@ export default function useMyCalendarData({ t }) {
     };
   }, []);
 
-  const loadCalendarData = async () => {
+  const loadCalendarData = async (): Promise<void> => {
     setIsCalendarLoading(true);
     try {
       const { timeMin, timeMax } = getHebrewMonthGregorianRange(viewHDate);
@@ -142,16 +155,16 @@ export default function useMyCalendarData({ t }) {
     }
   };
 
-  const loadEvents = async () => {
+  const loadEvents = async (): Promise<void> => {
     setIsLoading(true);
     setIsGoogleLoadingCount((count) => count + 1);
     try {
       const items = await fetchMyAppEvents(selectedCalendarIds);
       const currentHebrewYear = new HDate().getFullYear();
-      const formattedEvents = items.map((item) => {
+      const formattedEvents = items.map((item): MyCalendarEventListItem => {
         const props = item.extendedProperties?.private || {};
-        const originalYear = parseInt(props.originalHebrewYear, 10);
-        const age = originalYear ? (currentHebrewYear - originalYear) : 0;
+        const originalYear = parseInt(props.originalHebrewYear || '', 10);
+        const age = originalYear ? currentHebrewYear - originalYear : 0;
         return {
           id: item.id,
           calendarId: item.calendarId,
@@ -188,25 +201,25 @@ export default function useMyCalendarData({ t }) {
     }
   }, [isAuthenticated, viewHDate, selectedCalendarIds]);
 
-  const handleLogin = () => {
+  const handleLogin = (): void => {
     setLoginModalMode('connect');
     setLoginModalInitialScopeMode(SCOPE_MODES.APP_CREATED);
     setShowLoginModal(true);
   };
 
-  const onLoginSelect = (selectedScopeMode) => {
+  const onLoginSelect = (selectedScopeMode: Exclude<ScopeMode, null>): void => {
     setShowLoginModal(false);
-    authenticateWithGoogle(selectedScopeMode, undefined, (error) => {
+    authenticateWithGoogle(selectedScopeMode, undefined, (error: Error) => {
       alert(t('loginErrorWithMessage', { message: error.message }));
     });
   };
 
-  const promptForEditingUpgrade = () => {
+  const promptForEditingUpgrade = (): void => {
     setLoginModalMode('upgrade');
     setShowLoginModal(true);
   };
 
-  const handleChangePermissions = async () => {
+  const handleChangePermissions = async (): Promise<void> => {
     if (isAllCalendarsMode && window.confirm(t('switchToHebsyncOnlyConfirm'))) {
       setIsLoading(true);
       await revokeAccess();
@@ -224,7 +237,7 @@ export default function useMyCalendarData({ t }) {
     setShowLoginModal(true);
   };
 
-  const handleDisableEditing = async () => {
+  const handleDisableEditing = async (): Promise<void> => {
     if (!window.confirm(t('switchToReadOnlyConfirm'))) return;
 
     setIsLoading(true);
@@ -239,41 +252,41 @@ export default function useMyCalendarData({ t }) {
     authenticateWithGoogle(SCOPE_MODES.READ_ONLY);
   };
 
-  const handleCreateCalendar = async () => {
+  const handleCreateCalendar = async (): Promise<void> => {
     const name = window.prompt(t('newCalendarPrompt'));
     if (!name) return;
     try {
       await createNewCalendar(name);
       await loadCalendars();
-    } catch (error) {
+    } catch {
       alert(t('createCalendarError'));
     }
   };
 
-  const handleRefreshCalendars = () => {
+  const handleRefreshCalendars = (): void => {
     if (!isAuthenticated || isFetchingGoogle) return;
     loadCalendars();
   };
 
-  const toggleCalendar = (id) => {
+  const toggleCalendar = (id: string): void => {
     setSelectedCalendarIds((prev) =>
       prev.includes(id) ? prev.filter((calendarId) => calendarId !== id) : [...prev, id],
     );
   };
 
-  const selectAllCalendars = () => {
+  const selectAllCalendars = (): void => {
     setSelectedCalendarIds(calendars.map((calendar) => calendar.id));
   };
 
-  const deselectAllCalendars = () => {
+  const deselectAllCalendars = (): void => {
     setSelectedCalendarIds([]);
   };
 
-  const selectCalendarsByIds = (calendarIds) => {
+  const selectCalendarsByIds = (calendarIds: string[]): void => {
     setSelectedCalendarIds((prev) => [...new Set([...prev, ...calendarIds])]);
   };
 
-  const deselectCalendarsByIds = (calendarIds) => {
+  const deselectCalendarsByIds = (calendarIds: string[]): void => {
     const calendarIdSet = new Set(calendarIds);
     setSelectedCalendarIds((prev) => prev.filter((id) => !calendarIdSet.has(id)));
   };

@@ -1,5 +1,14 @@
 import { useState } from 'react';
 import { deleteEvent, updateEvent } from '../utils/googleApi';
+import type { GoogleCalendarEvent } from '../types/appTypes';
+
+interface UseCalendarEventActionsParams {
+  hasWriteAccess: boolean;
+  promptForEditingUpgrade: () => void;
+  t: (key: string) => string;
+  loadCalendarData: () => Promise<void> | void;
+  loadEvents: () => Promise<void> | void;
+}
 
 export default function useCalendarEventActions({
   hasWriteAccess,
@@ -7,25 +16,29 @@ export default function useCalendarEventActions({
   t,
   loadCalendarData,
   loadEvents,
-}) {
-  const [selectedEvent, setSelectedEvent] = useState(null);
+}: UseCalendarEventActionsParams) {
+  const [selectedEvent, setSelectedEvent] = useState<GoogleCalendarEvent | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleEventClick = (event) => {
+  const handleEventClick = (event: GoogleCalendarEvent): void => {
     setSelectedEvent(event);
-    setEditTitle(event.summary);
+    setEditTitle(event.summary || '');
     setEditDesc(event.description || '');
     setIsEditing(false);
   };
 
-  const handleDelete = async (calendarId, googleEventId) => {
+  const handleDelete = async (
+    calendarId?: string,
+    googleEventId?: string,
+  ): Promise<void> => {
     if (!hasWriteAccess) {
       promptForEditingUpgrade();
       return;
     }
+    if (!calendarId || !googleEventId) return;
     if (!window.confirm(t('deleteEventConfirm'))) return;
     setIsDeleting(true);
     try {
@@ -33,20 +46,22 @@ export default function useCalendarEventActions({
       setSelectedEvent(null);
       await loadCalendarData();
       await loadEvents();
-    } catch (error) {
+    } catch {
       alert(t('deleteEventError'));
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (): Promise<void> => {
     if (!hasWriteAccess || !selectedEvent) {
       if (!hasWriteAccess) {
         promptForEditingUpgrade();
       }
       return;
     }
+    if (!selectedEvent.calendarId || !selectedEvent.id) return;
+
     try {
       await updateEvent(selectedEvent.calendarId, selectedEvent.id, {
         summary: editTitle,
@@ -54,8 +69,8 @@ export default function useCalendarEventActions({
       });
       setIsEditing(false);
       setSelectedEvent(null);
-      loadCalendarData();
-    } catch (error) {
+      await loadCalendarData();
+    } catch {
       alert(t('updateEventError'));
     }
   };

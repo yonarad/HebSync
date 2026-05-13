@@ -1,15 +1,17 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation, type Location } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Home from './pages/Home';
 import MyCalendar from './pages/MyCalendar';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 
-import { useTranslation } from 'react-i18next';
+interface ModalLocationState {
+  backgroundLocation?: Location;
+}
 
 function AppRoutes() {
   const location = useLocation();
-  const backgroundLocation = location.state?.backgroundLocation;
+  const backgroundLocation = (location.state as ModalLocationState | null)?.backgroundLocation;
 
   return (
     <>
@@ -30,17 +32,15 @@ function AppRoutes() {
   );
 }
 
-function App() {
+export default function App() {
   const { i18n } = useTranslation();
   const direction = i18n.language === 'he' ? 'rtl' : 'ltr';
 
   return (
-    <div dir={direction} className="min-h-screen text-slate-900 font-sans antialiased">
+    <div dir={direction} className="min-h-screen font-sans text-slate-900 antialiased">
       <Router>
         <AppRoutes />
       </Router>
     </div>
   );
 }
-
-export default App;

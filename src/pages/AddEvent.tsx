@@ -3,21 +3,34 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, GripHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import LoginModal from '../components/LoginModal';
-import { getMonthsForYear, getDaysInHebrewMonth, gregorianToHebrew, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
-import { resolveCalendarColor } from '../utils/googleCalendarColors';
+import { getMonthsForYear, getDaysInHebrewMonth, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, canEditCalendars, GCAL_AUTH_EXPIRED_EVENT, getAccessToken, createHebcalEvent, createNewCalendar, fetchAllCalendars, fetchGoogleCalendarColors, fetchSession, getScopeMode, isAuthError, logout, revokeAccess, SCOPE_MODES } from '../utils/googleApi';
+import { authenticateWithGoogle, getAccessToken, createHebcalEvent, revokeAccess } from '../utils/googleApi';
+import useAddEventCalendarData from '../hooks/useAddEventCalendarData';
+import useAddEventImport from '../hooks/useAddEventImport';
+import useAddEventPreviewSubmit from '../hooks/useAddEventPreviewSubmit';
+import type { AddEventPrefillDate, Calendar, PreviewOccurrence, ScopeMode } from '../types/appTypes';
+import type { FallbackChoice, ImportPreviewRow } from '../types/appTypes';
 
 import { useTranslation } from 'react-i18next';
+
+interface AddEventProps {
+  onClose?: () => void;
+  onComplete?: (() => Promise<void> | void) | null;
+  onCalendarsChanged?: (() => Promise<void> | void) | null;
+  prefillDate?: AddEventPrefillDate | null;
+}
+
+type LoginModalMode = 'connect' | 'upgrade' | 'reauthorize';
 
 export default function AddEvent({
   onClose = () => {},
   onComplete = null,
   onCalendarsChanged = null,
   prefillDate = null,
-}) {
+}: AddEventProps) {
   const BULK_IMPORT_COLUMNS = ['שם האירוע', 'קטגוריה', 'הערות', 'שנת מקור', 'חודש', 'יום', 'מופעים'];
-  const HEBREW_NUMBER_MAP = {
+  const HEBREW_NUMBER_MAP: Record<string, number> = {
     א: 1, ב: 2, ג: 3, ד: 4, ה: 5, ו: 6, ז: 7, ח: 8, ט: 9,
     י: 10, כ: 20, ך: 20, ל: 30, מ: 40, ם: 40, נ: 50, ן: 50, ס: 60, ע: 70, פ: 80, ף: 80, צ: 90, ץ: 90,
     ק: 100, ר: 200, ש: 300, ת: 400,
@@ -54,22 +67,47 @@ export default function AddEvent({
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
   const hasAppliedPrefillRef = useRef(false);
-  const notesRef = useRef(null);
-  const importFileInputRef = useRef(null);
+  const notesRef = useRef<HTMLTextAreaElement | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalMode, setLoginModalMode] = useState<LoginModalMode>('connect');
+  const {
+    calendars,
+    clearCalendarSession,
+    handleCreateCalendar,
+    hasWriteAccess,
+    isCalendarLoading,
+    loadCalendars,
+    readOnlyCalendars,
+    selectedCalendarIds,
+    setShowReadOnlyCalendars,
+    showReadOnlyCalendars,
+    toggleCalendar,
+    writableCalendars,
+  } = useAddEventCalendarData({
+    onAuthExpired: (mode: Exclude<LoginModalMode, 'connect'> = 'reauthorize') => {
+      setLoginModalMode(mode);
+      setShowLoginModal(true);
+      setIsLoading(false);
+    },
+    onCalendarsChanged,
+    t,
+  });
 
-  const getCalendarColor = (calendarId) => {
+  const getCalendarColor = (calendarId: string) => {
     const calendar = calendars.find(c => c.id === calendarId);
     return calendar?.color || '#0038A8';
   };
 
-  const normalizeHebrewToken = (value) => String(value ?? '').replace(/\u00A0/g, ' ').trim();
+  const normalizeHebrewToken = (value: unknown) => String(value ?? '').replace(/\u00A0/g, ' ').trim();
 
-  const parseHebrewNumeral = (value) => {
+  const parseHebrewNumeral = (value: unknown) => {
     const normalized = normalizeHebrewToken(value).replace(/["׳״']/g, '');
     return [...normalized].reduce((sum, char) => sum + (HEBREW_NUMBER_MAP[char] ?? 0), 0);
   };
 
-  const parseSourceYearValue = (value) => {
+  const parseSourceYearValue = (value: unknown) => {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return value;
     }
@@ -90,7 +128,7 @@ export default function AddEvent({
     return total >= 1000 ? total : total + 5000;
   };
 
-  const parseDayValue = (value) => {
+  const parseDayValue = (value: unknown) => {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return value;
     }
@@ -103,14 +141,6 @@ export default function AddEvent({
 
   const [tab, setTab] = useState('manual');
   // ... rest of the code remains same but strings replaced
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginModalMode, setLoginModalMode] = useState('connect');
-  const [scopeMode, setScopeMode] = useState(getScopeMode());
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendarIds, setSelectedCalendarIds] = useState([]);
-  const [showReadOnlyCalendars, setShowReadOnlyCalendars] = useState(false);
   const currentHDate = new HDate();
   const currentHebrewYear = currentHDate.getFullYear();
   
@@ -118,39 +148,107 @@ export default function AddEvent({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('birthday');
   const [year, setYear] = useState(currentHebrewYear.toString());
-  const [month, setMonth] = useState(currentHDate.getMonthName());
+  const [month, setMonth] = useState<string>(currentHDate.getMonthName());
   const [day, setDay] = useState(currentHDate.getDate());
   const [daysInMonth, setDaysInMonth] = useState(30);
   const [syncSpan, setSyncSpan] = useState(121);
   const [notes, setNotes] = useState('');
-  const [availableMonths, setAvailableMonths] = useState(() => getMonthsForYear(year));
+  const [availableMonths, setAvailableMonths] = useState<Array<{ id: string; label: string }>>(() => getMonthsForYear(year));
   
   // Preview State
   const [showPreview, setShowPreview] = useState(false);
-  const [previewData, setPreviewData] = useState([]);
-  const [selectedImportFile, setSelectedImportFile] = useState(null);
-  const [isImportParsing, setIsImportParsing] = useState(false);
-  const [importPreviewRows, setImportPreviewRows] = useState([]);
-  const [importPreviewError, setImportPreviewError] = useState('');
-  const [importFallbackSelections, setImportFallbackSelections] = useState({});
+  const [previewData, setPreviewData] = useState<PreviewOccurrence[]>([]);
   const [isMobileLayout, setIsMobileLayout] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth < 768;
   });
   
   // State for 30th day fallback
-  const [fallback30th, setFallback30th] = useState('29th'); // '29th', '1st', 'skip'
+  const [fallback30th, setFallback30th] = useState<FallbackChoice>('29th'); // '29th', '1st', 'skip'
   
   // State for Gregorian conversion
   const [isGregorianEntry, setIsGregorianEntry] = useState(false);
   const [gregDate, setGregDate] = useState('');
   const [afterSunset, setAfterSunset] = useState(false);
 
-  // Computed Hebrew date from Gregorian
-  const convertedHDate = isGregorianEntry && gregDate ? gregorianToHebrew(new Date(gregDate), afterSunset) : null;
-  const hasWriteAccess = canEditCalendars(scopeMode);
-  const writableCalendars = calendars.filter((calendar) => ['owner', 'writer'].includes(calendar.accessRole));
-  const readOnlyCalendars = calendars.filter((calendar) => !['owner', 'writer'].includes(calendar.accessRole));
+  const {
+    canConfirmImport,
+    getImportFallbackSelection,
+    getImportRowStatus,
+    handleConfirmImport,
+    handleImportFileChange,
+    importInvalidCount,
+    importNeedsDecisionCount,
+    importPreviewError,
+    importPreviewRows,
+    importValidCount,
+    isImportParsing,
+    parseImportWorkbook,
+    removeImportPreviewRow,
+    selectedImportFile,
+    updateImportFallbackSelection,
+  } = useAddEventImport({
+    bulkImportColumns: BULK_IMPORT_COLUMNS,
+    createHebcalEvent,
+    generateRdates,
+    hasWriteAccess,
+    importCategoryMap: IMPORT_CATEGORY_MAP,
+    importMonthMap: IMPORT_MONTH_MAP,
+    isLoading,
+    isRtl,
+    normalizeHebrewToken,
+    onComplete,
+    openLoginModal: (mode) => {
+      setLoginModalMode(mode);
+      setShowLoginModal(true);
+    },
+    parseDayValue,
+    parseSourceYearValue,
+    requires30thFallbackDecision,
+    selectedCalendarIds,
+    setIsLoading,
+    t,
+    validateHebrewDateForYear,
+    xlsx: XLSX,
+  });
+  const openLoginModal = (mode: 'connect' | 'upgrade' | 'reauthorize') => {
+    setLoginModalMode(mode);
+    setShowLoginModal(true);
+  };
+  const {
+    convertedHDate,
+    handlePreview,
+    show30thFallback,
+    sourceDateValidation,
+    submitEvent,
+  } = useAddEventPreviewSubmit({
+    afterSunset,
+    category,
+    createHebcalEvent,
+    day,
+    fallback30th,
+    generateRdates,
+    getPreviewDates,
+    gregDate,
+    hasWriteAccess,
+    isGregorianEntry,
+    isLoading,
+    isRtl,
+    month,
+    notes,
+    onComplete,
+    openLoginModal,
+    requires30thFallbackDecision,
+    selectedCalendarIds,
+    setIsLoading,
+    setPreviewData,
+    setShowPreview,
+    syncSpan,
+    t,
+    title,
+    validateHebrewDateForYear,
+    year,
+  });
 
   const handleClose = () => {
     if (showPreview) {
@@ -215,149 +313,20 @@ export default function AddEvent({
     if (day > num) setDay(num);
   }, [year, month]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    fetchSession()
-      .then((session) => {
-        if (isMounted && session) {
-          setScopeMode(session.scopeMode || null);
-          loadCalendars();
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setScopeMode(null);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleAuthExpired = () => {
-      setCalendars([]);
-      setSelectedCalendarIds([]);
-      setScopeMode(null);
-      setLoginModalMode('reauthorize');
-      setShowLoginModal(true);
-      setIsLoading(false);
-    };
-
-    window.addEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
-    return () => {
-      window.removeEventListener(GCAL_AUTH_EXPIRED_EVENT, handleAuthExpired);
-    };
-  }, []);
-
-  const loadCalendars = async () => {
-    setIsCalendarLoading(true);
-    try {
-      const [cals, googleColors] = await Promise.all([
-        fetchAllCalendars(),
-        fetchGoogleCalendarColors().catch(() => null),
-      ]);
-      // Assign colors to calendars
-      const calendarsWithColors = cals.map((cal, index) => ({
-        ...cal,
-        color: resolveCalendarColor(cal, index, googleColors),
-      }));
-      setCalendars(calendarsWithColors);
-    } catch (e) {
-      if (isAuthError(e)) return;
-      console.error("Failed to load calendars", e);
-    } finally {
-      setIsCalendarLoading(false);
-    }
-  };
-
-  const handleCreateCalendar = async () => {
-    if (!hasWriteAccess) {
-      setLoginModalMode('upgrade');
-      setShowLoginModal(true);
-      return;
-    }
-
-    const name = window.prompt(t('newCalendarPrompt'));
-    if (!name) return;
-
-    setIsCalendarLoading(true);
-    try {
-      await createNewCalendar(name);
-      await loadCalendars();
-      if (onCalendarsChanged) {
-        await onCalendarsChanged();
-      }
-    } catch (error) {
-      alert(t('createCalendarError'));
-    } finally {
-      setIsCalendarLoading(false);
-    }
-  };
-
-  const toggleCalendar = (id) => {
-    setSelectedCalendarIds(prev => 
-      prev.includes(id) ? prev.filter(cId => cId !== id) : [...prev, id]
-    );
-  };
-
-  const show30thFallback = !isGregorianEntry && requires30thFallbackDecision(month, day);
-  const sourceDateValidation = !isGregorianEntry
-    ? validateHebrewDateForYear(parseInt(year, 10), month, day)
-    : { isValid: true };
-
   // Generate list of years for the dropdown
   const yearOptions = Array.from({length: 121}, (_, i) => currentHebrewYear - 120 + i).reverse();
 
-  const handlePreview = () => {
-    if (!title) {
-      alert("נא להזין את שם האירוע");
-      return;
-    }
-    if (!isGregorianEntry && !sourceDateValidation.isValid) {
-      alert(
-        sourceDateValidation.reason === 'missing_flexible_30th'
-          ? (isRtl ? "התאריך שבחרת לא קיים בשנת המקור. ל׳ בחשוון, ל׳ בכסלו ול׳ באדר א׳ קיימים רק בחלק מהשנים." : "The selected date does not exist in the source year. 30 Cheshvan, 30 Kislev, and 30 Adar I exist only in some years.")
-          : (isRtl ? "התאריך שבחרת לא קיים בשנת המקור שנבחרה." : "The selected date does not exist in the selected source year.")
-      );
-      return;
-    }
-    if (selectedCalendarIds.length === 0) {
-      alert(t('errorNoCalendar'));
-      return;
-    }
-
-    let targetYear, targetMonth, targetDay;
-    if (isGregorianEntry) {
-      if (!convertedHDate) return;
-      targetYear = convertedHDate.getFullYear();
-      targetMonth = convertedHDate.getMonthName();
-      targetDay = convertedHDate.getDate();
-    } else {
-      targetYear = parseInt(year, 10);
-      targetMonth = month;
-      targetDay = day;
-    }
-
-    const data = getPreviewDates(targetYear, targetMonth, targetDay, syncSpan, fallback30th);
-    setPreviewData(data);
-    setShowPreview(true);
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     if (e) e.preventDefault();
     
     if (!getAccessToken()) {
-      setLoginModalMode('connect');
-      setShowLoginModal(true);
+      openLoginModal('connect');
     } else {
       submitEvent();
     }
   };
 
-  const onLoginSelect = (scopeMode) => {
+  const onLoginSelect = (scopeMode: Exclude<ScopeMode, null>) => {
     setShowLoginModal(false);
     authenticateWithGoogle(scopeMode, undefined, (err) => {
       alert(t('errorSyncFailed') + ": " + err.message);
@@ -368,73 +337,9 @@ export default function AddEvent({
     if (!window.confirm(isRtl ? "פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?" : "This will disconnect the app from your Google account and revoke all permissions. Continue?")) return;
     setIsLoading(true);
     await revokeAccess();
-    setScopeMode(null);
+    clearCalendarSession();
     setIsLoading(false);
     navigate('/');
-  };
-
-  const submitEvent = async () => {
-    if (isLoading) return; // Guard against double submission
-    if (!hasWriteAccess) {
-      setLoginModalMode('upgrade');
-      setShowLoginModal(true);
-      return;
-    }
-    if (!isGregorianEntry && !sourceDateValidation.isValid) {
-      throw new Error(isRtl ? 'התאריך שנבחר אינו קיים בשנת המקור.' : 'The selected date does not exist in the source year.');
-    }
-    setIsLoading(true);
-    try {
-      let targetYear, targetMonth, targetDay;
-      
-      if (isGregorianEntry) {
-        if (!convertedHDate) throw new Error("תאריך לועזי לא חוקי");
-        targetYear = convertedHDate.getFullYear();
-        targetMonth = convertedHDate.getMonthName();
-        targetDay = convertedHDate.getDate();
-      } else {
-        targetYear = parseInt(year, 10);
-        targetMonth = month;
-        targetDay = day;
-      }
-
-      const rdateString = generateRdates(targetYear, targetMonth, targetDay, syncSpan, fallback30th);
-      
-      if (!rdateString) {
-        throw new Error("לא ניתן היה לחשב תאריכים עבור האירוע");
-      }
-
-      if (selectedCalendarIds.length === 0) {
-        throw new Error("אנא בחר לפחות יומן אחד לסנכרון");
-      }
-
-      // Create event in all selected calendars
-      await Promise.all(selectedCalendarIds.map((calendarId) =>
-        createHebcalEvent(title, category, targetYear, rdateString, calendarId, notes, {
-          specialDate: requires30thFallbackDecision(targetMonth, targetDay)
-            ? { monthName: targetMonth, day: targetDay, fallback: fallback30th }
-            : null,
-        })
-      ));
-
-      alert(isRtl ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!` : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`);
-      if (onComplete) {
-        await onComplete();
-      }
-    } catch (e) {
-      console.error("Submission error:", e);
-      if (e.message.includes("401") || e.message.includes("authentication") || e.message.includes("Not authenticated")) {
-        logout();
-        if (window.confirm("פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?")) {
-          setLoginModalMode('reauthorize');
-          setShowLoginModal(true);
-          }
-      } else {
-        alert("שגיאה בשמירת האירוע: " + e.message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const renderCalendarSelection = () => {
@@ -478,7 +383,10 @@ export default function AddEvent({
       );
     }
 
-    const renderCalendarOption = (cal, { disabled = false, readOnly = false } = {}) => (
+    const renderCalendarOption = (
+      cal: Calendar,
+      { disabled = false, readOnly = false }: { disabled?: boolean; readOnly?: boolean } = {},
+    ) => (
       <label
         key={cal.id}
         className={`flex items-center gap-3 rounded-xl border p-3 transition-all ${isRtl ? 'flex-row-reverse text-right' : ''} ${
@@ -561,46 +469,11 @@ export default function AddEvent({
     );
   };
 
-  const handleImportFileChange = (event) => {
-    const [file] = event.target.files ?? [];
-    setSelectedImportFile(file ?? null);
-    setImportPreviewRows([]);
-    setImportPreviewError('');
-  };
-
   const openImportFilePicker = () => {
     importFileInputRef.current?.click();
   };
 
-  const getImportRowStatus = (row) => {
-    if (row.needsFallbackDecision && !getImportFallbackSelection(row.rowNumber)) {
-      return 'needs_decision';
-    }
-
-    return row.issues.length > 0 ? 'invalid' : 'valid';
-  };
-
-  const updateImportFallbackSelection = (rowNumber, value) => {
-    setImportFallbackSelections((prev) => ({
-      ...prev,
-      [rowNumber]: value,
-    }));
-  };
-
-  const removeImportPreviewRow = (rowNumber) => {
-    setImportPreviewRows((prev) => prev
-      .filter((row) => row.rowNumber !== rowNumber)
-      .map((row, index) => ({ ...row, displayIndex: index + 1 })));
-    setImportFallbackSelections((prev) => {
-      const next = { ...prev };
-      delete next[rowNumber];
-      return next;
-    });
-  };
-
-  const getImportFallbackSelection = (rowNumber) => importFallbackSelections[rowNumber] ?? '';
-
-  const renderImportRowStatus = (row) => {
+  const renderImportRowStatus = (row: ImportPreviewRow) => {
     if (row.needsFallbackDecision) {
       return (
         <div className="space-y-2">
@@ -615,7 +488,12 @@ export default function AddEvent({
           </div>
           <select
             value={getImportFallbackSelection(row.rowNumber)}
-            onChange={(event) => updateImportFallbackSelection(row.rowNumber, event.target.value)}
+            onChange={(event) =>
+              updateImportFallbackSelection(
+                row.rowNumber,
+                event.target.value as FallbackChoice | '',
+              )
+            }
             className="w-full rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#0038A8] dark:border-amber-900/30 dark:bg-slate-900 dark:text-slate-200"
           >
             <option value="">{t('bulkImportFallbackSelect', { defaultValue: 'בחר טיפול' })}</option>
@@ -644,242 +522,6 @@ export default function AddEvent({
         ))}
       </div>
     );
-  };
-
-  const importValidCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'valid').length;
-  const importNeedsDecisionCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'needs_decision').length;
-  const importInvalidCount = importPreviewRows.filter((row) => getImportRowStatus(row) === 'invalid').length;
-  const importExecutableRows = importPreviewRows.filter((row) => getImportRowStatus(row) === 'valid');
-  const canConfirmImport =
-    importPreviewRows.length > 0 &&
-    importInvalidCount === 0 &&
-    importNeedsDecisionCount === 0 &&
-    importExecutableRows.length > 0 &&
-    selectedCalendarIds.length > 0;
-
-  const parseImportWorkbook = async () => {
-    if (!selectedImportFile) {
-      setImportPreviewError(isRtl ? 'יש לבחור קובץ Excel לפני התצוגה המקדימה.' : 'Select an Excel file first.');
-      return;
-    }
-
-    setIsImportParsing(true);
-    setImportPreviewError('');
-
-    try {
-      const buffer = await selectedImportFile.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const firstSheet = workbook.Sheets[firstSheetName];
-
-      if (!firstSheet) {
-        throw new Error(isRtl ? 'לא נמצא גיליון ראשון בקובץ.' : 'No first sheet was found in the workbook.');
-      }
-
-      const rows = XLSX.utils.sheet_to_json(firstSheet, {
-        header: 1,
-        defval: '',
-        blankrows: false,
-      });
-
-      const [headerRow = []] = rows;
-      const normalizedHeaders = headerRow.map(normalizeHebrewToken);
-      const missingColumns = BULK_IMPORT_COLUMNS.filter((column) => !normalizedHeaders.includes(column));
-
-      if (missingColumns.length > 0) {
-        throw new Error(
-          isRtl
-            ? `חסרות עמודות חובה בגיליון Events: ${missingColumns.join(', ')}`
-            : `Missing required columns in Events sheet: ${missingColumns.join(', ')}`
-        );
-      }
-
-      const headerIndexMap = Object.fromEntries(
-        BULK_IMPORT_COLUMNS.map((column) => [column, normalizedHeaders.indexOf(column)])
-      );
-
-      const parsedRows = rows
-        .slice(1)
-        .map((row, rowIndex) => {
-          const titleValue = normalizeHebrewToken(row[headerIndexMap['שם האירוע']]);
-          const categoryLabel = normalizeHebrewToken(row[headerIndexMap['קטגוריה']]);
-          const notesValue = normalizeHebrewToken(row[headerIndexMap['הערות']]);
-          const sourceYearLabel = normalizeHebrewToken(row[headerIndexMap['שנת מקור']]);
-          const monthLabel = normalizeHebrewToken(row[headerIndexMap['חודש']]);
-          const dayLabel = normalizeHebrewToken(row[headerIndexMap['יום']]);
-          const occurrencesValue = row[headerIndexMap['מופעים']];
-
-          if (![titleValue, categoryLabel, notesValue, sourceYearLabel, monthLabel, dayLabel, occurrencesValue]
-            .some((value) => String(value ?? '').trim() !== '')) {
-            return null;
-          }
-
-          const sourceYearValue = parseSourceYearValue(sourceYearLabel);
-          const dayValue = parseDayValue(dayLabel);
-          const monthId = IMPORT_MONTH_MAP[monthLabel];
-          const categoryId = IMPORT_CATEGORY_MAP[categoryLabel];
-          const occurrencesNumber = Number(occurrencesValue);
-
-          const issues = [];
-          if (!titleValue) issues.push(isRtl ? 'חסר שם אירוע' : 'Missing event title');
-          if (!categoryId) issues.push(isRtl ? 'קטגוריה לא מזוהה' : 'Unknown category');
-          if (!sourceYearValue) issues.push(isRtl ? 'שנת מקור לא תקינה' : 'Invalid source year');
-          if (!monthId) issues.push(isRtl ? 'חודש לא מזוהה' : 'Unknown month');
-          if (!dayValue) issues.push(isRtl ? 'יום לא תקין' : 'Invalid day');
-          if (!Number.isFinite(occurrencesNumber) || occurrencesNumber < 1) {
-            issues.push(isRtl ? 'מספר מופעים לא תקין' : 'Invalid occurrences count');
-          }
-
-          const validation = sourceYearValue && monthId && dayValue
-            ? validateHebrewDateForYear(sourceYearValue, monthId, dayValue)
-            : null;
-          const canResolveWithFallback =
-            validation &&
-            (validation.reason === 'ok' || validation.reason === 'missing_flexible_30th');
-          const needsFallbackDecision =
-            requires30thFallbackDecision(monthId, dayValue) && canResolveWithFallback;
-
-          if (validation && !validation.isValid) {
-            if (validation.reason !== 'missing_flexible_30th') {
-              issues.push(isRtl ? 'התאריך לא קיים בשנת המקור' : 'Date does not exist in source year');
-            }
-          }
-
-          return {
-            displayIndex: rowIndex + 1,
-            rowNumber: rowIndex + 2,
-            title: titleValue,
-            categoryLabel,
-            notes: notesValue,
-            sourceYearLabel,
-            sourceYearValue,
-            monthLabel,
-            monthId,
-            dayLabel,
-            dayValue,
-            occurrences: Number.isFinite(occurrencesNumber) ? occurrencesNumber : occurrencesValue,
-            issues,
-            validation,
-            needsFallbackDecision,
-          };
-        })
-        .filter(Boolean);
-
-      setImportPreviewRows(parsedRows);
-      setImportFallbackSelections({});
-
-      if (parsedRows.length === 0) {
-        setImportPreviewError(isRtl ? 'לא נמצאו שורות אירועים בגיליון Events.' : 'No event rows were found in the Events sheet.');
-      }
-    } catch (error) {
-      setImportPreviewRows([]);
-      setImportPreviewError(error.message || (isRtl ? 'קריאת הקובץ נכשלה.' : 'Failed to read workbook.'));
-    } finally {
-      setIsImportParsing(false);
-    }
-  };
-
-  const handleConfirmImport = async () => {
-    if (isLoading) return;
-    if (!hasWriteAccess) {
-      setLoginModalMode('upgrade');
-      setShowLoginModal(true);
-      return;
-    }
-    if (selectedCalendarIds.length === 0) {
-      alert(t('errorNoCalendar'));
-      return;
-    }
-    if (importExecutableRows.length === 0) {
-      alert(isRtl ? 'אין שורות מוכנות לייבוא.' : 'There are no rows ready to import.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      let createdCount = 0;
-      let skippedCount = 0;
-      const failedRows = [];
-
-      for (const row of importExecutableRows) {
-        const fallback = row.needsFallbackDecision
-          ? (importFallbackSelections[row.rowNumber] ?? '29th')
-          : 'skip';
-
-        const rdateString = generateRdates(
-          row.sourceYearValue,
-          row.monthId,
-          row.dayValue,
-          Number(row.occurrences) || 1,
-          fallback,
-        );
-
-        if (!rdateString) {
-          skippedCount += 1;
-          continue;
-        }
-
-        try {
-          await Promise.all(
-            selectedCalendarIds.map((calendarId) =>
-              createHebcalEvent(
-                row.title,
-                IMPORT_CATEGORY_MAP[row.categoryLabel] ?? 'other',
-                row.sourceYearValue,
-                rdateString,
-                calendarId,
-                row.notes,
-                {
-                  specialDate: requires30thFallbackDecision(row.monthId, row.dayValue)
-                    ? { monthName: row.monthId, day: row.dayValue, fallback }
-                    : null,
-                },
-              ),
-            ),
-          );
-          createdCount += 1;
-        } catch (error) {
-          if (
-            error?.message?.includes('401') ||
-            error?.message?.includes('authentication') ||
-            error?.message?.includes('Not authenticated')
-          ) {
-            throw error;
-          }
-          failedRows.push(row.displayIndex);
-        }
-      }
-
-      const summaryParts = [
-        isRtl ? `נוצרו: ${createdCount}` : `Created: ${createdCount}`,
-        isRtl ? `דולגו: ${skippedCount}` : `Skipped: ${skippedCount}`,
-      ];
-
-      if (failedRows.length > 0) {
-        summaryParts.push(
-          isRtl
-            ? `נכשלו בשורות: ${failedRows.join(', ')}`
-            : `Failed rows: ${failedRows.join(', ')}`,
-        );
-      }
-
-      alert(summaryParts.join(' | '));
-
-      if (createdCount > 0 && onComplete) {
-        await onComplete();
-      }
-    } catch (e) {
-      console.error('Bulk import error:', e);
-      if (e.message.includes('401') || e.message.includes('authentication') || e.message.includes('Not authenticated')) {
-        localStorage.removeItem('gcal_token');
-        setLoginModalMode('reauthorize');
-        setShowLoginModal(true);
-      } else {
-        alert((isRtl ? 'שגיאה בייבוא: ' : 'Import error: ') + e.message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -952,7 +594,7 @@ export default function AddEvent({
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           placeholder={t('descriptionPlaceholder')}
-                          rows="1"
+                          rows={1}
                           className="w-full min-h-12 resize-none overflow-hidden rounded-xl border border-slate-200 p-3 pb-7 text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-[#0038A8]"
                         />
                         <span className={`pointer-events-none absolute bottom-2 text-slate-300 dark:text-slate-600 ${isRtl ? 'left-3' : 'right-3'}`}>
@@ -1276,7 +918,12 @@ export default function AddEvent({
                                             </div>
                                             <select
                                               value={getImportFallbackSelection(row.rowNumber)}
-                                              onChange={(event) => updateImportFallbackSelection(row.rowNumber, event.target.value)}
+                                              onChange={(event) =>
+                                                updateImportFallbackSelection(
+                                                  row.rowNumber,
+                                                  event.target.value as FallbackChoice | '',
+                                                )
+                                              }
                                               className="w-full rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#0038A8] dark:border-amber-900/30 dark:bg-slate-900 dark:text-slate-200"
                                             >
                                               <option value="">{t('bulkImportFallbackSelect', { defaultValue: 'בחר טיפול' })}</option>
@@ -1455,5 +1102,6 @@ export default function AddEvent({
     </div>
   );
 }
+
 
 

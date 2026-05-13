@@ -1,12 +1,22 @@
 import { ChevronLeft, ChevronRight, LoaderCircle, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
+import type {
+  CalendarDay,
+  CalendarViewMode,
+  GoogleCalendarEvent,
+  OverflowDay,
+} from '../types/appTypes';
 
-function hexToRgba(hex, alpha) {
+function hexToRgba(hex: string | undefined, alpha: number): string {
   if (!hex) return `rgba(0, 56, 168, ${alpha})`;
   const normalized = hex.replace('#', '');
-  const fullHex = normalized.length === 3
-    ? normalized.split('').map((char) => char + char).join('')
-    : normalized;
+  const fullHex =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((char) => char + char)
+          .join('')
+      : normalized;
 
   const red = Number.parseInt(fullHex.slice(0, 2), 16);
   const green = Number.parseInt(fullHex.slice(2, 4), 16);
@@ -19,7 +29,10 @@ function hexToRgba(hex, alpha) {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
-function formatEventTimeLabel(event, locale) {
+function formatEventTimeLabel(
+  event: GoogleCalendarEvent,
+  locale: string,
+): string {
   if (!event?.start?.dateTime) return '';
   return new Date(event.start.dateTime).toLocaleTimeString(locale, {
     hour: '2-digit',
@@ -27,7 +40,7 @@ function formatEventTimeLabel(event, locale) {
   });
 }
 
-function CalendarLoadingOverlay({ t }) {
+function CalendarLoadingOverlay({ t }: { t: (key: string) => string }) {
   return (
     <div
       data-testid="calendar-loading-state"
@@ -41,7 +54,7 @@ function CalendarLoadingOverlay({ t }) {
   );
 }
 
-function CalendarEmptyState({ message }) {
+function CalendarEmptyState({ message }: { message: string }) {
   return (
     <div className="flex h-full items-center justify-center p-6">
       <div className="max-w-md rounded-3xl border border-dashed border-slate-300 bg-slate-50/90 px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
@@ -53,7 +66,31 @@ function CalendarEmptyState({ message }) {
   );
 }
 
-export const MOBILE_HEBREW_WEEKDAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+export const MOBILE_HEBREW_WEEKDAYS = [
+  '\u05d0',
+  '\u05d1',
+  '\u05d2',
+  '\u05d3',
+  '\u05d4',
+  '\u05d5',
+  '\u05e9',
+];
+
+interface CalendarToolbarProps {
+  isRtl: boolean;
+  t: (key: string) => string;
+  viewHDate: HDate;
+  hMonthNameHebrew: string;
+  hYear: string;
+  gMonthRange: string;
+  viewMode: CalendarViewMode;
+  setViewMode: React.Dispatch<React.SetStateAction<CalendarViewMode>>;
+  showGregorian: boolean;
+  setShowGregorian: React.Dispatch<React.SetStateAction<boolean>>;
+  handleNextMonth: () => void;
+  handlePrevMonth: () => void;
+  setViewHDate: React.Dispatch<React.SetStateAction<HDate>>;
+}
 
 export function CalendarToolbar({
   isRtl,
@@ -69,7 +106,7 @@ export function CalendarToolbar({
   handleNextMonth,
   handlePrevMonth,
   setViewHDate,
-}) {
+}: CalendarToolbarProps) {
   return (
     <section className="px-1 py-0">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -142,6 +179,24 @@ export function CalendarToolbar({
   );
 }
 
+interface MonthCalendarViewProps {
+  t: (key: string, options?: Record<string, unknown>) => string;
+  isRtl: boolean;
+  days: Array<CalendarDay | null>;
+  showGregorian: boolean;
+  isMobileViewport: boolean;
+  maxVisibleMonthEvents: number;
+  getCalendarColor: (calendarId?: string) => string;
+  handleEventClick: (event: GoogleCalendarEvent) => void;
+  handleOverflowDayOpen: (
+    dayObj: OverflowDay,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => void;
+  handleCreateFromDay: (dayObj: OverflowDay) => void;
+  isCalendarLoading: boolean;
+  emptyStateMessage: string;
+}
+
 export function MonthCalendarView({
   t,
   isRtl,
@@ -155,7 +210,7 @@ export function MonthCalendarView({
   handleCreateFromDay,
   isCalendarLoading,
   emptyStateMessage,
-}) {
+}: MonthCalendarViewProps) {
   const timeLocale = isRtl ? 'he-IL' : 'en-US';
   const hasVisibleEvents = days.some((dayObj) => dayObj?.events?.length > 0);
 
@@ -205,8 +260,8 @@ export function MonthCalendarView({
                     {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
                       const props = event.extendedProperties?.private || {};
                       const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-                      const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
-                      const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
+                      const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
+                      const age = originalYear && dayObj.hYear ? dayObj.hYear - originalYear : 0;
                       const ageSuffix = isHebCal ? ` (${age})` : '';
                       const eventColor = getCalendarColor(event.calendarId);
                       const timeLabel = formatEventTimeLabel(event, timeLocale);
@@ -215,7 +270,10 @@ export function MonthCalendarView({
                       return (
                         <div
                           key={idx}
-                          onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEventClick(event);
+                          }}
                           className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${
                             isTimedEvent
                               ? 'rounded-sm px-0.5 py-0.5 text-slate-700 hover:bg-slate-100/80 dark:text-slate-100 dark:hover:bg-slate-800/70'
@@ -273,18 +331,31 @@ export function MonthCalendarView({
   );
 }
 
+interface ScheduleCalendarViewProps {
+  t: (key: string, options?: Record<string, unknown>) => string;
+  isRtl: boolean;
+  showGregorian: boolean;
+  scheduleDays: CalendarDay[];
+  hMonthNameHebrew: string;
+  getCalendarColor: (calendarId?: string) => string;
+  handleEventClick: (event: GoogleCalendarEvent) => void;
+  isCalendarLoading: boolean;
+  handleCreateFromDay: (dayObj: OverflowDay) => void;
+  emptyStateMessage: string;
+}
+
 export function ScheduleCalendarView({
   t,
   isRtl,
   showGregorian,
   scheduleDays,
-  hMonthNameHebrew,
+  hMonthNameHebrew: _hMonthNameHebrew,
   getCalendarColor,
   handleEventClick,
   isCalendarLoading,
   handleCreateFromDay,
   emptyStateMessage,
-}) {
+}: ScheduleCalendarViewProps) {
   return (
     <div className="relative flex-1 overflow-hidden bg-white dark:bg-slate-900">
       <div className="h-full overflow-y-auto px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
@@ -292,86 +363,101 @@ export function ScheduleCalendarView({
           <CalendarEmptyState message={emptyStateMessage || t('noEventsInView')} />
         ) : (
           <div className="space-y-3">
-          {scheduleDays.map((dayObj) => (
-            <section
-              key={dayObj.gDate.toISOString()}
-              className="grid grid-cols-[44px_minmax(0,1fr)] gap-0.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[60px_minmax(0,1fr)] md:gap-1"
-            >
-              <button
-                type="button"
-                onClick={() => handleCreateFromDay(dayObj)}
-                className={`pt-1 transition-colors hover:text-[#1a73e8] ${isRtl ? 'text-right' : 'text-left'}`}
-                aria-label={t('createEventOnDay', {
-                  hebrewDay: dayObj.hDayGematriya,
-                  gregorianDay: dayObj.gDay,
-                })}
+            {scheduleDays.map((dayObj) => (
+              <section
+                key={dayObj.gDate.toISOString()}
+                className="grid grid-cols-[44px_minmax(0,1fr)] gap-0.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[60px_minmax(0,1fr)] md:gap-1"
               >
-                <div className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-black md:h-9 md:w-9 md:text-[15px] ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
-                  {dayObj.isToday ? dayObj.gDay : dayObj.hDayGematriya}
-                </div>
-                <div className="mt-1 text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
-                  {t(`days.${dayObj.weekday}`)}
-                </div>
-                {showGregorian ? (
-                  <div className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
-                    {dayObj.gMonthLabel} {dayObj.gDay}
+                <button
+                  type="button"
+                  onClick={() => handleCreateFromDay(dayObj)}
+                  className={`pt-1 transition-colors hover:text-[#1a73e8] ${isRtl ? 'text-right' : 'text-left'}`}
+                  aria-label={t('createEventOnDay', {
+                    hebrewDay: dayObj.hDayGematriya,
+                    gregorianDay: dayObj.gDay,
+                  })}
+                >
+                  <div className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-black md:h-9 md:w-9 md:text-[15px] ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
+                    {dayObj.isToday ? dayObj.gDay : dayObj.hDayGematriya}
                   </div>
-                ) : null}
-              </button>
+                  <div className="mt-1 text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
+                    {t(`days.${dayObj.weekday}`)}
+                  </div>
+                  {showGregorian ? (
+                    <div className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
+                      {dayObj.gMonthLabel} {dayObj.gDay}
+                    </div>
+                  ) : null}
+                </button>
 
-              <div className="space-y-1.5">
-                {dayObj.events.map((event, idx) => {
-                  const props = event.extendedProperties?.private || {};
-                  const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-                  const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
-                  const age = (originalYear && dayObj.hYear) ? (dayObj.hYear - originalYear) : 0;
-                  const ageSuffix = isHebCal ? ` (${age})` : '';
-                  const eventColor = getCalendarColor(event.calendarId);
-                  const start = event.start?.dateTime || event.start?.date;
-                  const end = event.end?.dateTime || event.end?.date;
-                  const timeLabel = event.start?.dateTime
-                    ? `${new Date(start).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}${end ? ` - ${new Date(end).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}`
-                    : '';
+                <div className="space-y-1.5">
+                  {dayObj.events.map((event, idx) => {
+                    const props = event.extendedProperties?.private || {};
+                    const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+                    const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
+                    const age = originalYear && dayObj.hYear ? dayObj.hYear - originalYear : 0;
+                    const ageSuffix = isHebCal ? ` (${age})` : '';
+                    const eventColor = getCalendarColor(event.calendarId);
+                    const start = event.start?.dateTime || event.start?.date;
+                    const end = event.end?.dateTime || event.end?.date;
+                    const timeLabel = event.start?.dateTime
+                      ? `${new Date(start || '').toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}${end ? ` - ${new Date(end).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}`
+                      : '';
 
-                  return (
-                    <button
-                      key={`${event.id || event.summary}-${idx}`}
-                      type="button"
-                      onClick={() => handleEventClick(event)}
+                    return (
+                      <button
+                        key={`${event.id || event.summary}-${idx}`}
+                        type="button"
+                        onClick={() => handleEventClick(event)}
                         className={`flex w-full items-start gap-2 rounded-2xl border px-2.5 py-2 text-right transition-all ${
-                        isHebCal
-                          ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
-                          : 'border-transparent hover:brightness-[0.98]'
-                      }`}
-                      style={
-                        isHebCal
-                          ? undefined
-                          : {
-                              backgroundColor: hexToRgba(eventColor, 0.18),
-                            }
-                      }
-                    >
-                      <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventColor }} />
-                      <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
-                        <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-50">{event.summary}{ageSuffix}</div>
-                      </div>
-                      {timeLabel && (
-                        <div className="shrink-0 pt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 md:text-xs">
-                          {timeLabel}
+                          isHebCal
+                            ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
+                            : 'border-transparent hover:brightness-[0.98]'
+                        }`}
+                        style={
+                          isHebCal
+                            ? undefined
+                            : {
+                                backgroundColor: hexToRgba(eventColor, 0.18),
+                              }
+                        }
+                      >
+                        <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventColor }} />
+                        <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+                          <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-50">{event.summary}{ageSuffix}</div>
                         </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                        {timeLabel && (
+                          <div className="shrink-0 pt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 md:text-xs">
+                            {timeLabel}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         )}
       </div>
       {isCalendarLoading ? <CalendarLoadingOverlay t={t} /> : null}
     </div>
   );
+}
+
+interface DayEventsPopoverProps {
+  overflowDay: OverflowDay | null;
+  isRtl: boolean;
+  closeDayEventsLabel: string;
+  dayEventsDialogLabel: string;
+  overflowPopoverWidth: number;
+  overflowPopoverMargin: number;
+  overflowTop: number;
+  overflowLeft: number;
+  showGregorian: boolean;
+  getCalendarColor: (calendarId?: string) => string;
+  setOverflowDay: React.Dispatch<React.SetStateAction<OverflowDay | null>>;
+  handleOverflowEventClick: (event: GoogleCalendarEvent) => void;
 }
 
 export function DayEventsPopover({
@@ -387,7 +473,7 @@ export function DayEventsPopover({
   getCalendarColor,
   setOverflowDay,
   handleOverflowEventClick,
-}) {
+}: DayEventsPopoverProps) {
   if (!overflowDay) return null;
 
   return (
@@ -432,14 +518,18 @@ export function DayEventsPopover({
           {overflowDay.events.map((event, idx) => {
             const props = event.extendedProperties?.private || {};
             const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-            const originalYear = isHebCal ? parseInt(props.originalHebrewYear, 10) : null;
-            const age = (originalYear && overflowDay.hYear) ? (overflowDay.hYear - originalYear) : 0;
+            const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
+            const age = originalYear && overflowDay.hYear ? overflowDay.hYear - originalYear : 0;
             const ageSuffix = isHebCal ? ` (${age})` : '';
             const eventColor = getCalendarColor(event.calendarId);
             const start = event.start?.dateTime || event.start?.date;
-            const timeLabel = start && event.start?.dateTime
-              ? new Date(start).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })
-              : null;
+            const timeLabel =
+              start && event.start?.dateTime
+                ? new Date(start).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : null;
 
             return (
               <button

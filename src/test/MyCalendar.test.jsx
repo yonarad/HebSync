@@ -294,7 +294,7 @@ describe('My Calendar Component', () => {
         description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
       },
     ]);
-    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
       { id: 'evt1', summary: 'Event 1', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
       { id: 'evt2', summary: 'Event 2', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
       { id: 'evt3', summary: 'Event 3', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
@@ -344,7 +344,7 @@ describe('My Calendar Component', () => {
 
   it('should show a deleting state after confirming event deletion', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
       {
         id: 'cal1',
         summary: 'HebSync',
@@ -352,7 +352,7 @@ describe('My Calendar Component', () => {
         description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
       },
     ]);
-    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
       {
         id: 'evt1',
         summary: 'Event 1',
@@ -434,7 +434,7 @@ describe('My Calendar Component', () => {
   });
 
   it('should not show the month empty state when visible events exist', async () => {
-    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
       {
         id: 'cal1',
         summary: 'HebSync',
@@ -442,7 +442,7 @@ describe('My Calendar Component', () => {
         description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
       },
     ]);
-    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
       {
         id: 'evt1',
         summary: 'Visible Month Event',
@@ -458,7 +458,7 @@ describe('My Calendar Component', () => {
     expect(screen.queryByText('The selected calendars do not have events in this time range.')).not.toBeInTheDocument();
   });
 
-  it('should default to schedule view on mobile', async () => {
+  it('should show schedule events on mobile', async () => {
     const originalWidth = window.innerWidth;
     window.innerWidth = 375;
 
@@ -470,7 +470,7 @@ describe('My Calendar Component', () => {
         description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
       },
     ]);
-    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
       {
         id: 'evt1',
         summary: 'Mobile Event',
@@ -483,9 +483,12 @@ describe('My Calendar Component', () => {
 
     renderDashboard();
 
-    expect(await screen.findByRole('button', { name: /Mobile Event/ })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    expect(
+      await screen.findByRole('button', { name: /Mobile Event/ }),
+    ).toBeInTheDocument();
     await waitFor(() => {
-    expect(screen.queryByText('The selected calendars do not have events in this time range.')).not.toBeInTheDocument();
+      expect(screen.queryByText('The selected calendars do not have events in this time range.')).not.toBeInTheDocument();
     });
 
     window.innerWidth = originalWidth;

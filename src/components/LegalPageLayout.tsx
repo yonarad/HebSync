@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, X } from 'lucide-react';
 import Logo from './Logo';
@@ -5,16 +6,29 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import LegalLinks from './LegalLinks';
 
-export default function LegalPageLayout({ title, subtitle, children }) {
+interface LegalPageLayoutProps {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  children: ReactNode;
+}
+
+export default function LegalPageLayout({
+  title,
+  subtitle,
+  children,
+}: LegalPageLayoutProps) {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
   const location = useLocation();
   const navigate = useNavigate();
-  const backgroundLocation = location.state?.backgroundLocation;
-  const returnTo = location.state?.returnTo || '/?about=1';
+  const locationState = location.state as
+    | { backgroundLocation?: typeof location; returnTo?: string }
+    | undefined;
+  const backgroundLocation = locationState?.backgroundLocation;
+  const returnTo = locationState?.returnTo || '/?about=1';
   const isModal = Boolean(backgroundLocation);
 
-  const handleClose = () => {
+  const handleClose = (): void => {
     if (isModal) {
       navigate(-1);
       return;
@@ -53,7 +67,7 @@ export default function LegalPageLayout({ title, subtitle, children }) {
                 type="button"
                 onClick={handleClose}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-blue-400 dark:hover:text-blue-300"
-                aria-label={isRtl ? 'סגור' : 'Close'}
+                aria-label={isRtl ? '\u05e1\u05d2\u05d5\u05e8' : 'Close'}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -117,7 +131,7 @@ export default function LegalPageLayout({ title, subtitle, children }) {
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-blue-400 dark:hover:text-blue-300"
           >
             <ChevronLeft className={`h-4 w-4 ${isRtl ? 'rotate-180' : ''}`} />
-            {isRtl ? 'חזרה' : 'Back'}
+            {isRtl ? '\u05d7\u05d6\u05e8\u05d4' : 'Back'}
           </Link>
         </div>
 

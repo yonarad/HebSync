@@ -2,6 +2,8 @@
 
 HebSync is a Vite + React app for syncing Hebrew-date events with Google Calendar.
 
+The frontend source now uses TypeScript across `src`, with Vitest coverage for the main calendar and event flows.
+
 ## Server-side OAuth setup
 
 The project now includes a secure server-side OAuth foundation for:
@@ -71,6 +73,7 @@ npm install
 This project now requires:
 
 - `@neondatabase/serverless`
+- `typescript`
 
 ## 5. Vercel deployment
 
@@ -108,9 +111,18 @@ Important:
 - local app origin is `http://localhost:3000`
 - local API proxy target is `http://localhost:8787`
 
+## Quality checks
+
+Run the main verification commands before shipping changes:
+
+```bash
+npm run typecheck
+npm test
+```
+
 ## 6. Frontend integration
 
-The current frontend still uses client-side tokens in [src/utils/googleApi.js](C:/dev/HebSync/src/utils/googleApi.js). To complete the migration:
+The current frontend still calls Google Calendar utilities from [src/utils/googleApi.ts](C:/dev/HebSync/src/utils/googleApi.ts). To complete the security migration:
 
 1. Replace `authenticateWithGoogle(...)` with a redirect to `/api/auth/google/start?scopeMode=...`
 2. Replace `getAccessToken()` checks with `GET /api/auth/session`

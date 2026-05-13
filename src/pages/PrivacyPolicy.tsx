@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import LegalPageLayout from '../components/LegalPageLayout';
 import { LEGAL_DETAILS, hasPlaceholderLegalDetails } from '../config/legal';
 import { deleteAccountData, getAccessToken } from '../utils/googleApi';
-import { useTranslation } from 'react-i18next';
 
-function Section({ title, children }) {
+interface SectionContent {
+  title: string;
+  body?: string[];
+  list?: string[];
+}
+
+interface PageContent {
+  title: string;
+  subtitle: string;
+  warning: string;
+  sections: SectionContent[];
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
       <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{title}</h3>
@@ -16,7 +29,7 @@ function Section({ title, children }) {
   );
 }
 
-function List({ items }) {
+function List({ items }: { items: string[] }) {
   return (
     <ul className="list-disc space-y-2 ps-5">
       {items.map((item) => (
@@ -32,9 +45,9 @@ export default function PrivacyPolicy() {
   const isHebrew = i18n.language === 'he';
   const placeholderWarning = hasPlaceholderLegalDetails();
   const [isDeletingAccountData, setIsDeletingAccountData] = useState(false);
-  const isAuthenticated = !!getAccessToken();
+  const isAuthenticated = Boolean(getAccessToken());
 
-  const content = isHebrew
+  const content: PageContent = isHebrew
     ? {
         title: 'מדיניות פרטיות',
         subtitle:
@@ -53,16 +66,16 @@ export default function PrivacyPolicy() {
             title: 'איזה מידע אנחנו אוספים',
             list: [
               'מידע בסיסי מחשבון Google שהמשתמש מחבר, כמו מזהה Google, כתובת אימייל ונתוני חיבור בסיסיים.',
-              'רמת ההרשאה שנבחרה ב-HebSync: יומני HebSync בלבד, צפייה ביומנים קיימים, או עריכת אירועים כשנדרשת הרשאה כזו.',
+              'רמת ההרשאה שנבחרה ב-HebSync: יומני HebSync בלבד, צפייה ביומנים קיימים, או עריכת אירועים כאשר נדרשת הרשאה כזו.',
               'מטא-דאטה של יומנים ואירועים שנדרש כדי להציג יומנים, לצפות באירועים, וליצור או לעדכן אירועים לפי הפעולות שהמשתמש בוחר.',
               'Cookies הכרחיים ל-authentication ולשמירה על session מאובטח.',
-              'נתוני צד-לקוח מינימליים ב-localStorage לצורך שמירת מצב התחברות בסיסי, רמת הרשאה, וסנכרון בין טאבים. מידע זה אינו כולל פרופיל משתמש מלא או CSRF token.',
+              'נתוני צד-לקוח מינימליים ב-localStorage לצורך שמירת מצב ההתחברות הבסיסי, רמת ההרשאה, וסנכרון בין טאבים. מידע זה אינו כולל פרופיל משתמש מלא או CSRF token.',
             ],
           },
           {
             title: 'איך אנחנו משתמשים במידע',
             list: [
-              'להתחבר לחשבון Google שבחרת ולאמת שהבקשה לחיבור הגיעה ממך.',
+              'להתחבר לחשבון Google שבחרת ולאמת שבקשת החיבור הגיעה ממך.',
               'להציג את היומנים והאירועים שרלוונטיים להרשאות שאישרת.',
               'ליצור, לעדכן או למחוק אירועים רק כאשר בחרת בפעולה כזו והרשית לכך.',
               'לשמור את המצב שנבחר כדי שהאפליקציה תוכל להמשיך לעבוד גם בין טעינות דף או טאבים.',
@@ -71,9 +84,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: 'הרשאות Google שהאפליקציה מבקשת',
-            body: [
-              'HebSync מבקש הרשאות מדורגות ולא מבקש גישת עריכה מלאה מראש.',
-            ],
+            body: ['HebSync מבקש הרשאות מדורגות ולא מבקש גישת עריכה מלאה מראש.'],
             list: [
               'openid ו-email כדי לזהות את המשתמש המחובר.',
               'calendar.app.created כדי לעבוד עם יומנים שהאפליקציה יוצרת.',
@@ -87,7 +98,7 @@ export default function PrivacyPolicy() {
             body: [
               'Cookie ה-session נשמר עד 30 יום, אלא אם המשתמש מתנתק קודם.',
               'Cookie זמני של OAuth state נשמר עד 10 דקות לצורך השלמת תהליך החיבור ל-Google.',
-              'Access token ו-refresh token נשמרים בצד השרת כדי לאפשר גישה מאובטחת ל-Google Calendar. בעת ניתוק, הטוקנים מבוטלים וה-session-ים הפעילים נמחקים.',
+              'Access token ו-refresh token נשמרים בצד השרת כדי לאפשר גישה מאובטחת ל-Google Calendar. בעת ניתוק, הטוקנים מבוטלים וה-sessions הפעילים נמחקים.',
               'נתוני localStorage נשמרים בדפדפן עד לניתוק, ניקוי ידני או מחיקת נתוני האתר.',
               'ניתוק מבטל את גישת Google ומסיים sessions פעילים. מחיקה מלאה מתוך האפליקציה מוחקת גם את רשומת החיבור השמורה ממסד הנתונים.',
             ],
@@ -102,7 +113,7 @@ export default function PrivacyPolicy() {
           {
             title: 'Cookies ואחסון מקומי',
             body: [
-              'האפליקציה משתמשת ב-cookies הכרחיים לצורך התחברות מאובטחת ושמירת session, וב-localStorage מינימלי לצורך מצב התחברות בסיסי ומצב הרשאות.',
+              'האפליקציה משתמשת ב-cookies הכרחיים לצורך התחברות מאובטחת ושמירת session, וב-localStorage מינימלי לצורך מצב ההתחברות הבסיסי ומצב ההרשאות.',
               'אם יתווספו בעתיד analytics, advertising cookies או כלי tracking לא הכרחיים, יהיה צורך לעדכן את המדיניות ולשקול מנגנון consent בהתאם לדין החל.',
             ],
           },
@@ -268,9 +279,7 @@ export default function PrivacyPolicy() {
             disabled={isDeletingAccountData}
             className="mt-4 inline-flex items-center rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-rose-700 disabled:cursor-wait disabled:opacity-70 dark:bg-rose-500 dark:hover:bg-rose-400"
           >
-            {isDeletingAccountData
-              ? (isHebrew ? 'מוחק נתונים...' : 'Deleting data...')
-              : t('deleteAccountData')}
+            {isDeletingAccountData ? (isHebrew ? 'מוחק נתונים...' : 'Deleting data...') : t('deleteAccountData')}
           </button>
         </section>
       ) : null}

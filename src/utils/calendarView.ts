@@ -1,13 +1,24 @@
 import { HDate, gematriya } from '@hebcal/core';
 import { HEBREW_MONTHS, formatHebrewYear } from './hebcal';
+import type {
+  CalendarDay,
+  GoogleCalendarEvent,
+  HebrewMonthGregorianRange,
+  HebrewMonthMeta,
+  OverflowDay,
+  OverflowPopoverLayout,
+} from '../types/appTypes';
 
-export function buildMonthDays(viewHDate, calendarEvents) {
+export function buildMonthDays(
+  viewHDate: HDate,
+  calendarEvents: GoogleCalendarEvent[],
+): Array<CalendarDay | null> {
   const hMonth = viewHDate.getMonthName();
   const hYear = viewHDate.getFullYear();
   const firstDayH = new HDate(1, hMonth, hYear);
   const daysInMonth = HDate.daysInMonth(HDate.monthFromName(hMonth), hYear);
   const firstDayOfWeek = firstDayH.getDay();
-  const days = [];
+  const days: Array<CalendarDay | null> = [];
 
   for (let i = 0; i < firstDayOfWeek; i += 1) days.push(null);
 
@@ -49,7 +60,9 @@ export function buildMonthDays(viewHDate, calendarEvents) {
   return days;
 }
 
-export function getHebrewMonthGregorianRange(viewHDate) {
+export function getHebrewMonthGregorianRange(
+  viewHDate: HDate,
+): HebrewMonthGregorianRange {
   const hMonth = viewHDate.getMonthName();
   const hYear = viewHDate.getFullYear();
   const firstDay = new HDate(1, hMonth, hYear).greg();
@@ -67,7 +80,9 @@ export function getHebrewMonthGregorianRange(viewHDate) {
   };
 }
 
-export function getEventOccurrenceHebrewYear(event) {
+export function getEventOccurrenceHebrewYear(
+  event: GoogleCalendarEvent | null | undefined,
+): number | null {
   const startValue = event?.start?.dateTime || event?.start?.date;
   if (!startValue) return null;
 
@@ -82,9 +97,11 @@ export function getEventOccurrenceHebrewYear(event) {
   return new HDate(startDate).getFullYear();
 }
 
-export function buildScheduleDays(days) {
+export function buildScheduleDays(
+  days: Array<CalendarDay | null>,
+): CalendarDay[] {
   return days
-    .filter((dayObj) => dayObj?.events?.length)
+    .filter((dayObj): dayObj is CalendarDay => Boolean(dayObj?.events?.length))
     .map((dayObj) => ({
       ...dayObj,
       events: [...dayObj.events].sort((a, b) => {
@@ -95,9 +112,11 @@ export function buildScheduleDays(days) {
     }));
 }
 
-export function getHebrewMonthMeta(viewHDate) {
+export function getHebrewMonthMeta(viewHDate: HDate): HebrewMonthMeta {
   const hMonthNameEnglish = viewHDate.getMonthName();
-  const hMonthNameHebrew = HEBREW_MONTHS.find((month) => month.id === hMonthNameEnglish)?.label || hMonthNameEnglish;
+  const hMonthNameHebrew =
+    HEBREW_MONTHS.find((month) => month.id === hMonthNameEnglish)?.label ||
+    hMonthNameEnglish;
   const hYear = formatHebrewYear(viewHDate.getFullYear());
   const gMonthRange = `${new HDate(1, hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })} - ${new HDate(HDate.daysInMonth(HDate.monthFromName(hMonthNameEnglish), viewHDate.getFullYear()), hMonthNameEnglish, viewHDate.getFullYear()).greg().toLocaleString('he-IL', { month: 'long' })}`;
 
@@ -109,7 +128,7 @@ export function getHebrewMonthMeta(viewHDate) {
   };
 }
 
-export function getNextMonthHDate(viewHDate) {
+export function getNextMonthHDate(viewHDate: HDate): HDate {
   let m = viewHDate.getMonth();
   let y = viewHDate.getFullYear();
   const monthsInYear = HDate.monthsInYear(y);
@@ -124,7 +143,7 @@ export function getNextMonthHDate(viewHDate) {
   return new HDate(1, m, y);
 }
 
-export function getPrevMonthHDate(viewHDate) {
+export function getPrevMonthHDate(viewHDate: HDate): HDate {
   let m = viewHDate.getMonth();
   let y = viewHDate.getFullYear();
   if (m === 7) {
@@ -144,7 +163,13 @@ export function getOverflowPopoverLayout({
   viewportHeight,
   overflowPopoverWidth = 220,
   overflowPopoverMargin = 12,
-}) {
+}: {
+  overflowDay: OverflowDay | null;
+  viewportWidth: number;
+  viewportHeight: number;
+  overflowPopoverWidth?: number;
+  overflowPopoverMargin?: number;
+}): OverflowPopoverLayout {
   const overflowAnchorRect = overflowDay?.anchorRect;
   const overflowEventCount = overflowDay?.events?.length ?? 0;
   const overflowPopoverHeight = Math.min(
@@ -156,7 +181,8 @@ export function getOverflowPopoverLayout({
   const overflowTop = Math.max(
     overflowPopoverMargin,
     Math.min(
-      overflowPreferredTop + overflowPopoverHeight <= viewportHeight - overflowPopoverMargin
+      overflowPreferredTop + overflowPopoverHeight <=
+        viewportHeight - overflowPopoverMargin
         ? overflowPreferredTop
         : overflowAboveTop,
       viewportHeight - overflowPopoverHeight - overflowPopoverMargin,
@@ -165,7 +191,8 @@ export function getOverflowPopoverLayout({
   const overflowLeft = Math.max(
     overflowPopoverMargin,
     Math.min(
-      (overflowAnchorRect?.right ?? overflowPopoverWidth + overflowPopoverMargin) - overflowPopoverWidth,
+      (overflowAnchorRect?.right ?? overflowPopoverWidth + overflowPopoverMargin) -
+        overflowPopoverWidth,
       viewportWidth - overflowPopoverWidth - overflowPopoverMargin,
     ),
   );

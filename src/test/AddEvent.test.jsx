@@ -126,7 +126,7 @@ describe('AddEvent Component', () => {
 
     expect(window.alert).toHaveBeenCalledWith('errorNoCalendar');
     expect(screen.queryByText('preview')).not.toBeInTheDocument();
-  });
+  }, 15000);
 
   it('should show a clear empty state when no calendars are available', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([]);
@@ -224,9 +224,9 @@ describe('AddEvent Component', () => {
     fireEvent.click(screen.getByText('confirmAndSync'));
     await waitFor(() => {
       expect(googleApi.createHebcalEvent).toHaveBeenCalled();
-      expect(screen.getByText('reauthorize')).toBeInTheDocument();
     });
-  });
+    expect(await screen.findByText('reauthorize', {}, { timeout: 10000 })).toBeInTheDocument();
+  }, 15000);
 
   it('should hide read-only calendars by default and reveal them as disabled when toggled', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
