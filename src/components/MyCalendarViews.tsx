@@ -254,17 +254,17 @@ export function MonthCalendarView({
                     gregorianDay: dayObj.gDay,
                   })}
                 >
-                  <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-start text-right' : 'justify-end text-left'}`}>
-                    <div className={`flex w-full items-baseline gap-px ${isRtl ? 'justify-start' : 'justify-end'}`}>
-                      <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:px-1.5 md:text-sm ${
+                  <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-start text-right' : 'justify-start text-left'}`}>
+                    <div className="flex w-full min-w-0 flex-nowrap items-baseline gap-0.5 justify-start">
+                      <span className={`inline-flex h-6 items-center px-0 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:justify-center md:rounded-full md:px-1.5 md:text-sm ${
                         dayObj.isToday
-                          ? 'bg-[#1a73e8] text-white shadow-sm'
-                          : 'text-slate-800 dark:text-slate-100'
+                          ? 'min-w-6 justify-center rounded-full bg-[#1a73e8] px-1 text-white shadow-sm md:min-w-7'
+                          : 'justify-start text-slate-800 dark:text-slate-100'
                       }`}>
                         {dayObj.hDayGematriya}
                       </span>
                       {showGregorian && (
-                        <span className="text-[9px] font-medium leading-none text-slate-400 dark:text-slate-500 md:text-[10px]">
+                        <span className="min-w-0 truncate text-[9px] font-medium leading-none text-slate-400 dark:text-slate-500 md:text-[10px]">
                           ({dayObj.gDay})
                         </span>
                       )}
