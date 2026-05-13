@@ -1,11 +1,18 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import useCalendarEventActions from '../hooks/useCalendarEventActions';
-import { deleteEvent, updateEvent } from '../utils/googleApi';
+import {
+  deleteEvent,
+  deleteRecurringEventScope,
+  updateEvent,
+  updateRecurringEventScope,
+} from '../utils/googleApi';
 
 vi.mock('../utils/googleApi', () => ({
   deleteEvent: vi.fn(),
+  deleteRecurringEventScope: vi.fn(),
   updateEvent: vi.fn(),
+  updateRecurringEventScope: vi.fn(),
 }));
 
 describe('useCalendarEventActions', () => {
@@ -30,7 +37,7 @@ describe('useCalendarEventActions', () => {
     );
 
     await act(async () => {
-      await result.current.handleDelete('cal1', 'evt1');
+      await result.current.handleDelete();
     });
 
     expect(promptForEditingUpgrade).toHaveBeenCalledTimes(1);
@@ -61,7 +68,7 @@ describe('useCalendarEventActions', () => {
     });
 
     await act(async () => {
-      await result.current.handleDelete('cal1', 'evt1');
+      await result.current.handleDelete();
     });
 
     expect(deleteEvent).toHaveBeenCalledWith('cal1', 'evt1');
@@ -107,6 +114,87 @@ describe('useCalendarEventActions', () => {
     expect(loadCalendarData).toHaveBeenCalledTimes(1);
     expect(result.current.selectedEvent).toBeNull();
     expect(result.current.isEditing).toBe(false);
+  });
+
+  it('applies recurring deletes to the selected scope', async () => {
+    vi.mocked(deleteRecurringEventScope).mockResolvedValueOnce(true);
+
+    const { result } = renderHook(() =>
+      useCalendarEventActions({
+        hasWriteAccess: true,
+        promptForEditingUpgrade,
+        t,
+        loadCalendarData,
+        loadEvents,
+      }),
+    );
+
+    act(() => {
+      result.current.handleEventClick({
+        id: 'evt1',
+        recurringEventId: 'series1',
+        calendarId: 'cal1',
+        summary: 'Recurring event',
+      });
+    });
+
+    await act(async () => {
+      await result.current.handleDelete('series', { skipConfirm: true });
+    });
+
+    expect(deleteRecurringEventScope).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'evt1',
+        recurringEventId: 'series1',
+      }),
+      'series',
+    );
+  });
+
+  it('applies recurring updates to the selected scope', async () => {
+    vi.mocked(updateRecurringEventScope).mockResolvedValueOnce({
+      id: 'future-series',
+      summary: 'Updated title',
+    } as never);
+
+    const { result } = renderHook(() =>
+      useCalendarEventActions({
+        hasWriteAccess: true,
+        promptForEditingUpgrade,
+        t,
+        loadCalendarData,
+        loadEvents,
+      }),
+    );
+
+    act(() => {
+      result.current.handleEventClick({
+        id: 'evt1',
+        recurringEventId: 'series1',
+        calendarId: 'cal1',
+        summary: 'Original title',
+        description: 'Original description',
+      });
+      result.current.setIsEditing(true);
+      result.current.setEditTitle('Updated title');
+      result.current.setEditDesc('Updated description');
+    });
+
+    await act(async () => {
+      await result.current.handleUpdate('future');
+    });
+
+    expect(updateRecurringEventScope).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'evt1',
+        recurringEventId: 'series1',
+      }),
+      {
+        summary: 'Updated title',
+        description: 'Updated description',
+      },
+      'future',
+    );
   });
 
   it('shows an alert when update fails', async () => {

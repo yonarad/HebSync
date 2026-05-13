@@ -6,6 +6,36 @@ function getEventUrl(calendarId, eventId) {
   return `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
 }
 
+export async function GET(request) {
+  const sessionToken = getSessionTokenFromRequest(request);
+  const session = sessionToken ? await requireSession(request) : null;
+  if (!session) {
+    return json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  try {
+    const url = new URL(request.url);
+    const calendarId = url.searchParams.get('calendarId');
+    const eventId = url.searchParams.get('eventId');
+
+    if (!calendarId || !eventId) {
+      return json({ error: 'calendarId and eventId are required' }, { status: 400 });
+    }
+
+    const response = await authorizedGoogleFetch(
+      session,
+      getEventUrl(calendarId, eventId),
+      {},
+      'Failed to fetch event',
+    );
+
+    return json(await response.json());
+  } catch (error) {
+    console.error('Failed to fetch event:', error);
+    return googleApiErrorResponse(error, 'Failed to fetch event');
+  }
+}
+
 export async function PATCH(request) {
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;

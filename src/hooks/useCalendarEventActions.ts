@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { deleteEvent, updateEvent } from '../utils/googleApi';
+import {
+  deleteEvent,
+  deleteRecurringEventScope,
+  type RecurringEventActionScope,
+  updateEvent,
+  updateRecurringEventScope,
+} from '../utils/googleApi';
 import type { GoogleCalendarEvent } from '../types/appTypes';
 
 interface UseCalendarEventActionsParams {
@@ -22,6 +28,7 @@ export default function useCalendarEventActions({
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleEventClick = (event: GoogleCalendarEvent): void => {
     setSelectedEvent(event);
@@ -31,18 +38,22 @@ export default function useCalendarEventActions({
   };
 
   const handleDelete = async (
-    calendarId?: string,
-    googleEventId?: string,
+    scope: RecurringEventActionScope = 'single',
+    options: { skipConfirm?: boolean } = {},
   ): Promise<void> => {
     if (!hasWriteAccess) {
       promptForEditingUpgrade();
       return;
     }
-    if (!calendarId || !googleEventId) return;
-    if (!window.confirm(t('deleteEventConfirm'))) return;
+    if (!selectedEvent?.calendarId || !selectedEvent?.id) return;
+    if (!options.skipConfirm && !window.confirm(t('deleteEventConfirm'))) return;
     setIsDeleting(true);
     try {
-      await deleteEvent(calendarId, googleEventId);
+      if (scope === 'single') {
+        await deleteEvent(selectedEvent.calendarId, selectedEvent.id);
+      } else {
+        await deleteRecurringEventScope(selectedEvent, scope);
+      }
       setSelectedEvent(null);
       await loadCalendarData();
       await loadEvents();
@@ -53,7 +64,9 @@ export default function useCalendarEventActions({
     }
   };
 
-  const handleUpdate = async (): Promise<void> => {
+  const handleUpdate = async (
+    scope: RecurringEventActionScope = 'single',
+  ): Promise<void> => {
     if (!hasWriteAccess || !selectedEvent) {
       if (!hasWriteAccess) {
         promptForEditingUpgrade();
@@ -62,16 +75,24 @@ export default function useCalendarEventActions({
     }
     if (!selectedEvent.calendarId || !selectedEvent.id) return;
 
+    setIsUpdating(true);
     try {
-      await updateEvent(selectedEvent.calendarId, selectedEvent.id, {
+      const updates = {
         summary: editTitle,
         description: editDesc,
-      });
+      };
+      if (scope === 'single') {
+        await updateEvent(selectedEvent.calendarId, selectedEvent.id, updates);
+      } else {
+        await updateRecurringEventScope(selectedEvent, updates, scope);
+      }
       setIsEditing(false);
       setSelectedEvent(null);
       await loadCalendarData();
     } catch {
       alert(t('updateEventError'));
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -83,6 +104,7 @@ export default function useCalendarEventActions({
     handleUpdate,
     isDeleting,
     isEditing,
+    isUpdating,
     selectedEvent,
     setEditDesc,
     setEditTitle,

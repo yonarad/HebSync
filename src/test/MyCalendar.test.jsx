@@ -49,7 +49,15 @@ vi.mock('../utils/googleApi', () => ({
   createNewCalendar: vi.fn(),
   createHebcalEvent: vi.fn(),
   deleteEvent: vi.fn(),
+  deleteRecurringEventScope: vi.fn(),
   updateEvent: vi.fn(),
+  updateRecurringEventScope: vi.fn(),
+  isRecurringEvent: vi.fn((event) => Boolean(event?.recurringEventId || event?.recurrence?.length)),
+  supportsFutureScopedChanges: vi.fn(
+    (event) =>
+      event?.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar' &&
+      Boolean(event?.recurringEventId || event?.recurrence?.length),
+  ),
   isAuthError: vi.fn((error) => error?.code === 'AUTH_EXPIRED'),
 }));
 
@@ -82,6 +90,19 @@ vi.mock('react-i18next', () => ({
         allDay: 'All day',
         loadingGoogleData: 'Loading Google data...',
         createEventOnDay: `Create an event on day ${options?.hebrewDay ?? ''} (${options?.gregorianDay ?? ''})`,
+        recurringDeleteDialogTitle: 'Delete recurring event',
+        recurringDeleteDialogBody: 'Choose delete scope',
+        recurringUpdateDialogTitle: 'Edit recurring event',
+        recurringUpdateDialogBody: 'Choose update scope',
+        recurringActionScopeSeries: 'Entire series',
+        recurringActionScopeSeriesHint: 'Apply to all occurrences.',
+        recurringActionScopeSingle: 'Only this occurrence',
+        recurringActionScopeSingleHint: 'Keep other occurrences unchanged.',
+        recurringActionScopeFuture: 'This and following',
+        recurringActionScopeFutureHint: 'Apply from this point onward.',
+        recurringDeleteConfirm: 'Delete selected scope',
+        recurringUpdateConfirm: 'Apply changes',
+        recommended: 'Recommended',
       };
       return translations[key] ?? key;
     },
@@ -374,6 +395,77 @@ describe('My Calendar Component', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'delete' }));
 
     expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
+  });
+
+  it('should open a recurring delete dialog with entire series selected by default', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
+      {
+        id: 'evt1',
+        recurringEventId: 'series1',
+        summary: 'Recurring event',
+        description: 'Event description',
+        calendarId: 'cal1',
+        start: { date: '2026-05-07' },
+        originalStartTime: { date: '2026-05-07' },
+        extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    fireEvent.click(await screen.findByText((content) => content.includes('Recurring event')));
+    fireEvent.click(await screen.findByRole('button', { name: 'delete' }));
+
+    expect(await screen.findByText('Delete recurring event')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Entire series/ })).toBeChecked();
+  });
+
+  it('should apply recurring delete to the default entire-series scope', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
+      {
+        id: 'evt1',
+        recurringEventId: 'series1',
+        summary: 'Recurring event',
+        description: 'Event description',
+        calendarId: 'cal1',
+        start: { date: '2026-05-07' },
+        originalStartTime: { date: '2026-05-07' },
+        extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+      },
+    ]);
+    vi.mocked(googleApi.deleteRecurringEventScope).mockResolvedValueOnce(true);
+
+    renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    fireEvent.click(await screen.findByText((content) => content.includes('Recurring event')));
+    fireEvent.click(await screen.findByRole('button', { name: 'delete' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete selected scope' }));
+
+    expect(googleApi.deleteRecurringEventScope).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'evt1',
+        recurringEventId: 'series1',
+      }),
+      'series',
+    );
   });
 
   it('should open event details when clicking an external event chip', async () => {

@@ -4,7 +4,12 @@ import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import AddEvent from './AddEvent';
-import { revokeAccess } from '../utils/googleApi';
+import {
+  isRecurringEvent,
+  revokeAccess,
+  supportsFutureScopedChanges,
+  type RecurringEventActionScope,
+} from '../utils/googleApi';
 import {
   buildMonthDays,
   buildScheduleDays,
@@ -109,6 +114,8 @@ export default function MyCalendar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHebSyncGroupOpen, setIsHebSyncGroupOpen] = useState(true);
   const [isOtherGroupOpen, setIsOtherGroupOpen] = useState(false);
+  const [recurringActionMode, setRecurringActionMode] = useState<'delete' | 'update' | null>(null);
+  const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
   const {
     editDesc,
     editTitle,
@@ -117,6 +124,7 @@ export default function MyCalendar() {
     handleUpdate,
     isDeleting,
     isEditing,
+    isUpdating,
     selectedEvent,
     setEditDesc,
     setEditTitle,
@@ -257,6 +265,43 @@ export default function MyCalendar() {
     setIsAddEventModalOpen(true);
   };
 
+  const closeRecurringActionDialog = (): void => {
+    setRecurringActionMode(null);
+    setRecurringActionScope('series');
+  };
+
+  const handleDeleteClick = (): void => {
+    if (selectedEvent && isRecurringEvent(selectedEvent)) {
+      setRecurringActionMode('delete');
+      setRecurringActionScope('series');
+      return;
+    }
+
+    void handleDelete();
+  };
+
+  const handleSaveClick = (): void => {
+    if (selectedEvent && isRecurringEvent(selectedEvent)) {
+      setRecurringActionMode('update');
+      setRecurringActionScope('series');
+      return;
+    }
+
+    void handleUpdate();
+  };
+
+  const confirmRecurringAction = async (): Promise<void> => {
+    if (!recurringActionMode) return;
+
+    if (recurringActionMode === 'delete') {
+      await handleDelete(recurringActionScope, { skipConfirm: true });
+    } else {
+      await handleUpdate(recurringActionScope);
+    }
+
+    closeRecurringActionDialog();
+  };
+
   const handleCloseAddEventModal = (): void => {
     setIsAddEventModalOpen(false);
     setCreatePrefillDate(null);
@@ -325,6 +370,34 @@ export default function MyCalendar() {
     const endLabel = new Date(event.end.dateTime).toLocaleTimeString(locale, formatOptions);
     return `${startLabel} - ${endLabel}`;
   };
+
+  const showRecurringFutureOption = supportsFutureScopedChanges(selectedEvent);
+  const isRecurringActionPending =
+    (recurringActionMode === 'delete' && isDeleting) ||
+    (recurringActionMode === 'update' && isUpdating);
+  const recurringScopeOptions: Array<{
+    value: RecurringEventActionScope;
+    label: string;
+    description: string;
+  }> = [
+    {
+      value: 'series',
+      label: t('recurringActionScopeSeries'),
+      description: t('recurringActionScopeSeriesHint'),
+    },
+    {
+      value: 'single',
+      label: t('recurringActionScopeSingle'),
+      description: t('recurringActionScopeSingleHint'),
+    },
+    ...(showRecurringFutureOption
+      ? [{
+          value: 'future' as RecurringEventActionScope,
+          label: t('recurringActionScopeFuture'),
+          description: t('recurringActionScopeFutureHint'),
+        }]
+      : []),
+  ];
 
   return (
     <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
@@ -580,7 +653,7 @@ export default function MyCalendar() {
             </div>
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
               <button
-                onClick={() => handleDelete(selectedEvent.calendarId, selectedEvent.id)}
+                onClick={handleDeleteClick}
                 disabled={isDeleting}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 font-bold transition-colors ${
                   isDeleting
@@ -593,11 +666,114 @@ export default function MyCalendar() {
               </button>
               <div className="flex gap-2">
                 {isEditing ? (
-                  <><button onClick={() => setIsEditing(false)} className="rounded-xl px-4 py-2 font-bold text-slate-600 transition-colors hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800">{t('cancel')}</button><button onClick={handleUpdate} className="rounded-xl bg-[#0038A8] px-6 py-2 font-bold text-white shadow-md transition-colors hover:bg-blue-800">{t('save')}</button></>
+                  <><button onClick={() => setIsEditing(false)} disabled={isUpdating} className="rounded-xl px-4 py-2 font-bold text-slate-600 transition-colors hover:bg-slate-200 disabled:cursor-wait disabled:opacity-60 dark:text-slate-300 dark:hover:bg-slate-800">{t('cancel')}</button><button onClick={handleSaveClick} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-xl bg-[#0038A8] px-6 py-2 font-bold text-white shadow-md transition-colors hover:bg-blue-800 disabled:cursor-wait disabled:opacity-70">{isUpdating ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}{t('save')}</button></>
                 ) : (
                   <button onClick={() => (hasWriteAccess ? setIsEditing(true) : promptForEditingUpgrade())} className="px-6 py-2 bg-white border border-slate-200 text-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700">{hasWriteAccess ? t('edit') : t('allowEdit')}</button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEvent && recurringActionMode && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={closeRecurringActionDialog}
+            aria-label={t('close')}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recurring-action-title"
+            className="relative z-10 w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+          >
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h3 id="recurring-action-title" className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                  {recurringActionMode === 'delete'
+                    ? t('recurringDeleteDialogTitle')
+                    : t('recurringUpdateDialogTitle')}
+                </h3>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                  {recurringActionMode === 'delete'
+                    ? t('recurringDeleteDialogBody')
+                    : t('recurringUpdateDialogBody')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeRecurringActionDialog}
+                className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                aria-label={t('close')}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {recurringScopeOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer gap-3 rounded-2xl border p-4 transition-colors ${
+                    recurringActionScope === option.value
+                      ? 'border-[#0038A8] bg-blue-50/70 dark:border-blue-400 dark:bg-blue-950/30'
+                      : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="recurring-action-scope"
+                    value={option.value}
+                    checked={recurringActionScope === option.value}
+                    onChange={() => setRecurringActionScope(option.value)}
+                    className="mt-1 h-4 w-4 shrink-0 accent-[#0038A8]"
+                  />
+                  <span>
+                    <span className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-50">
+                      <span>{option.label}</span>
+                      {option.value === 'series' ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-amber-800 dark:bg-amber-400/20 dark:text-amber-200">
+                          {t('recommended')}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-1 block text-sm text-slate-600 dark:text-slate-300">
+                      {option.description}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={closeRecurringActionDialog}
+              disabled={isRecurringActionPending}
+              className="rounded-xl px-4 py-2 font-bold text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-wait disabled:opacity-60 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmRecurringAction()}
+              disabled={isRecurringActionPending}
+              className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 font-bold text-white transition-colors disabled:cursor-wait disabled:opacity-70 ${
+                  recurringActionMode === 'delete'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-[#0038A8] hover:bg-blue-800'
+                }`}
+            >
+              {isRecurringActionPending ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : null}
+              {recurringActionMode === 'delete'
+                ? t('recurringDeleteConfirm')
+                : t('recurringUpdateConfirm')}
+              </button>
             </div>
           </div>
         </div>

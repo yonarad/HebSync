@@ -85,6 +85,7 @@ export interface AddEventPrefillDate {
 export interface GoogleCalendarDateTime {
   date?: string;
   dateTime?: string;
+  timeZone?: string;
 }
 
 export interface GoogleEventPrivateProperties {
@@ -101,6 +102,9 @@ export interface GoogleCalendarEvent {
   description?: string;
   start?: GoogleCalendarDateTime;
   end?: GoogleCalendarDateTime;
+  recurrence?: string[];
+  recurringEventId?: string;
+  originalStartTime?: GoogleCalendarDateTime;
   calendarId?: string;
   accessRole?: string;
   extendedProperties?: {
