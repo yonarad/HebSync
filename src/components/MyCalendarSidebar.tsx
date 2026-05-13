@@ -377,20 +377,20 @@ export default function MyCalendarSidebar({
           </div>
 
           <div className="mt-auto space-y-4 border-t border-slate-100 pt-4 dark:border-slate-800">
-            <div className="space-y-2 rounded-xl bg-blue-50/20 p-3 dark:bg-blue-900/10">
+            <div className="rounded-xl bg-blue-50/20 px-3 py-2.5 dark:bg-blue-900/10">
               <button
                 type="button"
                 onClick={handleOpenLanding}
-                className="flex w-full items-start gap-3 rounded-lg text-start text-blue-700 transition-colors hover:text-[#0038A8] dark:text-blue-300 dark:hover:text-blue-200"
+                className="flex w-full items-center gap-2 rounded-lg text-start text-blue-700 transition-colors hover:text-[#0038A8] dark:text-blue-300 dark:hover:text-blue-200"
               >
-                <Info className="mt-0.5 h-4 w-4 shrink-0 opacity-70" />
+                <Info className="h-3.5 w-3.5 shrink-0 opacity-70" />
                 <div>
                   <p className="text-[10px] font-bold">
                     {t('aboutHebSync', {
                       defaultValue: '\u05d0\u05d5\u05d3\u05d5\u05ea HebSync',
                     })}
                   </p>
-                  <p className="text-[9px] leading-4 opacity-80">
+                  <p className="text-[9px] leading-3 opacity-80">
                     {t('aboutHebSyncHint', {
                       defaultValue:
                         '\u05d4\u05e1\u05d1\u05e8 \u05e2\u05dc \u05d4\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4, \u05d0\u05d5\u05e4\u05df \u05d4\u05e2\u05d1\u05d5\u05d3\u05d4 \u05d5\u05d4\u05d2\u05d3\u05e8\u05d5\u05ea \u05d4\u05d7\u05d9\u05d1\u05d5\u05e8 \u05d4\u05e8\u05d0\u05e9\u05d5\u05e0\u05d9\u05d5\u05ea.',
@@ -409,6 +409,7 @@ export default function MyCalendarSidebar({
               >
                 Hebcal
               </a>
+              .
             </div>
             <LegalLinks
               className="flex items-center gap-2 text-[10px]"

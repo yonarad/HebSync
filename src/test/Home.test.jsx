@@ -80,7 +80,7 @@ vi.mock('react-i18next', () => ({
         howAccessWorks: 'How access works',
         permissionHebsyncOnlyFooter: 'HebSync only footer',
         permissionAllCalendarsFooter: 'All calendars footer',
-        thanksTo: 'Thanks to',
+        thanksTo: 'Powered by',
         copyright: `HebSync ${options?.year ?? ''}`,
         authErrorTitle: 'Google sign-in did not complete',
         authErrorInvalidState:

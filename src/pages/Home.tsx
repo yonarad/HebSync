@@ -529,6 +529,7 @@ export default function Home() {
             >
               Hebcal
             </a>
+            .
           </p>
         </footer>
       </div>
