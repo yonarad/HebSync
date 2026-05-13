@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import AddEvent from '../pages/AddEvent';
@@ -114,8 +114,6 @@ describe('AddEvent Component', () => {
   });
 
   it('should require selecting at least one calendar before opening preview', async () => {
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
-
     renderAddEvent();
 
     fireEvent.change(screen.getAllByRole('textbox')[0], {
@@ -124,7 +122,7 @@ describe('AddEvent Component', () => {
 
     fireEvent.click(screen.getByText('showPreview'));
 
-    expect(window.alert).toHaveBeenCalledWith('errorNoCalendar');
+    expect(await screen.findByRole('alert')).toHaveTextContent('errorNoCalendar');
     expect(screen.queryByText('preview')).not.toBeInTheDocument();
   }, 15000);
 
@@ -199,7 +197,9 @@ describe('AddEvent Component', () => {
 
   it('should open the login modal in reauthorize mode when the Google session expires', async () => {
     renderAddEvent();
-    window.dispatchEvent(new CustomEvent(GCAL_AUTH_EXPIRED_EVENT));
+    act(() => {
+      window.dispatchEvent(new CustomEvent(GCAL_AUTH_EXPIRED_EVENT));
+    });
     expect(await screen.findByText('reauthorize')).toBeInTheDocument();
   });
 

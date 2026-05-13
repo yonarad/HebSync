@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import MyCalendar from './pages/MyCalendar';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import AccessibilityStatement from './pages/AccessibilityStatement';
 
 interface ModalLocationState {
   backgroundLocation?: Location;
@@ -20,12 +21,14 @@ function AppRoutes() {
         <Route path="/calendar" element={<MyCalendar />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/accessibility" element={<AccessibilityStatement />} />
       </Routes>
 
       {backgroundLocation ? (
         <Routes>
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/accessibility" element={<AccessibilityStatement />} />
         </Routes>
       ) : null}
     </>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -129,6 +129,7 @@ export default function Home() {
   const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [selectedMode, setSelectedMode] = useState<ScopeMode>(SCOPE_MODES.APP_CREATED);
   const [activeMode, setActiveMode] = useState<ScopeMode | null>(null);
+  const [connectErrorMessage, setConnectErrorMessage] = useState<string | null>(null);
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const isRtl = i18n.language === 'he';
   const locale: LocaleCode = isRtl ? 'he' : 'en';
@@ -191,6 +192,16 @@ export default function Home() {
 
   const handleInstall = async () => {
     await promptInstall();
+  };
+
+  const activateOnKeyboard = (
+    event: KeyboardEvent<HTMLElement>,
+    action: () => void,
+  ): void => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      action();
+    }
   };
 
   if (!isSessionResolved) {
@@ -350,7 +361,7 @@ export default function Home() {
               </div>
 
               {authErrorMessage ? (
-                <div className="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50/90 px-4 py-3.5 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+                <div role="alert" aria-live="assertive" className="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50/90 px-4 py-3.5 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/80 text-amber-700 shadow-sm dark:bg-slate-900/70 dark:text-amber-300">
                       <AlertTriangle className="h-4 w-4" />
@@ -363,6 +374,12 @@ export default function Home() {
                 </div>
               ) : null}
 
+              {connectErrorMessage ? (
+                <div role="alert" aria-live="assertive" className="mt-5 rounded-[1.5rem] border border-rose-200 bg-rose-50/90 px-4 py-3.5 text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100">
+                  <p className="text-sm font-bold">{connectErrorMessage}</p>
+                </div>
+              ) : null}
+
               {!isAuthenticated && (
                 <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   {t('landingConnectBody', {
@@ -372,7 +389,7 @@ export default function Home() {
                 </p>
               )}
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-6 space-y-4" role="radiogroup" aria-label={t('landingConnectTitle')}>
                 {CONNECT_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   const isSelected = selectedMode === option.id;
@@ -380,7 +397,11 @@ export default function Home() {
                   return (
                     <div
                       key={option.id}
+                      role="radio"
+                      aria-checked={isSelected}
+                      tabIndex={0}
                       onClick={() => setSelectedMode(option.id)}
+                      onKeyDown={(event) => activateOnKeyboard(event, () => setSelectedMode(option.id))}
                       className={`relative w-full cursor-pointer rounded-[1.75rem] border-2 p-5 text-start transition-all ${option.accentClassName} ${
                         isSelected
                           ? 'shadow-[0_20px_45px_-30px_rgba(0,56,168,0.45)] ring-2 ring-[#0038A8]/20 dark:ring-blue-400/20'
@@ -435,12 +456,13 @@ export default function Home() {
                           onClick={(event) => {
                             event.stopPropagation();
                             setSelectedMode(option.id);
+                            setConnectErrorMessage(null);
                             if (isAuthenticated && activeOptionId === option.id) {
                               navigate('/calendar');
                               return;
                             }
                             authenticateWithGoogle(option.id, undefined, (err: Error) => {
-                              window.alert(`${t('errorSyncFailed')}: ${err.message || ''}`);
+                              setConnectErrorMessage(`${t('errorSyncFailed')}: ${err.message || ''}`);
                             });
                           }}
                           className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition-all ${

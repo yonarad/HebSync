@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle } from 'lucide-react';
 import Logo from '../components/Logo';
@@ -35,6 +35,16 @@ import type {
 } from '../types/appTypes';
 
 const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
+
+function activateOnKeyboard(
+  event: KeyboardEvent<HTMLElement>,
+  action: () => void,
+): void {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    action();
+  }
+}
 
 export default function MyCalendar() {
   const navigate = useNavigate();
@@ -128,6 +138,29 @@ export default function MyCalendar() {
       setIsOtherGroupOpen(false);
     }
   }, [hebSyncCalendars.length, otherCalendars.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: globalThis.KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+
+      if (selectedEvent) {
+        setSelectedEvent(null);
+        return;
+      }
+
+      if (isAddEventModalOpen) {
+        handleCloseAddEventModal();
+        return;
+      }
+
+      if (isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddEventModalOpen, isSidebarOpen, selectedEvent, setSelectedEvent]);
 
   useEffect(() => {
     if (!isAuthenticated || !hasWriteAccess) return;
@@ -297,10 +330,17 @@ export default function MyCalendar() {
     <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-4 md:gap-6">
-          <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
+          <button type="button" aria-label={menuLabel} onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
             <Menu className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/calendar')}>
+          <div
+            role="link"
+            tabIndex={0}
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate('/calendar')}
+            onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/calendar'))}
+            aria-label={t('myCalendar')}
+          >
             <Logo className="w-8 h-8" />
             <h1 className="text-lg md:text-xl font-black tracking-tight dark:text-white" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>
               <span className="text-[#0038A8] dark:text-blue-400">{t('appNameFirst')}</span>
@@ -327,6 +367,7 @@ export default function MyCalendar() {
                 onClick={handleRevoke}
                 className="flex items-center gap-2 rounded-lg p-2 text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 md:px-4 md:py-2"
                 title={t('disconnect')}
+                aria-label={t('disconnect')}
               >
                 <LogOut className="w-5 h-5" />
                 <span className="hidden md:inline">{t('disconnect')}</span>
@@ -451,10 +492,11 @@ export default function MyCalendar() {
 
       {isAddEventModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-sm md:items-center md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
-          <div
+          <button
+            type="button"
             className="absolute inset-0"
             onClick={handleRequestCloseAddEventModal}
-            aria-hidden="true"
+            aria-label={t('close')}
             data-testid="add-event-modal-backdrop"
           />
           <div className="pointer-events-none relative z-10 flex h-full max-h-full w-full justify-center md:h-auto">
@@ -466,7 +508,12 @@ export default function MyCalendar() {
             >
               <X className="h-5 w-5" />
             </button>
-            <div className="pointer-events-auto flex h-full w-full justify-center md:h-auto md:w-auto">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('addEvent')}
+              className="pointer-events-auto flex h-full w-full justify-center md:h-auto md:w-auto"
+            >
               <AddEvent
                 onClose={handleRequestCloseAddEventModal}
                 onComplete={handleAddEventComplete}
@@ -492,10 +539,10 @@ export default function MyCalendar() {
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
+          <div role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
-              <button onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
+              <h2 id="event-details-title" className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
+              <button type="button" aria-label={t('close')} onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6 space-y-4">
               {isEditing ? (

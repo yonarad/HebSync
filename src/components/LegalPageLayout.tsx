@@ -43,7 +43,12 @@ export default function LegalPageLayout({
         dir={isRtl ? 'rtl' : 'ltr'}
         className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm md:px-6 md:py-8"
       >
-        <div className="absolute inset-0" onClick={handleClose} aria-hidden="true" />
+        <button
+          type="button"
+          className="absolute inset-0"
+          onClick={handleClose}
+          aria-label={isRtl ? 'סגור חלון' : 'Close dialog'}
+        />
         <div className="relative flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/95 shadow-2xl dark:border-slate-800 dark:bg-slate-900/95">
           <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 md:px-8">
             <div className="flex items-center gap-3">

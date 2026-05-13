@@ -200,10 +200,17 @@ export default function MyCalendarSidebar({
 }: MyCalendarSidebarProps) {
   return (
     <>
-      <aside className={`fixed inset-y-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} z-40 flex h-full min-h-0 w-72 flex-col border-slate-200 bg-white transition-transform duration-300 dark:border-slate-800 dark:bg-slate-900 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}`}>
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={menuLabel}
+        className={`fixed inset-y-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} z-40 flex h-full min-h-0 w-72 flex-col border-slate-200 bg-white transition-transform duration-300 dark:border-slate-800 dark:bg-slate-900 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}`}
+      >
         <div className="flex items-center justify-between border-b p-4 dark:border-slate-800 md:hidden">
           <span className="font-bold dark:text-white">{menuLabel}</span>
           <button
+            type="button"
+            aria-label={t('close')}
             onClick={() => setIsSidebarOpen(false)}
             className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
@@ -215,6 +222,7 @@ export default function MyCalendarSidebar({
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
               <span>{t('calendarAccess')}</span>
               <button
+                type="button"
                 onClick={handleChangePermissions}
                 className="text-[#0038A8] underline dark:text-blue-400"
               >
@@ -247,6 +255,7 @@ export default function MyCalendarSidebar({
                   {isAllCalendarsMode &&
                     (hasWriteAccess ? (
                       <button
+                        type="button"
                         onClick={handleDisableEditing}
                         className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                       >
@@ -255,6 +264,7 @@ export default function MyCalendarSidebar({
                       </button>
                     ) : (
                       <button
+                        type="button"
                         onClick={promptForEditingUpgrade}
                         className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#0038A8] transition-colors hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300"
                       >
@@ -294,6 +304,7 @@ export default function MyCalendarSidebar({
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <button
+                    type="button"
                     onClick={handleCreateCalendar}
                     className="shrink-0 rounded bg-blue-50 px-2 py-1 text-[10px] font-bold text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300"
                   >
@@ -310,6 +321,7 @@ export default function MyCalendarSidebar({
                 </span>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={selectAllCalendars}
                     className="text-slate-500 transition-colors hover:text-[#0038A8]"
                   >
@@ -317,6 +329,7 @@ export default function MyCalendarSidebar({
                   </button>
                   <span className="text-slate-300">|</span>
                   <button
+                    type="button"
                     onClick={deselectAllCalendars}
                     className="text-slate-500 transition-colors hover:text-[#0038A8]"
                   >
@@ -406,8 +419,10 @@ export default function MyCalendarSidebar({
       </aside>
 
       {isSidebarOpen && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm md:hidden"
+          aria-label={t('close')}
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

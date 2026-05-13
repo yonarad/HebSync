@@ -69,9 +69,13 @@ export default function AddEvent({
   const hasAppliedPrefillRef = useRef(false);
   const notesRef = useRef<HTMLTextAreaElement | null>(null);
   const importFileInputRef = useRef<HTMLInputElement | null>(null);
+  const feedbackRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<LoginModalMode>('connect');
+  const [feedbackContext, setFeedbackContext] = useState<'manualValidation' | 'general' | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [feedbackTone, setFeedbackTone] = useState<'error' | 'success' | null>(null);
   const {
     calendars,
     clearCalendarSession,
@@ -90,6 +94,9 @@ export default function AddEvent({
       setLoginModalMode(mode);
       setShowLoginModal(true);
       setIsLoading(false);
+      setFeedbackContext('general');
+      setFeedbackTone('error');
+      setFeedbackMessage(t('authErrorAuthenticationFailed'));
     },
     onCalendarsChanged,
     t,
@@ -240,6 +247,9 @@ export default function AddEvent({
     openLoginModal,
     requires30thFallbackDecision,
     selectedCalendarIds,
+    setFeedbackContext,
+    setFeedbackMessage,
+    setFeedbackTone,
     setIsLoading,
     setPreviewData,
     setShowPreview,
@@ -249,8 +259,14 @@ export default function AddEvent({
     validateHebrewDateForYear,
     year,
   });
+  const showInlineManualError =
+    !showPreview && tab === 'manual' && feedbackTone === 'error' && feedbackContext === 'manualValidation' && Boolean(feedbackMessage);
+  const showTopFeedback = Boolean(feedbackMessage) && !showInlineManualError;
 
   const handleClose = () => {
+    setFeedbackContext(null);
+    setFeedbackMessage(null);
+    setFeedbackTone(null);
     if (showPreview) {
       setShowPreview(false);
       return;
@@ -292,6 +308,12 @@ export default function AddEvent({
     return () => window.removeEventListener('resize', updateLayoutMode);
   }, []);
 
+  useEffect(() => {
+    if (!feedbackMessage || showPreview) return;
+    feedbackRef.current?.focus();
+    feedbackRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  }, [feedbackMessage, showPreview]);
+
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {
     if (!isGregorianEntry) {
@@ -329,8 +351,17 @@ export default function AddEvent({
   const onLoginSelect = (scopeMode: Exclude<ScopeMode, null>) => {
     setShowLoginModal(false);
     authenticateWithGoogle(scopeMode, undefined, (err) => {
-      alert(t('errorSyncFailed') + ": " + err.message);
+      setFeedbackContext('general');
+      setFeedbackTone('error');
+      setFeedbackMessage(`${t('errorSyncFailed')}: ${err.message}`);
     });
+  };
+
+  const clearManualValidationFeedback = () => {
+    if (feedbackContext !== 'manualValidation') return;
+    setFeedbackContext(null);
+    setFeedbackMessage(null);
+    setFeedbackTone(null);
   };
 
   const handleRevoke = async () => {
@@ -405,7 +436,10 @@ export default function AddEvent({
         <input
           type="checkbox"
           checked={selectedCalendarIds.includes(cal.id)}
-          onChange={() => toggleCalendar(cal.id)}
+          onChange={() => {
+            clearManualValidationFeedback();
+            toggleCalendar(cal.id);
+          }}
           disabled={disabled}
           className="h-4 w-4 rounded text-[#0038A8] disabled:cursor-not-allowed disabled:opacity-60"
         />
@@ -540,17 +574,43 @@ export default function AddEvent({
             </p>
           </div>
 
+          {showTopFeedback ? (
+            <div
+              ref={feedbackRef}
+              tabIndex={-1}
+              role={feedbackTone === 'error' ? 'alert' : 'status'}
+              aria-live={feedbackTone === 'error' ? 'assertive' : 'polite'}
+              className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+                feedbackTone === 'success'
+                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-200'
+                  : 'border border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200'
+              }`}
+            >
+              {feedbackMessage}
+            </div>
+          ) : null}
+
         <div className="overflow-hidden rounded-none border-0 bg-transparent shadow-none dark:bg-slate-900 md:rounded-2xl md:border md:border-slate-100 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800">
           {!showPreview ? (
             <>
-              <div className="flex border-b border-slate-100 dark:border-slate-700">
-                <button 
+              <div className="flex border-b border-slate-100 dark:border-slate-700" role="tablist" aria-label={t('addEventTitle')}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === 'manual'}
+                  aria-controls="add-event-manual-panel"
+                  id="add-event-manual-tab"
                   className={`flex-1 py-4 text-center font-medium transition-colors ${tab === 'manual' ? 'text-[#0038A8] border-b-2 border-[#0038A8] bg-blue-50/50 dark:bg-[#0038A8]/20 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setTab('manual')}
                 >
                   {t('manualEntry')}
                 </button>
-                <button 
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === 'csv'}
+                  aria-controls="add-event-import-panel"
+                  id="add-event-import-tab"
                   className={`flex-1 py-4 text-center font-medium transition-colors ${tab === 'csv' ? 'text-[#0038A8] border-b-2 border-[#0038A8] bg-blue-50/50 dark:bg-[#0038A8]/20 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setTab('csv')}
                 >
@@ -560,23 +620,31 @@ export default function AddEvent({
 
               <div className="px-4 pb-6 pt-4 md:p-8">
                 {tab === 'manual' ? (
-                  <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePreview(); }}>
+                  <form id="add-event-manual-panel" role="tabpanel" aria-labelledby="add-event-manual-tab" className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePreview(); }}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('eventName')}</label>
+                        <label htmlFor="event-title" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('eventName')}</label>
                         <input 
+                          id="event-title"
                           type="text" 
                           value={title}
-                          onChange={(e) => setTitle(e.target.value)}
+                          onChange={(e) => {
+                            clearManualValidationFeedback();
+                            setTitle(e.target.value);
+                          }}
                           placeholder={isRtl ? "לדוגמה: יום הולדת של דוד" : "e.g. David's Birthday"} 
                           className="w-full rounded-xl border border-slate-200 p-3 text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-[#0038A8]"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('category')}</label>
+                        <label htmlFor="event-category" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('category')}</label>
                         <select 
+                          id="event-category"
                           value={category}
-                          onChange={(e) => setCategory(e.target.value)}
+                          onChange={(e) => {
+                            clearManualValidationFeedback();
+                            setCategory(e.target.value);
+                          }}
                           className="w-full rounded-xl border border-slate-200 bg-white p-3 text-slate-900 transition-all outline-none focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-[#0038A8]">
                           <option value="birthday">{t('birthday')}</option>
                           <option value="anniversary">{t('anniversary')}</option>
@@ -587,9 +655,10 @@ export default function AddEvent({
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('description')}</label>
+                      <label htmlFor="event-notes" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('description')}</label>
                       <div className="relative">
                         <textarea
+                          id="event-notes"
                           ref={notesRef}
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
@@ -609,11 +678,15 @@ export default function AddEvent({
                           <CalendarIcon className="w-5 h-5 text-[#0038A8]" />
                           {t('originalEventDate')}
                         </h3>
-                        <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600 md:text-sm dark:text-slate-400">
+                        <label htmlFor="toggle-gregorian-entry" className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600 md:text-sm dark:text-slate-400">
                           <input 
+                            id="toggle-gregorian-entry"
                             type="checkbox" 
                             checked={isGregorianEntry}
-                            onChange={(e) => setIsGregorianEntry(e.target.checked)}
+                            onChange={(e) => {
+                              clearManualValidationFeedback();
+                              setIsGregorianEntry(e.target.checked);
+                            }}
                             className="w-4 h-4 text-[#0038A8] rounded" 
                           />
                           {t('enterGregorian')}
@@ -623,10 +696,14 @@ export default function AddEvent({
                       {!isGregorianEntry ? (
                         <div className="grid grid-cols-[1.35fr_1fr_0.8fr] gap-2.5 md:grid-cols-3 md:gap-4">
                           <div className="space-y-1 md:space-y-2">
-                            <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('sourceYear')}</label>
+                            <label htmlFor="source-year" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('sourceYear')}</label>
                             <select 
+                              id="source-year"
                               value={year}
-                              onChange={(e) => setYear(e.target.value)}
+                              onChange={(e) => {
+                                clearManualValidationFeedback();
+                                setYear(e.target.value);
+                              }}
                               className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium text-slate-900 outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                             >
                               {yearOptions.map(y => (
@@ -635,10 +712,14 @@ export default function AddEvent({
                             </select>
                           </div>
                           <div className="space-y-1 md:space-y-2">
-                            <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('month')}</label>
+                            <label htmlFor="source-month" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('month')}</label>
                             <select 
+                              id="source-month"
                               value={month}
-                              onChange={(e) => setMonth(e.target.value)}
+                              onChange={(e) => {
+                                clearManualValidationFeedback();
+                                setMonth(e.target.value);
+                              }}
                               className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium text-slate-900 outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                             >
                               {availableMonths.map(m => (
@@ -647,10 +728,14 @@ export default function AddEvent({
                             </select>
                           </div>
                           <div className="space-y-1 md:space-y-2">
-                            <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('day')}</label>
+                            <label htmlFor="source-day" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('day')}</label>
                             <select 
+                              id="source-day"
                               value={day}
-                              onChange={(e) => setDay(parseInt(e.target.value, 10))}
+                              onChange={(e) => {
+                                clearManualValidationFeedback();
+                                setDay(parseInt(e.target.value, 10));
+                              }}
                               className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[13px] font-medium text-slate-900 outline-none focus:border-[#0038A8] md:p-3 md:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                             >
                               {Array.from({length: daysInMonth}).map((_, i) => (
@@ -665,18 +750,25 @@ export default function AddEvent({
                         <div className="space-y-4">
                           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                             <div className="space-y-1.5 md:space-y-2">
-                              <label className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('gregorianDate')}</label>
+                              <label htmlFor="gregorian-date" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('gregorianDate')}</label>
                               <input 
+                                id="gregorian-date"
                                 type="date" 
                                 value={gregDate}
-                                onChange={(e) => setGregDate(e.target.value)}
+                                onChange={(e) => {
+                                  clearManualValidationFeedback();
+                                  setGregDate(e.target.value);
+                                }}
                                 className="w-full rounded-lg border border-slate-200 p-2.5 text-sm text-slate-900 outline-none focus:border-[#0038A8] md:p-3 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                               />
                             </div>
                             <div className="flex flex-col justify-end pb-1">
                               <button 
                                 type="button"
-                                onClick={() => setAfterSunset(!afterSunset)}
+                                onClick={() => {
+                                  clearManualValidationFeedback();
+                                  setAfterSunset(!afterSunset);
+                                }}
                                 className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition-all md:p-3 ${afterSunset ? 'border-[#0038A8] bg-[#0038A8]/10 text-[#0038A8] dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-300' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
                               >
                                 {afterSunset ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
@@ -707,15 +799,24 @@ export default function AddEvent({
                           </p>
                           <div className="grid grid-cols-1 gap-3">
                             <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
-                              <input type="radio" name="fallback" checked={fallback30th === '29th'} onChange={() => setFallback30th('29th')} className="w-4 h-4 text-[#0038A8]" />
+                              <input type="radio" name="fallback" checked={fallback30th === '29th'} onChange={() => {
+                                clearManualValidationFeedback();
+                                setFallback30th('29th');
+                              }} className="w-4 h-4 text-[#0038A8]" />
                               <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'הקדמה ל-כ״ט באותו חודש' : 'Move to 29th of the same month'}</span>
                             </label>
                             <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
-                              <input type="radio" name="fallback" checked={fallback30th === '1st'} onChange={() => setFallback30th('1st')} className="w-4 h-4 text-[#0038A8]" />
+                              <input type="radio" name="fallback" checked={fallback30th === '1st'} onChange={() => {
+                                clearManualValidationFeedback();
+                                setFallback30th('1st');
+                              }} className="w-4 h-4 text-[#0038A8]" />
                               <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דחייה ל-א׳ בחודש הבא' : 'Move to 1st of the next month'}</span>
                             </label>
                             <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
-                              <input type="radio" name="fallback" checked={fallback30th === 'skip'} onChange={() => setFallback30th('skip')} className="w-4 h-4 text-[#0038A8]" />
+                              <input type="radio" name="fallback" checked={fallback30th === 'skip'} onChange={() => {
+                                clearManualValidationFeedback();
+                                setFallback30th('skip');
+                              }} className="w-4 h-4 text-[#0038A8]" />
                               <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דילוג על השנה (לא ליצור אירוע)' : 'Skip the year (don\'t create event)'}</span>
                             </label>
                           </div>
@@ -723,14 +824,18 @@ export default function AddEvent({
                       )}
                       
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('howManyOccurrences')}</label>
-                        <div className="flex items-center gap-3">
-                          <input 
-                            type="number"
+                          <label htmlFor="sync-span" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('howManyOccurrences')}</label>
+                          <div className="flex items-center gap-3">
+                            <input 
+                              id="sync-span"
+                              type="number"
                             min="1"
                             max="121"
                             value={syncSpan}
-                            onChange={(e) => setSyncSpan(Math.min(121, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                            onChange={(e) => {
+                              clearManualValidationFeedback();
+                              setSyncSpan(Math.min(121, Math.max(1, parseInt(e.target.value, 10) || 1)));
+                            }}
                             className="w-24 rounded-xl border border-slate-200 bg-white p-3 text-center font-bold text-slate-900 outline-none focus:border-[#0038A8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                           />
                           <span className="text-slate-600 dark:text-slate-400 font-medium">{t('occurrences')}</span>
@@ -739,6 +844,18 @@ export default function AddEvent({
 
                       {renderCalendarSelection()}
                     </div>
+
+                    {showInlineManualError ? (
+                      <div
+                        ref={feedbackRef}
+                        tabIndex={-1}
+                        role="alert"
+                        aria-live="assertive"
+                        className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-900 outline-none dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200"
+                      >
+                        {feedbackMessage}
+                      </div>
+                    ) : null}
 
                     <div className="pt-2 flex justify-end">
                       <button 
@@ -751,9 +868,11 @@ export default function AddEvent({
                     </div>
                   </form>
                 ) : (
+                  <div id="add-event-import-panel" role="tabpanel" aria-labelledby="add-event-import-tab">
                   <>
                     <div className="space-y-6">
                       <input
+                        id="import-workbook-input"
                         ref={importFileInputRef}
                         type="file"
                         accept=".xlsx,.xls"
@@ -1002,6 +1121,7 @@ export default function AddEvent({
                       ) : null}
                     </div>
                   </>
+                  </div>
                 )}
               </div>
             </>

@@ -43,6 +43,15 @@ export default function LegalLinks({
       >
         {isHebrew ? '\u05ea\u05e0\u05d0\u05d9 \u05e9\u05d9\u05de\u05d5\u05e9' : 'Terms'}
       </Link>
+      <span className="text-slate-300 dark:text-slate-600">|</span>
+      <Link
+        to="/accessibility"
+        state={linkState}
+        replace={isModal}
+        className={linkClassName}
+      >
+        {isHebrew ? 'נגישות' : 'Accessibility'}
+      </Link>
     </div>
   );
 }

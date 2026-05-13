@@ -11,8 +11,14 @@ export default function LanguageSwitcher() {
 
   return (
     <button
+      type="button"
       onClick={toggleLanguage}
       className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors dark:text-slate-400 dark:hover:bg-slate-800"
+      aria-label={
+        i18n.language === 'he'
+          ? 'Switch site language to English'
+          : 'החלפת שפת האתר לעברית'
+      }
       title={
         i18n.language === 'he'
           ? 'Switch to English'

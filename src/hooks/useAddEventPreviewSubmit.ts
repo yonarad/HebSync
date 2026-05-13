@@ -57,6 +57,9 @@ interface UseAddEventPreviewSubmitParams {
   openLoginModal: (mode: LoginModalMode) => void;
   requires30thFallbackDecision: (month: string, day: number) => boolean;
   selectedCalendarIds: string[];
+  setFeedbackContext?: (value: 'manualValidation' | 'general' | null) => void;
+  setFeedbackMessage?: (value: string | null) => void;
+  setFeedbackTone?: (value: 'error' | 'success' | null) => void;
   setIsLoading: (value: boolean) => void;
   setPreviewData: (value: PreviewOccurrence[]) => void;
   setShowPreview: (value: boolean) => void;
@@ -94,6 +97,9 @@ export default function useAddEventPreviewSubmit({
   openLoginModal,
   requires30thFallbackDecision,
   selectedCalendarIds,
+  setFeedbackContext = () => {},
+  setFeedbackMessage = () => {},
+  setFeedbackTone = () => {},
   setIsLoading,
   setPreviewData,
   setShowPreview,
@@ -132,26 +138,36 @@ export default function useAddEventPreviewSubmit({
   };
 
   const handlePreview = () => {
+    setFeedbackContext(null);
+    setFeedbackMessage(null);
+    setFeedbackTone(null);
+
     if (!title) {
-      window.alert('נא להזין את שם האירוע');
+      setFeedbackContext('manualValidation');
+      setFeedbackTone('error');
+      setFeedbackMessage(t('errorNoTitle'));
       return;
     }
 
     if (!isGregorianEntry && !sourceDateValidation.isValid) {
-      window.alert(
+      setFeedbackContext('manualValidation');
+      setFeedbackTone('error');
+      setFeedbackMessage(
         sourceDateValidation.reason === 'missing_flexible_30th'
           ? isRtl
-            ? 'התאריך שבחרת לא קיים בשנת המקור. ל׳ בחשוון, ל׳ בכסלו ול׳ באדר א׳ קיימים רק בחלק מהשנים.'
+            ? 'התאריך שנבחר לא קיים בשנת המקור. ל׳ בחשוון, ל׳ בכסלו ול׳ באדר א׳ קיימים רק בחלק מהשנים.'
             : 'The selected date does not exist in the source year. 30 Cheshvan, 30 Kislev, and 30 Adar I exist only in some years.'
           : isRtl
-            ? 'התאריך שבחרת לא קיים בשנת המקור שנבחרה.'
+            ? 'התאריך שנבחר לא קיים בשנת המקור שנבחרה.'
             : 'The selected date does not exist in the selected source year.',
       );
       return;
     }
 
     if (selectedCalendarIds.length === 0) {
-      window.alert(t('errorNoCalendar'));
+      setFeedbackContext('manualValidation');
+      setFeedbackTone('error');
+      setFeedbackMessage(t('errorNoCalendar'));
       return;
     }
 
@@ -186,6 +202,8 @@ export default function useAddEventPreviewSubmit({
     }
 
     setIsLoading(true);
+    setFeedbackMessage(null);
+    setFeedbackTone(null);
 
     try {
       const targetParts = resolveTargetDateParts();
@@ -242,7 +260,8 @@ export default function useAddEventPreviewSubmit({
         ),
       );
 
-      window.alert(
+      setFeedbackTone('success');
+      setFeedbackMessage(
         isRtl
           ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!`
           : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`,
@@ -263,13 +282,16 @@ export default function useAddEventPreviewSubmit({
         logout();
         if (
           window.confirm(
-            'פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?',
+            isRtl
+              ? 'פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?'
+              : 'Your Google session expired. Do you want to reconnect to save the event?',
           )
         ) {
           openLoginModal('reauthorize');
         }
       } else {
-        window.alert(
+        setFeedbackTone('error');
+        setFeedbackMessage(
           `${isRtl ? 'שגיאה בשמירת האירוע: ' : 'Error saving event: '}${errorMessage}`,
         );
       }

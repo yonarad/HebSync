@@ -1,11 +1,22 @@
 import { ChevronLeft, ChevronRight, LoaderCircle, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
+import type { KeyboardEvent } from 'react';
 import type {
   CalendarDay,
   CalendarViewMode,
   GoogleCalendarEvent,
   OverflowDay,
 } from '../types/appTypes';
+
+function activateOnKeyboard(
+  event: KeyboardEvent<HTMLElement>,
+  action: () => void,
+): void {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    action();
+  }
+}
 
 function hexToRgba(hex: string | undefined, alpha: number): string {
   if (!hex) return `rgba(0, 56, 168, ${alpha})`;
@@ -233,7 +244,10 @@ export function MonthCalendarView({
             <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
               {dayObj && (
                 <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleCreateFromDay(dayObj)}
+                  onKeyDown={(event) => activateOnKeyboard(event, () => handleCreateFromDay(dayObj))}
                   className={`flex h-full min-h-0 cursor-pointer flex-col overflow-hidden px-1 py-1 transition-colors hover:bg-slate-50/80 md:px-2 md:py-1.5 dark:hover:bg-slate-800/40 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}
                   aria-label={t('createEventOnDay', {
                     hebrewDay: dayObj.hDayGematriya,
@@ -268,19 +282,21 @@ export function MonthCalendarView({
                       const chipLabel = `${event.summary}${ageSuffix}`;
                       const isTimedEvent = Boolean(timeLabel);
                       return (
-                        <div
+                        <button
                           key={idx}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEventClick(event);
                           }}
-                          className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${
+                          type="button"
+                          className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${isRtl ? 'text-right' : 'text-left'} ${
                             isTimedEvent
                               ? 'rounded-sm px-0.5 py-0.5 text-slate-700 hover:bg-slate-100/80 dark:text-slate-100 dark:hover:bg-slate-800/70'
                               : 'rounded-md px-1.5 py-0.5 text-white hover:brightness-95'
                           }`}
                           style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
                           title={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
+                          aria-label={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
                         >
                           {isTimedEvent ? (
                             <div className="flex w-full">
@@ -298,7 +314,7 @@ export function MonthCalendarView({
                           ) : (
                             <div className="truncate">{chipLabel}</div>
                           )}
-                        </div>
+                        </button>
                       );
                     })}
                     {dayObj.events.length > maxVisibleMonthEvents && (
@@ -486,6 +502,7 @@ export function DayEventsPopover({
       />
       <div
         role="dialog"
+        aria-modal="true"
         aria-label={dayEventsDialogLabel}
         className="absolute z-10 overflow-hidden rounded-[0.9rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
         style={{

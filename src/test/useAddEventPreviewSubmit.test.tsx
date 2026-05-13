@@ -51,6 +51,9 @@ describe('useAddEventPreviewSubmit', () => {
     requires30thFallbackDecision: (month: string, day: number) =>
       month === 'Cheshvan' && day === 30,
     selectedCalendarIds: ['cal1', 'cal2'],
+    setFeedbackContext: vi.fn(),
+    setFeedbackMessage: vi.fn(),
+    setFeedbackTone: vi.fn(),
     setIsLoading: vi.fn(),
     setPreviewData: vi.fn(),
     setShowPreview: vi.fn(),
@@ -73,8 +76,7 @@ describe('useAddEventPreviewSubmit', () => {
     localStorage.clear();
   });
 
-  it('alerts when preview is requested without a title', () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('sets inline feedback when preview is requested without a title', () => {
     const params = {
       ...buildParams(),
       title: '',
@@ -86,7 +88,9 @@ describe('useAddEventPreviewSubmit', () => {
       result.current.handlePreview();
     });
 
-    expect(alertSpy).toHaveBeenCalled();
+    expect(params.setFeedbackContext).toHaveBeenCalledWith('manualValidation');
+    expect(params.setFeedbackTone).toHaveBeenCalledWith('error');
+    expect(params.setFeedbackMessage).toHaveBeenCalledWith('errorNoTitle');
     expect(params.setPreviewData).not.toHaveBeenCalled();
     expect(params.setShowPreview).not.toHaveBeenCalled();
   });
@@ -122,7 +126,6 @@ describe('useAddEventPreviewSubmit', () => {
   });
 
   it('submits one event per selected calendar and includes special-date metadata', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     const params = buildParams();
 
     const { result } = renderHook(() => useAddEventPreviewSubmit(params));
@@ -150,7 +153,10 @@ describe('useAddEventPreviewSubmit', () => {
       },
     );
     expect(params.onComplete).toHaveBeenCalled();
-    expect(alertSpy).toHaveBeenCalled();
+    expect(params.setFeedbackMessage).toHaveBeenCalledWith(
+      'Event created successfully and synced to 2 calendars!',
+    );
+    expect(params.setFeedbackTone).toHaveBeenCalledWith('success');
     expect(params.setIsLoading).toHaveBeenLastCalledWith(false);
   });
 
