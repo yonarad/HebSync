@@ -226,7 +226,7 @@ export function MonthCalendarView({
   const hasVisibleEvents = days.some((dayObj) => dayObj?.events?.length > 0);
 
   return (
-    <div className="relative flex h-full flex-1 flex-col">
+    <div className="relative flex flex-1 flex-col md:h-full">
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
         {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
           const weekdayLabel = t(`days.${idx}`);
@@ -239,7 +239,7 @@ export function MonthCalendarView({
         })}
       </div>
       <div className="relative flex-1">
-        <div className="grid h-full grid-cols-7 auto-rows-fr overflow-y-auto bg-white dark:bg-slate-900 md:overflow-hidden">
+        <div className="grid grid-cols-7 auto-rows-auto bg-white dark:bg-slate-900 md:h-full md:auto-rows-fr md:overflow-hidden">
           {days.map((dayObj, i) => (
             <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
               {dayObj && (

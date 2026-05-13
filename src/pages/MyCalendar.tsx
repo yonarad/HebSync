@@ -400,7 +400,7 @@ export default function MyCalendar() {
   ];
 
   return (
-    <div className={`h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'} md:h-screen md:overflow-hidden`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-4 md:gap-6">
           <button type="button" aria-label={menuLabel} onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
@@ -450,7 +450,7 @@ export default function MyCalendar() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden relative min-h-0">
+      <div className="relative flex flex-1 flex-col md:min-h-0 md:flex-row md:overflow-hidden">
         <MyCalendarSidebar
           isRtl={isRtl}
           isSidebarOpen={isSidebarOpen}
@@ -487,8 +487,8 @@ export default function MyCalendar() {
           handleOpenLanding={handleOpenLanding}
         />
 
-        <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_32%),linear-gradient(180deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">
-          <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-3">
+        <main className="flex-1 overflow-visible bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-24 pt-0 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_32%),linear-gradient(180deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] md:overflow-auto md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">
+          <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-3 md:h-full">
             <CalendarToolbar
               isRtl={isRtl}
               t={t}
@@ -505,7 +505,7 @@ export default function MyCalendar() {
               setViewHDate={setViewHDate}
             />
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] dark:border-slate-700/60 dark:bg-slate-900">
+            <div className="flex flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] md:min-h-0 dark:border-slate-700/60 dark:bg-slate-900">
               {viewMode === 'month' ? (
                 <MonthCalendarView
                   t={t}
