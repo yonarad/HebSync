@@ -51,6 +51,10 @@ function formatEventTimeLabel(
   });
 }
 
+function formatMobileHebrewDayLabel(label: string): string {
+  return label.replace(/['"׳״]/g, '');
+}
+
 function CalendarLoadingOverlay({ t }: { t: (key: string) => string }) {
   return (
     <div
@@ -261,7 +265,9 @@ export function MonthCalendarView({
                           ? 'min-w-6 justify-center rounded-full bg-[#1a73e8] px-1 text-white shadow-sm md:min-w-7'
                           : 'justify-start text-slate-800 dark:text-slate-100'
                       }`}>
-                        {dayObj.hDayGematriya}
+                        {isMobileViewport
+                          ? formatMobileHebrewDayLabel(dayObj.hDayGematriya)
+                          : dayObj.hDayGematriya}
                       </span>
                       {showGregorian && (
                         <span className="min-w-0 truncate text-[9px] font-medium leading-none text-slate-400 dark:text-slate-500 md:text-[10px]">
