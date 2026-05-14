@@ -226,7 +226,7 @@ export function MonthCalendarView({
   const hasVisibleEvents = days.some((dayObj) => dayObj?.events?.length > 0);
 
   return (
-    <div className="relative flex flex-1 flex-col md:h-full">
+    <div className="relative flex min-h-0 flex-1 flex-col md:h-full">
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
         {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
           const weekdayLabel = t(`days.${idx}`);
@@ -238,10 +238,10 @@ export function MonthCalendarView({
           );
         })}
       </div>
-      <div className="relative flex-1">
-        <div className="grid grid-cols-7 auto-rows-auto bg-white dark:bg-slate-900 md:h-full md:auto-rows-fr md:overflow-hidden">
+      <div className="relative min-h-0 flex-1 overflow-y-auto pb-14 md:pb-12">
+        <div className="grid min-h-full grid-cols-7 auto-rows-[minmax(112px,1fr)] bg-white dark:bg-slate-900 md:auto-rows-[minmax(128px,1fr)]">
           {days.map((dayObj, i) => (
-            <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
+            <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-[128px] ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
               {dayObj && (
                 <div
                   role="button"
@@ -374,7 +374,7 @@ export function ScheduleCalendarView({
 }: ScheduleCalendarViewProps) {
   return (
     <div className="relative flex-1 overflow-hidden bg-white dark:bg-slate-900">
-      <div className="h-full overflow-y-auto px-3 py-3 dark:bg-slate-900 md:px-5 md:py-4">
+      <div className="h-full overflow-y-auto px-3 py-3 pb-14 dark:bg-slate-900 md:px-5 md:py-4 md:pb-12">
         {scheduleDays.length === 0 ? (
           <CalendarEmptyState message={emptyStateMessage || t('noEventsInView')} />
         ) : (
