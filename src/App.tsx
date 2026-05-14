@@ -40,7 +40,7 @@ export default function App() {
   const direction = i18n.language === 'he' ? 'rtl' : 'ltr';
 
   return (
-    <div dir={direction} className="min-h-screen font-sans text-slate-900 antialiased">
+    <div dir={direction} className="h-full min-h-0 font-sans text-slate-900 antialiased">
       <Router>
         <AppRoutes />
       </Router>
