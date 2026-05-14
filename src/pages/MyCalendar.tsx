@@ -1,6 +1,6 @@
 import { useState, useEffect, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle } from 'lucide-react';
+import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import AddEvent from './AddEvent';
@@ -427,9 +427,12 @@ export default function MyCalendar() {
             <button
               type="button"
               onClick={promptInstall}
-              className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:h-auto sm:w-auto sm:gap-2 sm:px-3 sm:py-2 sm:text-sm sm:font-bold"
+              aria-label={t('installApp')}
+              title={t('installApp')}
             >
-              {t('installApp')}
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('installApp')}</span>
             </button>
           ) : null}
           {!isAuthenticated ? (

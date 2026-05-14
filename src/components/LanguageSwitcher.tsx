@@ -3,9 +3,10 @@ import { Languages } from 'lucide-react';
 
 export default function LanguageSwitcher() {
   const { i18n } = useTranslation();
+  const isHebrew = i18n.language === 'he';
 
   const toggleLanguage = (): void => {
-    const nextLang = i18n.language === 'he' ? 'en' : 'he';
+    const nextLang = isHebrew ? 'en' : 'he';
     i18n.changeLanguage(nextLang);
   };
 
@@ -13,20 +14,16 @@ export default function LanguageSwitcher() {
     <button
       type="button"
       onClick={toggleLanguage}
-      className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors dark:text-slate-400 dark:hover:bg-slate-800"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 sm:h-auto sm:w-auto sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs sm:font-bold"
       aria-label={
-        i18n.language === 'he'
+        isHebrew
           ? 'Switch site language to English'
-          : 'החלפת שפת האתר לעברית'
+          : 'Switch site language to Hebrew'
       }
-      title={
-        i18n.language === 'he'
-          ? 'Switch to English'
-          : '\u05e2\u05d1\u05d5\u05e8 \u05dc\u05e2\u05d1\u05e8\u05d9\u05ea'
-      }
+      title={isHebrew ? 'Switch to English' : 'Switch to Hebrew'}
     >
-      <Languages className="w-4 h-4" />
-      <span>{i18n.language === 'he' ? 'EN' : '\u05e2\u05d1'}</span>
+      <Languages className="h-4 w-4" />
+      <span className="hidden sm:inline">{isHebrew ? 'EN' : 'עב'}</span>
     </button>
   );
 }

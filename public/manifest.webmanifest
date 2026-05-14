@@ -2,7 +2,7 @@
   "id": "/",
   "name": "עברי ליומן",
   "short_name": "עברי ליומן",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Sync Hebrew calendar events with Google Calendar.",
   "lang": "he",
   "dir": "rtl",

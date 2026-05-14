@@ -9,62 +9,104 @@ interface NavigatorWithStandalone extends Navigator {
   standalone?: boolean;
 }
 
+interface InstallPromptSnapshot {
+  deferredPrompt: BeforeInstallPromptEvent | null;
+  isInstalled: boolean;
+}
+
+const subscribers = new Set<(snapshot: InstallPromptSnapshot) => void>();
+
+let activeDeferredPrompt: BeforeInstallPromptEvent | null = null;
+let listenersAttached = false;
+let mediaQueryList: MediaQueryList | null = null;
+let mediaQueryListener: ((event: MediaQueryListEvent) => void) | null = null;
+
+const getInstalledState = (): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: minimal-ui)').matches ||
+    (window.navigator as NavigatorWithStandalone).standalone === true
+  );
+};
+
+let installPromptSnapshot: InstallPromptSnapshot = {
+  deferredPrompt: null,
+  isInstalled: getInstalledState(),
+};
+
+const emitSnapshot = (): void => {
+  installPromptSnapshot = {
+    deferredPrompt: activeDeferredPrompt,
+    isInstalled: getInstalledState(),
+  };
+
+  subscribers.forEach((subscriber) => subscriber(installPromptSnapshot));
+};
+
+const attachListeners = (): void => {
+  if (listenersAttached || typeof window === 'undefined') return;
+
+  const handleBeforeInstallPrompt = (event: Event) => {
+    const promptEvent = event as BeforeInstallPromptEvent;
+    promptEvent.preventDefault();
+    activeDeferredPrompt = promptEvent;
+    emitSnapshot();
+  };
+
+  const handleAppInstalled = () => {
+    activeDeferredPrompt = null;
+    emitSnapshot();
+  };
+
+  mediaQueryList = window.matchMedia('(display-mode: standalone)');
+  mediaQueryListener = () => {
+    emitSnapshot();
+  };
+
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  window.addEventListener('appinstalled', handleAppInstalled);
+  mediaQueryList.addEventListener('change', mediaQueryListener);
+  listenersAttached = true;
+  emitSnapshot();
+};
+
 export default function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [snapshot, setSnapshot] = useState<InstallPromptSnapshot>(() => ({
+    deferredPrompt: activeDeferredPrompt,
+    isInstalled: getInstalledState(),
+  }));
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(display-mode: standalone)');
-    const updateInstalledState = () => {
-      setIsInstalled(
-        mediaQuery.matches ||
-          (window.navigator as NavigatorWithStandalone).standalone === true,
-      );
-    };
-
-    const handleBeforeInstallPrompt = (event: Event) => {
-      const promptEvent = event as BeforeInstallPromptEvent;
-      promptEvent.preventDefault();
-      setDeferredPrompt(promptEvent);
-    };
-
-    const handleAppInstalled = () => {
-      setDeferredPrompt(null);
-      setIsInstalled(true);
-    };
-
-    updateInstalledState();
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    mediaQuery.addEventListener('change', updateInstalledState);
+    attachListeners();
+    subscribers.add(setSnapshot);
+    setSnapshot(installPromptSnapshot);
 
     return () => {
-      window.removeEventListener(
-        'beforeinstallprompt',
-        handleBeforeInstallPrompt,
-      );
-      window.removeEventListener('appinstalled', handleAppInstalled);
-      mediaQuery.removeEventListener('change', updateInstalledState);
+      subscribers.delete(setSnapshot);
     };
   }, []);
 
   const promptInstall = async (): Promise<boolean> => {
-    if (!deferredPrompt) return false;
+    const promptEvent = activeDeferredPrompt;
+    if (!promptEvent) return false;
 
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome !== 'accepted') {
-      return false;
+    await promptEvent.prompt();
+    const { outcome } = await promptEvent.userChoice;
+
+    if (outcome === 'accepted') {
+      activeDeferredPrompt = null;
+      emitSnapshot();
+      return true;
     }
 
-    setDeferredPrompt(null);
-    return true;
+    return false;
   };
 
   return {
-    canInstall: Boolean(deferredPrompt) && !isInstalled,
-    isInstalled,
+    canInstall: Boolean(snapshot.deferredPrompt) && !snapshot.isInstalled,
+    isInstalled: snapshot.isInstalled,
     promptInstall,
   };
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hebcal-sync-v004'
+const CACHE_NAME = 'hebcal-sync-v006'
 const OFFLINE_URL = '/offline.html'
 const APP_SHELL = [
   '/',
