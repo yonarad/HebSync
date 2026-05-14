@@ -401,7 +401,7 @@ export default function MyCalendar() {
 
   return (
     <div className={`h-dvh min-h-screen overflow-hidden bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
-      <header className="fixed inset-x-0 top-0 h-14 bg-white border-b border-slate-200 px-4 md:static md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
+      <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
         <div className="flex items-center gap-4 md:gap-6">
           <button type="button" aria-label={menuLabel} onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
             <Menu className="w-6 h-6" />
@@ -450,7 +450,7 @@ export default function MyCalendar() {
         </div>
       </header>
 
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden pt-14 md:pt-0 md:flex-row">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
         <MyCalendarSidebar
           isRtl={isRtl}
           isSidebarOpen={isSidebarOpen}
@@ -487,8 +487,8 @@ export default function MyCalendar() {
           handleOpenLanding={handleOpenLanding}
         />
 
-        <main className="flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_32%),linear-gradient(180deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">
-          <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col gap-3">
+        <main className="min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_32%),linear-gradient(180deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">
+          <div className="mx-auto flex h-full min-h-0 w-full max-w-[1680px] flex-col gap-3">
             <CalendarToolbar
               isRtl={isRtl}
               t={t}
