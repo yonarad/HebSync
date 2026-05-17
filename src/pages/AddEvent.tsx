@@ -67,9 +67,12 @@ export default function AddEvent({
   const { t, i18n } = useTranslation();
   const isRtl = i18n.language === 'he';
   const hasAppliedPrefillRef = useRef(false);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
   const notesRef = useRef<HTMLTextAreaElement | null>(null);
   const importFileInputRef = useRef<HTMLInputElement | null>(null);
-  const feedbackRef = useRef<HTMLDivElement | null>(null);
+  const topFeedbackRef = useRef<HTMLDivElement | null>(null);
+  const inlineManualFeedbackRef = useRef<HTMLDivElement | null>(null);
+  const calendarSelectionRef = useRef<HTMLDivElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<LoginModalMode>('connect');
@@ -158,7 +161,12 @@ export default function AddEvent({
   const [month, setMonth] = useState<string>(currentHDate.getMonthName());
   const [day, setDay] = useState(currentHDate.getDate());
   const [daysInMonth, setDaysInMonth] = useState(30);
-  const [syncSpan, setSyncSpan] = useState(121);
+  const [syncSpanInput, setSyncSpanInput] = useState('121');
+  const syncSpan = (() => {
+    const parsed = Number.parseInt(syncSpanInput, 10);
+    if (!Number.isFinite(parsed)) return 1;
+    return Math.min(121, Math.max(1, parsed));
+  })();
   const [notes, setNotes] = useState('');
   const [availableMonths, setAvailableMonths] = useState<Array<{ id: string; label: string }>>(() => getMonthsForYear(year));
   
@@ -261,6 +269,8 @@ export default function AddEvent({
   });
   const showInlineManualError =
     !showPreview && tab === 'manual' && feedbackTone === 'error' && feedbackContext === 'manualValidation' && Boolean(feedbackMessage);
+  const titleHasError = showInlineManualError && feedbackMessage === t('errorNoTitle');
+  const calendarSelectionHasError = showInlineManualError && feedbackMessage === t('errorNoCalendar');
   const showTopFeedback = Boolean(feedbackMessage) && !showInlineManualError;
 
   const handleClose = () => {
@@ -310,9 +320,23 @@ export default function AddEvent({
 
   useEffect(() => {
     if (!feedbackMessage || showPreview) return;
-    feedbackRef.current?.focus();
-    feedbackRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
-  }, [feedbackMessage, showPreview]);
+
+    if (showInlineManualError) {
+      const focusTarget =
+        titleHasError
+          ? titleInputRef.current
+          : calendarSelectionHasError
+          ? calendarSelectionRef.current
+          : inlineManualFeedbackRef.current;
+
+      focusTarget?.focus();
+      focusTarget?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+
+    topFeedbackRef.current?.focus();
+    topFeedbackRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  }, [calendarSelectionHasError, feedbackMessage, showInlineManualError, showPreview, t, titleHasError]);
 
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {
@@ -362,6 +386,10 @@ export default function AddEvent({
     setFeedbackContext(null);
     setFeedbackMessage(null);
     setFeedbackTone(null);
+  };
+
+  const commitSyncSpanInput = () => {
+    setSyncSpanInput(String(syncSpan));
   };
 
   const handleRevoke = async () => {
@@ -462,9 +490,27 @@ export default function AddEvent({
     );
 
     return (
-      <div className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-700">
-        <div>
+      <div
+        ref={calendarSelectionRef}
+        tabIndex={-1}
+        className={`space-y-3 border-t pt-4 outline-none ${
+          calendarSelectionHasError
+            ? 'rounded-2xl border-2 border-rose-300 bg-rose-50/70 px-4 pb-4 dark:border-rose-800 dark:bg-rose-950/20'
+            : 'border-slate-200 dark:border-slate-700'
+        }`}
+        aria-describedby={calendarSelectionHasError ? 'calendar-selection-error' : undefined}
+        aria-invalid={calendarSelectionHasError}
+      >
+        <div className="space-y-1">
           <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('selectTargetCalendars')}</label>
+          {calendarSelectionHasError ? (
+            <p
+              id="calendar-selection-error"
+              className="text-sm font-medium text-rose-700 dark:text-rose-300"
+            >
+              {feedbackMessage}
+            </p>
+          ) : null}
         </div>
         {writableCalendars.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
@@ -576,7 +622,7 @@ export default function AddEvent({
 
           {showTopFeedback ? (
             <div
-              ref={feedbackRef}
+              ref={topFeedbackRef}
               tabIndex={-1}
               role={feedbackTone === 'error' ? 'alert' : 'status'}
               aria-live={feedbackTone === 'error' ? 'assertive' : 'polite'}
@@ -625,6 +671,7 @@ export default function AddEvent({
                       <div className="space-y-2">
                         <label htmlFor="event-title" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('eventName')}</label>
                         <input 
+                          ref={titleInputRef}
                           id="event-title"
                           type="text" 
                           value={title}
@@ -633,8 +680,19 @@ export default function AddEvent({
                             setTitle(e.target.value);
                           }}
                           placeholder={isRtl ? "לדוגמה: יום הולדת של דוד" : "e.g. David's Birthday"} 
-                          className="w-full rounded-xl border border-slate-200 p-3 text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-[#0038A8]"
+                          aria-invalid={titleHasError}
+                          aria-describedby={titleHasError ? 'event-title-error' : undefined}
+                          className={`w-full rounded-xl border p-3 text-slate-900 transition-all outline-none placeholder:text-slate-400 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 ${
+                            titleHasError
+                              ? 'border-rose-300 bg-rose-50/70 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 dark:border-rose-800 dark:bg-rose-950/20 dark:focus:ring-rose-900/40'
+                              : 'border-slate-200 focus:border-[#0038A8] focus:ring-2 focus:ring-blue-200 dark:border-slate-600 dark:focus:ring-[#0038A8]'
+                          }`}
                         />
+                        {titleHasError ? (
+                          <p id="event-title-error" className="text-sm font-medium text-rose-700 dark:text-rose-300">
+                            {feedbackMessage}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="space-y-2">
                         <label htmlFor="event-category" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('category')}</label>
@@ -854,14 +912,18 @@ export default function AddEvent({
                           <div className="flex items-center gap-3">
                             <input 
                               id="sync-span"
-                              type="number"
-                            min="1"
-                            max="121"
-                            value={syncSpan}
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={syncSpanInput}
                             onChange={(e) => {
                               clearManualValidationFeedback();
-                              setSyncSpan(Math.min(121, Math.max(1, parseInt(e.target.value, 10) || 1)));
+                              const nextValue = e.target.value;
+                              if (/^\d*$/.test(nextValue)) {
+                                setSyncSpanInput(nextValue);
+                              }
                             }}
+                            onBlur={commitSyncSpanInput}
                             className="w-24 rounded-xl border border-slate-200 bg-white p-3 text-center font-bold text-slate-900 outline-none focus:border-[#0038A8] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                           />
                           <span className="text-slate-600 dark:text-slate-400 font-medium">{t('occurrences')}</span>
@@ -871,9 +933,10 @@ export default function AddEvent({
                       {renderCalendarSelection()}
                     </div>
 
-                    {showInlineManualError ? (
+                    {showInlineManualError && !calendarSelectionHasError && !titleHasError ? (
                       <div
-                        ref={feedbackRef}
+                        id="manual-validation-feedback"
+                        ref={inlineManualFeedbackRef}
                         tabIndex={-1}
                         role="alert"
                         aria-live="assertive"
