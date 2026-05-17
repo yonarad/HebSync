@@ -116,15 +116,45 @@ describe('AddEvent Component', () => {
   it('should require selecting at least one calendar before opening preview', async () => {
     renderAddEvent();
 
-    fireEvent.change(screen.getAllByRole('textbox')[0], {
+    fireEvent.change(screen.getByLabelText('eventName'), {
       target: { value: 'Birthday' },
     });
 
     fireEvent.click(screen.getByText('showPreview'));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('errorNoCalendar');
+    const calendarSelection = await screen.findByText('selectTargetCalendars');
+    expect(await screen.findByText('errorNoCalendar')).toBeInTheDocument();
+    expect(calendarSelection.closest('[aria-invalid="true"]')).toBeInTheDocument();
     expect(screen.queryByText('preview')).not.toBeInTheDocument();
   }, 15000);
+
+  it('should mark the event title field invalid when preview is requested without a title', async () => {
+    renderAddEvent();
+
+    fireEvent.click(screen.getByText('showPreview'));
+
+    const titleInput = screen.getByLabelText('eventName');
+    expect(await screen.findByText('errorNoTitle')).toBeInTheDocument();
+    expect(titleInput).toHaveAttribute('aria-invalid', 'true');
+    expect(titleInput).toHaveAttribute('aria-describedby', 'event-title-error');
+    expect(screen.queryByText('preview')).not.toBeInTheDocument();
+  });
+
+  it('should allow clearing and retyping the occurrences count before blur normalization', () => {
+    renderAddEvent();
+
+    const syncSpanInput = screen.getByLabelText('howManyOccurrences');
+    expect(syncSpanInput).toHaveValue('121');
+
+    fireEvent.change(syncSpanInput, { target: { value: '' } });
+    expect(syncSpanInput).toHaveValue('');
+
+    fireEvent.change(syncSpanInput, { target: { value: '12' } });
+    expect(syncSpanInput).toHaveValue('12');
+
+    fireEvent.blur(syncSpanInput);
+    expect(syncSpanInput).toHaveValue('12');
+  });
 
   it('should show a clear empty state when no calendars are available', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([]);
