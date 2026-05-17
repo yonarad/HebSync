@@ -25,10 +25,16 @@ vi.mock('../utils/googleApi', () => ({
   fetchSession: vi.fn(() => Promise.resolve({ scopeMode: 'all_events' })),
   fetchGoogleCalendarColors: vi.fn(() => Promise.resolve({ calendar: {} })),
   fetchAllCalendars: vi.fn(() => Promise.resolve([
-    { id: 'cal1', summary: 'Personal', accessRole: 'owner' }
+    {
+      id: 'cal1',
+      summary: 'HebSync',
+      accessRole: 'owner',
+      description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+    }
   ])),
   fetchMyAppEvents: vi.fn(() => Promise.resolve([])),
   fetchEventsInRange: vi.fn(() => Promise.resolve([])),
+  searchEvents: vi.fn(() => Promise.resolve([])),
   authenticateWithGoogle: vi.fn(),
   canEditCalendars: vi.fn((scopeMode) => scopeMode === 'app_created' || scopeMode === 'all_events'),
   usesAllCalendarsMode: vi.fn((scopeMode) => scopeMode === 'read_only' || scopeMode === 'all_events'),
@@ -82,6 +88,23 @@ vi.mock('react-i18next', () => ({
         viewMonth: 'Month',
         viewSchedule: 'Schedule',
         showGregorianDates: 'Show Gregorian dates',
+        searchEvents: 'Search events',
+        searchEventsPlaceholder: 'Search events',
+        toggleAdvancedSearch: 'Toggle advanced search',
+        clearSearch: 'Clear search',
+        searchIn: 'Search in',
+        searchInSelectedCalendars: 'Selected calendars',
+        searchInAllCalendars: 'All calendars',
+        searchWhat: 'What',
+        searchWhatPlaceholder: 'Try a title, description, or keyword',
+        searchFromDate: 'From date',
+        searchToDate: 'To date',
+        searchResultsMode: 'Search results',
+        searchResultsTitle: 'Matching events',
+        searchResultsCount: `${options?.count ?? 0} results`,
+        noSearchResults: 'No events matched this search.',
+        searchEventsError: 'Failed to search events',
+        untitledEvent: 'Untitled event',
         discardEventConfirm: 'Discard event draft?',
         noCalendarsYetInCalendarView: 'No calendars are available yet. Create a calendar from the sidebar to start adding events.',
         noSelectedCalendarsInCalendarView: 'There are calendars available, but none are selected. Choose one or more calendars from the sidebar.',
@@ -176,7 +199,7 @@ describe('My Calendar Component', () => {
       ...flattenLocaleEntries(heLocale.translation),
     ];
 
-    for (const [key, value] of allEntries) {
+    for (const [, value] of allEntries) {
       expect(typeof value).toBe('string');
       expect(value).not.toMatch(/\?{3,}/);
     }
@@ -199,6 +222,37 @@ describe('My Calendar Component', () => {
   it('should show a refresh button near the calendars header', async () => {
     renderDashboard();
     expect(await screen.findByRole('button', { name: 'Refresh calendars' })).toBeInTheDocument();
+  });
+
+  it('should search events and show matching results', async () => {
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Jerusalem Day',
+        description: 'City celebration',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+
+    fireEvent.change(searchInput, {
+      target: { value: 'Jerusalem' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    expect(await screen.findByText('Matching events')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Jerusalem Day/ })).toBeInTheDocument();
+    expect(googleApi.searchEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: 'Jerusalem',
+        calendarIds: ['cal1'],
+      }),
+    );
   });
 
   it('should show a floating add event button for authenticated users', async () => {
@@ -316,11 +370,11 @@ describe('My Calendar Component', () => {
       },
     ]);
     vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
-      { id: 'evt1', summary: 'Event 1', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
-      { id: 'evt2', summary: 'Event 2', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
-      { id: 'evt3', summary: 'Event 3', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
-      { id: 'evt4', summary: 'Event 4', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
-      { id: 'evt5', summary: 'Event 5', calendarId: 'cal1', start: { date: '2026-05-07' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt1', summary: 'Event 1', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt2', summary: 'Event 2', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt3', summary: 'Event 3', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt4', summary: 'Event 4', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt5', summary: 'Event 5', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
     ]);
 
     renderDashboard();
@@ -346,8 +400,8 @@ describe('My Calendar Component', () => {
         summary: 'Event 1',
         description: 'Event description',
         calendarId: 'cal1',
-        start: { dateTime: '2026-05-07T08:00:00.000Z' },
-        end: { dateTime: '2026-05-07T09:00:00.000Z' },
+        start: { dateTime: '2026-05-18T08:00:00.000Z' },
+        end: { dateTime: '2026-05-18T09:00:00.000Z' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
@@ -379,8 +433,8 @@ describe('My Calendar Component', () => {
         summary: 'Event 1',
         description: 'Event description',
         calendarId: 'cal1',
-        start: { dateTime: '2026-05-07T08:00:00.000Z' },
-        end: { dateTime: '2026-05-07T09:00:00.000Z' },
+        start: { dateTime: '2026-05-18T08:00:00.000Z' },
+        end: { dateTime: '2026-05-18T09:00:00.000Z' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
@@ -413,8 +467,8 @@ describe('My Calendar Component', () => {
         summary: 'Recurring event',
         description: 'Event description',
         calendarId: 'cal1',
-        start: { date: '2026-05-07' },
-        originalStartTime: { date: '2026-05-07' },
+        start: { date: '2026-05-18' },
+        originalStartTime: { date: '2026-05-18' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
@@ -445,8 +499,8 @@ describe('My Calendar Component', () => {
         summary: 'Recurring event',
         description: 'Event description',
         calendarId: 'cal1',
-        start: { date: '2026-05-07' },
-        originalStartTime: { date: '2026-05-07' },
+        start: { date: '2026-05-18' },
+        originalStartTime: { date: '2026-05-18' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
@@ -483,7 +537,7 @@ describe('My Calendar Component', () => {
         summary: 'External Event',
         description: 'External description',
         calendarId: 'cal1',
-        start: { date: '2026-05-07' },
+        start: { date: '2026-05-18' },
         extendedProperties: { private: {} },
       },
     ]);
@@ -512,8 +566,8 @@ describe('My Calendar Component', () => {
         id: 'evt1',
         summary: 'Event 1',
         calendarId: 'cal1',
-        start: { dateTime: '2026-05-07T08:00:00.000Z' },
-        end: { dateTime: '2026-05-07T09:00:00.000Z' },
+        start: { dateTime: '2026-05-18T08:00:00.000Z' },
+        end: { dateTime: '2026-05-18T09:00:00.000Z' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
@@ -539,7 +593,7 @@ describe('My Calendar Component', () => {
         id: 'evt1',
         summary: 'Visible Month Event',
         calendarId: 'cal1',
-        start: { date: '2026-05-07' },
+        start: { date: '2026-05-18' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
@@ -567,8 +621,8 @@ describe('My Calendar Component', () => {
         id: 'evt1',
         summary: 'Mobile Event',
         calendarId: 'cal1',
-        start: { dateTime: '2026-05-07T08:00:00.000Z' },
-        end: { dateTime: '2026-05-07T09:00:00.000Z' },
+        start: { dateTime: '2026-05-18T08:00:00.000Z' },
+        end: { dateTime: '2026-05-18T09:00:00.000Z' },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);

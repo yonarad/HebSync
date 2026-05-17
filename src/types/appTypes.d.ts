@@ -100,6 +100,7 @@ export interface GoogleCalendarEvent {
   id?: string;
   summary?: string;
   description?: string;
+  location?: string;
   start?: GoogleCalendarDateTime;
   end?: GoogleCalendarDateTime;
   recurrence?: string[];
@@ -120,6 +121,15 @@ export interface MyCalendarEventListItem {
   age: number;
   category?: string;
   date: string;
+}
+
+export interface EventSearchParams {
+  calendarIds: string[];
+  query?: string;
+  timeMin?: string;
+  timeMax?: string;
+  location?: string;
+  exclude?: string;
 }
 
 export type CalendarViewMode = 'month' | 'schedule';

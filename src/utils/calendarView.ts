@@ -34,7 +34,9 @@ export function buildMonthDays(
     const dayEvents = calendarEvents.filter((event) => {
       const start = event.start?.date || event.start?.dateTime;
       if (!start) return false;
-      const eDate = new Date(start);
+      const eDate = event.start?.date
+        ? new Date(`${start}T12:00:00`)
+        : new Date(start);
       return (
         eDate.getFullYear() === gDate.getFullYear() &&
         eDate.getMonth() === gDate.getMonth() &&

@@ -1,9 +1,12 @@
-import { ChevronLeft, ChevronRight, LoaderCircle, X } from 'lucide-react';
+import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
-import type { KeyboardEvent } from 'react';
+import { useState, type KeyboardEvent } from 'react';
+import { HEBREW_MONTHS, formatHebrewYear, gematriya } from '../utils/hebcal';
 import type {
+  Calendar,
   CalendarDay,
   CalendarViewMode,
+  EventSearchParams,
   GoogleCalendarEvent,
   OverflowDay,
 } from '../types/appTypes';
@@ -51,6 +54,49 @@ function formatEventTimeLabel(
   });
 }
 
+function formatEventDateLabel(
+  value: string,
+  locale: string,
+  isDateTime: boolean,
+): string {
+  if (!value) return '';
+
+  if (!isDateTime) {
+    const [year, month, day] = value.split('-').map(Number);
+    if ([year, month, day].some((part) => Number.isNaN(part))) {
+      return value;
+    }
+
+    return new Date(year, month - 1, day).toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  return new Date(value).toLocaleDateString(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatHebrewEventDateLabel(value: string, isDateTime: boolean): string {
+  if (!value) return '';
+
+  const date = isDateTime ? new Date(value) : new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const hDate = new HDate(date);
+  const monthName =
+    HEBREW_MONTHS.find((month) => month.id === hDate.getMonthName())?.label ||
+    hDate.getMonthName();
+
+  return `${gematriya(hDate.getDate())} ב${monthName} ${formatHebrewYear(hDate.getFullYear())}`;
+}
+
 function formatMobileHebrewDayLabel(label: string): string {
   return label.replace(/['"׳״]/g, '');
 }
@@ -91,6 +137,275 @@ export const MOBILE_HEBREW_WEEKDAYS = [
   '\u05e9',
 ];
 
+interface SharedSearchProps {
+  isRtl: boolean;
+  t: (key: string) => string;
+  searchFilters: EventSearchParams;
+  setSearchFilters: React.Dispatch<React.SetStateAction<EventSearchParams>>;
+  searchCalendarMode: string;
+  setSearchCalendarMode: React.Dispatch<React.SetStateAction<string>>;
+  calendarSearchOptions: Calendar[];
+  isSearchOpen: boolean;
+  setIsSearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isSearchPanelOpen: boolean;
+  setIsSearchPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  onSearchSubmit: () => void | Promise<void>;
+  onSearchClear: () => void;
+  isSearchLoading: boolean;
+}
+
+export function DesktopCalendarSearch({
+  isRtl,
+  t,
+  searchFilters,
+  setSearchFilters,
+  searchCalendarMode,
+  setSearchCalendarMode,
+  calendarSearchOptions,
+  isSearchOpen,
+  setIsSearchOpen,
+  isSearchPanelOpen,
+  setIsSearchPanelOpen,
+  onSearchSubmit,
+  onSearchClear,
+  isSearchLoading,
+}: SharedSearchProps) {
+  const simpleQuery = searchFilters.query || '';
+
+  return (
+    <div className="relative hidden md:flex md:items-center">
+      {!isSearchOpen ? (
+        <button
+          type="button"
+          onClick={() => setIsSearchOpen(true)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          aria-label={t('searchEvents')}
+        >
+          <Search className="h-4 w-4" />
+        </button>
+      ) : (
+        <div className="flex h-11 w-[min(28rem,32vw)] items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.42)] dark:border-slate-700/70 dark:bg-slate-900">
+          <button
+            type="button"
+            onClick={() => setIsSearchPanelOpen((prev) => !prev)}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            aria-label={t('toggleAdvancedSearch')}
+            aria-expanded={isSearchPanelOpen}
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${isSearchPanelOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <input
+            autoFocus
+            type="text"
+            value={simpleQuery}
+            onChange={(event) =>
+              setSearchFilters((prev) => ({
+                ...prev,
+                query: event.target.value,
+              }))
+            }
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                onSearchSubmit();
+              }
+            }}
+            placeholder={t('searchEventsPlaceholder')}
+            className={`h-9 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500 ${isRtl ? 'text-right' : 'text-left'}`}
+            aria-label={t('searchEvents')}
+          />
+          <button
+            type="button"
+            onClick={
+              simpleQuery
+                ? onSearchClear
+                : () => {
+                    setIsSearchOpen(false);
+                    setIsSearchPanelOpen(false);
+                  }
+            }
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            aria-label={simpleQuery ? t('clearSearch') : t('close')}
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onSearchSubmit}
+            disabled={isSearchLoading}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#0038A8] disabled:cursor-wait disabled:opacity-60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+            aria-label={t('searchEvents')}
+          >
+            {isSearchLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+          </button>
+        </div>
+      )}
+
+      {isSearchOpen && isSearchPanelOpen ? (
+        <div className="absolute right-0 top-full z-40 mt-3 w-[min(46rem,72vw)] overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700/70 dark:bg-slate-900">
+          <div className="grid gap-3 px-4 pb-4 pt-4 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)]">
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+                {t('searchIn')}
+              </span>
+              <select
+                value={searchCalendarMode}
+                onChange={(event) => setSearchCalendarMode(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              >
+                <option value="selected">{t('searchInSelectedCalendars')}</option>
+                <option value="all">{t('searchInAllCalendars')}</option>
+                {calendarSearchOptions.map((calendar) => (
+                  <option key={calendar.id} value={calendar.id}>
+                    {calendar.summary}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+                {t('searchWhat')}
+              </span>
+              <input
+                type="text"
+                value={simpleQuery}
+                onChange={(event) =>
+                  setSearchFilters((prev) => ({
+                    ...prev,
+                    query: event.target.value,
+                  }))
+                }
+                placeholder={t('searchWhatPlaceholder')}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+              />
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+                {t('searchFromDate')}
+              </span>
+              <input
+                type="date"
+                value={searchFilters.timeMin || ''}
+                onChange={(event) =>
+                  setSearchFilters((prev) => ({
+                    ...prev,
+                    timeMin: event.target.value,
+                  }))
+                }
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+                {t('searchToDate')}
+              </span>
+              <input
+                type="date"
+                value={searchFilters.timeMax || ''}
+                onChange={(event) =>
+                  setSearchFilters((prev) => ({
+                    ...prev,
+                    timeMax: event.target.value,
+                  }))
+                }
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </label>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+interface MobileTextSearchDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function MobileTextSearchDialog({
+  isOpen,
+  onClose,
+  isRtl,
+  t,
+  searchFilters,
+  setSearchFilters,
+  onSearchSubmit,
+  onSearchClear,
+  isSearchLoading,
+}: MobileTextSearchDialogProps & Pick<SharedSearchProps, 'isRtl' | 't' | 'searchFilters' | 'setSearchFilters' | 'onSearchSubmit' | 'onSearchClear' | 'isSearchLoading'>) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[70] bg-white dark:bg-slate-950 md:hidden" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-3 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          aria-label={t('close')}
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <input
+          autoFocus
+          type="text"
+          value={searchFilters.query || ''}
+          onChange={(event) =>
+            setSearchFilters((prev) => ({
+              ...prev,
+              query: event.target.value,
+            }))
+          }
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              setIsSubmitting(true);
+              Promise.resolve(onSearchSubmit())
+                .then(() => onClose())
+                .finally(() => setIsSubmitting(false));
+            }
+          }}
+          placeholder={t('searchEventsPlaceholder')}
+          className={`h-11 min-w-0 flex-1 border-0 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500 ${isRtl ? 'text-right' : 'text-left'}`}
+          aria-label={t('searchEvents')}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setIsSubmitting(true);
+            void Promise.resolve(onSearchSubmit())
+              .then(() => onClose())
+              .finally(() => setIsSubmitting(false));
+          }}
+          disabled={isSearchLoading || isSubmitting}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#0038A8] disabled:cursor-wait disabled:opacity-60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+          aria-label={t('searchEvents')}
+        >
+          {isSearchLoading || isSubmitting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
+        </button>
+      </div>
+      <div className="px-4 py-4">
+        <button
+          type="button"
+          onClick={() => {
+            onSearchClear();
+            onClose();
+          }}
+          className="text-sm font-bold text-[#0038A8] dark:text-blue-300"
+        >
+          {t('clearSearch')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface CalendarToolbarProps {
   isRtl: boolean;
   t: (key: string) => string;
@@ -105,6 +420,7 @@ interface CalendarToolbarProps {
   handleNextMonth: () => void;
   handlePrevMonth: () => void;
   setViewHDate: React.Dispatch<React.SetStateAction<HDate>>;
+  isSearchActive: boolean;
 }
 
 export function CalendarToolbar({
@@ -121,6 +437,7 @@ export function CalendarToolbar({
   handleNextMonth,
   handlePrevMonth,
   setViewHDate,
+  isSearchActive,
 }: CalendarToolbarProps) {
   return (
     <section className="px-1 py-0">
@@ -160,6 +477,12 @@ export function CalendarToolbar({
         </div>
 
         <div className="flex w-full items-center justify-between gap-2 md:w-auto md:flex-wrap md:justify-end">
+          {isSearchActive ? (
+            <div className="hidden items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-[#0038A8] dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200 md:inline-flex">
+              <CalendarRange className="h-3.5 w-3.5" />
+              <span>{t('searchResultsMode')}</span>
+            </div>
+          ) : null}
           <div className="inline-flex rounded-full border border-slate-300 bg-white p-0.5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <button
               type="button"
@@ -191,6 +514,119 @@ export function CalendarToolbar({
         </div>
       </div>
     </section>
+  );
+}
+
+interface SearchResultsViewProps {
+  t: (key: string, options?: Record<string, unknown>) => string;
+  isRtl: boolean;
+  isSearchLoading: boolean;
+  searchResults: GoogleCalendarEvent[];
+  showGregorian: boolean;
+  getCalendarColor: (calendarId?: string) => string;
+  handleEventClick: (event: GoogleCalendarEvent) => void;
+  calendars: Calendar[];
+  onClearSearch: () => void;
+}
+
+export function SearchResultsView({
+  t,
+  isRtl,
+  isSearchLoading,
+  searchResults,
+  showGregorian,
+  getCalendarColor,
+  handleEventClick,
+  calendars,
+  onClearSearch,
+}: SearchResultsViewProps) {
+  const calendarNameById = new Map(calendars.map((calendar) => [calendar.id, calendar.summary]));
+
+  return (
+    <div className="relative flex-1 overflow-hidden bg-white dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-3 dark:border-slate-800 md:px-5">
+        <div>
+          <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">
+            {t('searchResultsTitle')}
+          </h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {t('searchResultsCount', { count: searchResults.length })}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClearSearch}
+          className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+        >
+          {t('clearSearch')}
+        </button>
+      </div>
+
+      <div className="h-full overflow-y-auto px-3 py-3 pb-20 dark:bg-slate-900 md:px-5 md:py-4 md:pb-24">
+        {!isSearchLoading && searchResults.length === 0 ? (
+          <CalendarEmptyState message={t('noSearchResults')} />
+        ) : (
+          <div className="space-y-3">
+            {searchResults.map((event, idx) => {
+              const eventColor = getCalendarColor(event.calendarId);
+              const startValue = event.start?.dateTime || event.start?.date || '';
+              const endValue = event.end?.dateTime || event.end?.date || '';
+              const isTimed = Boolean(event.start?.dateTime);
+              const locale = isRtl ? 'he-IL' : 'en-US';
+              const dateLabel = startValue
+                ? formatEventDateLabel(startValue, locale, isTimed)
+                : t('unknownDate');
+              const hebrewDateLabel = startValue
+                ? formatHebrewEventDateLabel(startValue, isTimed)
+                : '';
+              const timeLabel = isTimed
+                ? `${new Date(startValue).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}${endValue ? ` - ${new Date(endValue).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}` : ''}`
+                : t('allDay');
+
+              return (
+                <button
+                  key={`${event.id || event.summary}-${idx}`}
+                  type="button"
+                  onClick={() => handleEventClick(event)}
+                  className={`flex w-full items-start gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-4 text-left shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-500 dark:hover:bg-slate-800 ${isRtl ? 'text-right' : 'text-left'}`}
+                >
+                  <span
+                    className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: eventColor }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-base font-bold text-slate-900 dark:text-slate-50">
+                      {event.summary || t('untitledEvent')}
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                      {hebrewDateLabel ? <span>{hebrewDateLabel}</span> : null}
+                      {showGregorian ? <span>{dateLabel}</span> : null}
+                      <span>{timeLabel}</span>
+                      {event.calendarId ? (
+                        <span>{calendarNameById.get(event.calendarId) || event.calendarId}</span>
+                      ) : null}
+                      {event.location ? <span>{event.location}</span> : null}
+                    </div>
+                    {event.description ? (
+                      <p className="mt-2 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
+                        {event.description}
+                      </p>
+                    ) : null}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {isSearchLoading ? <CalendarLoadingOverlay t={t} /> : null}
+    </div>
   );
 }
 

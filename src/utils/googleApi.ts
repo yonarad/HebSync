@@ -5,6 +5,7 @@ import type {
   GoogleCalendarDateTime,
   GoogleCalendarColors,
   GoogleCalendarEvent,
+  EventSearchParams,
   ScopeMode,
   SessionResponse,
   SessionUser,
@@ -351,6 +352,26 @@ export async function fetchEventsInRange(
       body: JSON.stringify({ timeMin, timeMax, calendarIds }),
     },
     'Failed to fetch calendar events',
+  );
+  const data = (await response.json()) as GoogleApiListResponse<GoogleCalendarEvent>;
+  return data.items || [];
+}
+
+export async function searchEvents(
+  params: EventSearchParams,
+): Promise<GoogleCalendarEvent[]> {
+  if ((params.calendarIds || []).length === 0) return [];
+
+  const response = await authorizedFetch(
+    '/api/google/events/search',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    },
+    'Failed to search calendar events',
   );
   const data = (await response.json()) as GoogleApiListResponse<GoogleCalendarEvent>;
   return data.items || [];

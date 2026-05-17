@@ -1,12 +1,13 @@
 import { useState, useEffect, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download } from 'lucide-react';
+import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import AddEvent from './AddEvent';
 import {
   isRecurringEvent,
   revokeAccess,
+  searchEvents,
   supportsFutureScopedChanges,
   type RecurringEventActionScope,
 } from '../utils/googleApi';
@@ -24,7 +25,10 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import {
   CalendarToolbar,
+  DesktopCalendarSearch,
+  MobileTextSearchDialog,
   MonthCalendarView,
+  SearchResultsView,
   ScheduleCalendarView,
   DayEventsPopover,
 } from '../components/MyCalendarViews';
@@ -35,6 +39,7 @@ import useInstallPrompt from '../hooks/useInstallPrompt';
 import type {
   AddEventPrefillDate,
   GoogleCalendarEvent,
+  EventSearchParams,
   OverflowDay,
   PendingCalendarCreateState,
 } from '../types/appTypes';
@@ -49,6 +54,12 @@ function activateOnKeyboard(
     event.preventDefault();
     action();
   }
+}
+
+function toSearchBoundary(value: string | undefined, boundary: 'start' | 'end'): string {
+  if (!value) return '';
+  const suffix = boundary === 'start' ? 'T00:00:00.000Z' : 'T23:59:59.999Z';
+  return `${value}${suffix}`;
 }
 
 export default function MyCalendar() {
@@ -114,6 +125,19 @@ export default function MyCalendar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isHebSyncGroupOpen, setIsHebSyncGroupOpen] = useState(true);
   const [isOtherGroupOpen, setIsOtherGroupOpen] = useState(false);
+  const [searchFilters, setSearchFilters] = useState<EventSearchParams>({
+    calendarIds: [],
+    query: '',
+    timeMin: '',
+    timeMax: '',
+  });
+  const [searchCalendarMode, setSearchCalendarMode] = useState<string>('selected');
+  const [isDesktopSearchOpen, setIsDesktopSearchOpen] = useState(false);
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<GoogleCalendarEvent[]>([]);
+  const [isSearchActive, setIsSearchActive] = useState(false);
   const [recurringActionMode, setRecurringActionMode] = useState<'delete' | 'update' | null>(null);
   const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
   const {
@@ -148,6 +172,20 @@ export default function MyCalendar() {
   }, [hebSyncCalendars.length, otherCalendars.length]);
 
   useEffect(() => {
+    setSearchFilters((prev) => ({
+      ...prev,
+      calendarIds:
+        searchCalendarMode === 'selected'
+          ? selectedCalendarIds
+          : searchCalendarMode === 'all'
+            ? calendars.map((calendar) => calendar.id)
+            : searchCalendarMode
+              ? [searchCalendarMode]
+              : [],
+    }));
+  }, [calendars, searchCalendarMode, selectedCalendarIds]);
+
+  useEffect(() => {
     const handleKeyDown = (event: globalThis.KeyboardEvent): void => {
       if (event.key !== 'Escape') return;
 
@@ -163,12 +201,23 @@ export default function MyCalendar() {
 
       if (isSidebarOpen) {
         setIsSidebarOpen(false);
+        return;
+      }
+
+      if (isMobileSearchOpen) {
+        setIsMobileSearchOpen(false);
+        return;
+      }
+
+      if (isDesktopSearchOpen) {
+        setIsDesktopSearchOpen(false);
+        setIsSearchPanelOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAddEventModalOpen, isSidebarOpen, selectedEvent, setSelectedEvent]);
+  }, [isAddEventModalOpen, isDesktopSearchOpen, isMobileSearchOpen, isSidebarOpen, selectedEvent, setSelectedEvent]);
 
   useEffect(() => {
     if (!isAuthenticated || !hasWriteAccess) return;
@@ -355,6 +404,66 @@ export default function MyCalendar() {
         ? t('noSelectedCalendarsInCalendarView')
         : t('noEventsInView');
 
+  const performSearch = async (): Promise<void> => {
+    const query = searchFilters.query?.trim() || '';
+    const effectiveCalendarIds =
+      searchCalendarMode === 'selected'
+        ? selectedCalendarIds
+        : searchCalendarMode === 'all'
+          ? calendars.map((calendar) => calendar.id)
+          : searchCalendarMode
+            ? [searchCalendarMode]
+            : [];
+
+    const hasAnyFilter = Boolean(
+      query || searchFilters.timeMin || searchFilters.timeMax || effectiveCalendarIds.length > 0,
+    );
+
+    if (!hasAnyFilter) {
+      setSearchResults([]);
+      setIsSearchActive(false);
+      return;
+    }
+
+    setIsSearchLoading(true);
+    try {
+      const results = await searchEvents({
+        ...searchFilters,
+        query,
+        timeMin: toSearchBoundary(searchFilters.timeMin, 'start'),
+        timeMax: toSearchBoundary(searchFilters.timeMax, 'end'),
+        calendarIds: effectiveCalendarIds,
+      });
+      setSearchResults(results);
+      setIsSearchActive(true);
+    } catch (error) {
+      console.error('Failed to search calendar events', error);
+      alert(t('searchEventsError'));
+    } finally {
+      setIsSearchLoading(false);
+    }
+  };
+
+  const clearSearch = (): void => {
+    setSearchFilters({
+      calendarIds:
+        searchCalendarMode === 'selected'
+          ? selectedCalendarIds
+          : searchCalendarMode === 'all'
+            ? calendars.map((calendar) => calendar.id)
+            : searchCalendarMode
+              ? [searchCalendarMode]
+              : [],
+      query: '',
+      timeMin: '',
+      timeMax: '',
+    });
+    setSearchResults([]);
+    setIsSearchActive(false);
+    setIsSearchPanelOpen(false);
+    setIsDesktopSearchOpen(false);
+  };
+
   const formatEventTimeRange = (event: GoogleCalendarEvent): string => {
     if (!event?.start?.dateTime) return '';
 
@@ -402,27 +511,56 @@ export default function MyCalendar() {
   return (
     <div className={`h-full min-h-0 overflow-hidden bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
-        <div className="flex items-center gap-4 md:gap-6">
+        <div className="min-w-0 flex items-center gap-3 md:gap-6">
           <button type="button" aria-label={menuLabel} onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
             <Menu className="w-6 h-6" />
           </button>
           <div
             role="link"
             tabIndex={0}
-            className="flex items-center gap-3 cursor-pointer"
+            className="flex min-w-0 items-center gap-2 md:gap-3 cursor-pointer"
             onClick={() => navigate('/calendar')}
             onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/calendar'))}
             aria-label={t('myCalendar')}
           >
-            <Logo className="w-8 h-8" />
-            <h1 className="text-lg md:text-xl font-black tracking-tight dark:text-white" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>
+            <Logo className="h-8 w-8 shrink-0" />
+            <h1 className="truncate whitespace-nowrap text-lg font-black tracking-tight dark:text-white md:text-xl" style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}>
               <span className="text-[#0038A8] dark:text-blue-400">{t('appNameFirst')}</span>
               <span className="text-slate-900 dark:text-white">{t('appNameSecond')}</span>
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <LanguageSwitcher />
+        <div className="flex items-center gap-1 md:gap-4">
+          <DesktopCalendarSearch
+            isRtl={isRtl}
+            t={t}
+            searchFilters={searchFilters}
+            setSearchFilters={setSearchFilters}
+            searchCalendarMode={searchCalendarMode}
+            setSearchCalendarMode={setSearchCalendarMode}
+            calendarSearchOptions={calendars}
+            isSearchOpen={isDesktopSearchOpen}
+            setIsSearchOpen={setIsDesktopSearchOpen}
+            isSearchPanelOpen={isSearchPanelOpen}
+            setIsSearchPanelOpen={setIsSearchPanelOpen}
+            onSearchSubmit={() => performSearch()}
+            onSearchClear={clearSearch}
+            isSearchLoading={isSearchLoading}
+          />
+          <div className="flex items-center gap-0.5 md:hidden">
+            <button
+              type="button"
+              onClick={() => setIsMobileSearchOpen(true)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              aria-label={t('searchEvents')}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+            <LanguageSwitcher />
+          </div>
+          <div className="hidden md:block">
+            <LanguageSwitcher />
+          </div>
           {canInstall ? (
             <button
               type="button"
@@ -506,10 +644,23 @@ export default function MyCalendar() {
               handleNextMonth={handleNextMonth}
               handlePrevMonth={handlePrevMonth}
               setViewHDate={setViewHDate}
+              isSearchActive={isSearchActive}
             />
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] dark:border-slate-700/60 dark:bg-slate-900">
-              {viewMode === 'month' ? (
+              {isSearchActive ? (
+                <SearchResultsView
+                  t={t}
+                  isRtl={isRtl}
+                  isSearchLoading={isSearchLoading}
+                  searchResults={searchResults}
+                  showGregorian={showGregorian}
+                  getCalendarColor={getCalendarColor}
+                  handleEventClick={handleEventClick}
+                  calendars={calendars}
+                  onClearSearch={clearSearch}
+                />
+              ) : viewMode === 'month' ? (
                 <MonthCalendarView
                   t={t}
                   isRtl={isRtl}
@@ -549,6 +700,18 @@ export default function MyCalendar() {
         onSelect={onLoginSelect}
         mode={loginModalMode}
         initialSelectedMode={loginModalInitialScopeMode}
+      />
+
+      <MobileTextSearchDialog
+        isOpen={isMobileSearchOpen}
+        onClose={() => setIsMobileSearchOpen(false)}
+        isRtl={isRtl}
+        t={t}
+        searchFilters={searchFilters}
+        setSearchFilters={setSearchFilters}
+        onSearchSubmit={() => performSearch()}
+        onSearchClear={clearSearch}
+        isSearchLoading={isSearchLoading}
       />
 
       <DayEventsPopover

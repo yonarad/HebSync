@@ -12,6 +12,7 @@ import {
   fetchEventsInRange,
   fetchMyAppEvents,
   fetchSession,
+  searchEvents,
   getAccessToken,
   getScopeMode,
   logout,
@@ -329,6 +330,56 @@ describe('googleApi client utilities', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0].id).toBe('evt1');
+  });
+
+  it('searches events with advanced filters through the server endpoint', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            authenticated: true,
+            user: {
+              scopeMode: 'all_events',
+              csrfToken: 'csrf-search',
+            },
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            items: [{ id: 'evt-search', summary: 'Jerusalem Day' }],
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      );
+
+    const events = await searchEvents({
+      calendarIds: ['cal1'],
+      query: 'Jerusalem',
+      timeMin: '2026-05-01',
+      timeMax: '2026-05-31',
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0].id).toBe('evt-search');
+    expect(fetchSpy.mock.calls[1][0]).toBe('/api/google/events/search');
+    expect(fetchSpy.mock.calls[1][1]?.body).toBe(
+      JSON.stringify({
+        calendarIds: ['cal1'],
+        query: 'Jerusalem',
+        timeMin: '2026-05-01',
+        timeMax: '2026-05-31',
+      }),
+    );
   });
 
   it('creates, updates, and deletes events through the server endpoints', async () => {
