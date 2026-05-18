@@ -6,6 +6,21 @@ function normalizeSearchValue(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function getEventSortValue(event) {
+  const startValue = event?.start?.dateTime || event?.start?.date || '';
+  if (!startValue) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  if (event?.start?.date) {
+    const parsed = Date.parse(`${startValue}T12:00:00`);
+    return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
+  }
+
+  const parsed = Date.parse(startValue);
+  return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
+}
+
 function matchesClientSideFilters(event, locationQuery, excludeQuery) {
   const haystacks = [
     event?.summary || '',
@@ -86,7 +101,11 @@ export async function POST(request) {
       }),
     );
 
-    return json({ items: results.flat() });
+    const sortedItems = results
+      .flat()
+      .sort((a, b) => getEventSortValue(a) - getEventSortValue(b));
+
+    return json({ items: sortedItems });
   } catch (error) {
     console.error('Failed to search calendar events:', error);
     return googleApiErrorResponse(error, 'Failed to search calendar events');

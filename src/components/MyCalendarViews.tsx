@@ -2,6 +2,7 @@ import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Se
 import { HDate } from '@hebcal/core';
 import { useState, type KeyboardEvent } from 'react';
 import { HEBREW_MONTHS, formatHebrewYear, gematriya } from '../utils/hebcal';
+import { getEventOccurrenceHebrewYear } from '../utils/calendarView';
 import type {
   Calendar,
   CalendarDay,
@@ -572,6 +573,12 @@ export function SearchResultsView({
               const startValue = event.start?.dateTime || event.start?.date || '';
               const endValue = event.end?.dateTime || event.end?.date || '';
               const isTimed = Boolean(event.start?.dateTime);
+              const props = event.extendedProperties?.private || {};
+              const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+              const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
+              const occurrenceHebrewYear = getEventOccurrenceHebrewYear(event);
+              const age = originalYear && occurrenceHebrewYear ? occurrenceHebrewYear - originalYear : 0;
+              const ageSuffix = isHebCal ? ` (${age})` : '';
               const locale = isRtl ? 'he-IL' : 'en-US';
               const dateLabel = startValue
                 ? formatEventDateLabel(startValue, locale, isTimed)
@@ -602,7 +609,7 @@ export function SearchResultsView({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-bold text-slate-900 dark:text-slate-50">
-                      {event.summary || t('untitledEvent')}
+                      {(event.summary || t('untitledEvent'))}{ageSuffix}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                       {hebrewDateLabel ? <span>{hebrewDateLabel}</span> : null}
