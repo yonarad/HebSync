@@ -19,10 +19,11 @@ import {
   SCOPE_MODES,
   usesAllCalendarsMode,
 } from '../utils/googleApi';
-import { resolveCalendarColor } from '../utils/googleCalendarColors';
+import { resolveCalendarColor, resolveEventColor } from '../utils/googleCalendarColors';
 import type {
   Calendar,
   CalendarViewMode,
+  GoogleCalendarColors,
   GoogleCalendarEvent,
   MyCalendarEventListItem,
   ScopeMode,
@@ -49,6 +50,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const [selectedCalendarIds, setSelectedCalendarIds] = useState<string[]>([]);
   const [viewHDate, setViewHDate] = useState<HDate>(new HDate());
   const [calendarEvents, setCalendarEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [googleCalendarColors, setGoogleCalendarColors] = useState<GoogleCalendarColors | null>(null);
   const [showGregorian, setShowGregorian] = useState(true);
   const [viewMode, setViewMode] = useState<CalendarViewMode>(() => {
     if (typeof window === 'undefined') return 'month';
@@ -65,6 +67,9 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     const calendar = calendars.find((cal) => cal.id === calendarId);
     return calendar?.color || '#0038A8';
   };
+
+  const getEventColor = (event: GoogleCalendarEvent): string =>
+    resolveEventColor(event, calendars, googleCalendarColors);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,6 +108,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
         .filter(isHebSyncCalendar)
         .map((calendar) => calendar.id);
       setCalendars(calendarsWithColors);
+      setGoogleCalendarColors(googleColors);
       setSelectedCalendarIds(hebSyncCalendarIds);
     } catch (error) {
       if (isAuthError(error)) return;
@@ -123,6 +129,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
       setIsAuthenticated(false);
       setScopeMode(null);
       setCalendars([]);
+      setGoogleCalendarColors(null);
       setSelectedCalendarIds([]);
       setCalendarEvents([]);
       setMyEvents([]);
@@ -295,6 +302,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     calendarEvents,
     calendars,
     getCalendarColor,
+    getEventColor,
     handleChangePermissions,
     handleCreateCalendar,
     handleDisableEditing,

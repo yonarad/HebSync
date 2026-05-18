@@ -81,7 +81,7 @@ export default function MyCalendar() {
   const {
     calendarEvents,
     calendars,
-    getCalendarColor,
+    getEventColor,
     handleChangePermissions,
     handleCreateCalendar,
     handleDisableEditing,
@@ -655,7 +655,7 @@ export default function MyCalendar() {
                   isSearchLoading={isSearchLoading}
                   searchResults={searchResults}
                   showGregorian={showGregorian}
-                  getCalendarColor={getCalendarColor}
+                  getEventColor={getEventColor}
                   handleEventClick={handleEventClick}
                   calendars={calendars}
                   onClearSearch={clearSearch}
@@ -668,7 +668,7 @@ export default function MyCalendar() {
                   showGregorian={showGregorian}
                   isMobileViewport={isMobileViewport}
                   maxVisibleMonthEvents={maxVisibleMonthEvents}
-                  getCalendarColor={getCalendarColor}
+                  getEventColor={getEventColor}
                   handleEventClick={handleEventClick}
                   handleOverflowDayOpen={handleOverflowDayOpen}
                   handleCreateFromDay={handleCreateFromDay}
@@ -682,7 +682,7 @@ export default function MyCalendar() {
                   showGregorian={showGregorian}
                   scheduleDays={scheduleDays}
                   hMonthNameHebrew={hMonthNameHebrew}
-                  getCalendarColor={getCalendarColor}
+                  getEventColor={getEventColor}
                   handleEventClick={handleEventClick}
                   isCalendarLoading={isScheduleLoading}
                   handleCreateFromDay={handleCreateFromDay}
@@ -724,7 +724,7 @@ export default function MyCalendar() {
         overflowTop={overflowTop}
         overflowLeft={overflowLeft}
         showGregorian={showGregorian}
-        getCalendarColor={getCalendarColor}
+        getEventColor={getEventColor}
         setOverflowDay={setOverflowDay}
         handleOverflowEventClick={handleOverflowEventClick}
       />

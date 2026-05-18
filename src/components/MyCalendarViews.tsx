@@ -524,7 +524,7 @@ interface SearchResultsViewProps {
   isSearchLoading: boolean;
   searchResults: GoogleCalendarEvent[];
   showGregorian: boolean;
-  getCalendarColor: (calendarId?: string) => string;
+  getEventColor: (event: GoogleCalendarEvent) => string;
   handleEventClick: (event: GoogleCalendarEvent) => void;
   calendars: Calendar[];
   onClearSearch: () => void;
@@ -536,7 +536,7 @@ export function SearchResultsView({
   isSearchLoading,
   searchResults,
   showGregorian,
-  getCalendarColor,
+  getEventColor,
   handleEventClick,
   calendars,
   onClearSearch,
@@ -569,7 +569,7 @@ export function SearchResultsView({
         ) : (
           <div className="space-y-3">
             {searchResults.map((event, idx) => {
-              const eventColor = getCalendarColor(event.calendarId);
+              const eventColor = getEventColor(event);
               const startValue = event.start?.dateTime || event.start?.date || '';
               const endValue = event.end?.dateTime || event.end?.date || '';
               const isTimed = Boolean(event.start?.dateTime);
@@ -644,7 +644,7 @@ interface MonthCalendarViewProps {
   showGregorian: boolean;
   isMobileViewport: boolean;
   maxVisibleMonthEvents: number;
-  getCalendarColor: (calendarId?: string) => string;
+  getEventColor: (event: GoogleCalendarEvent) => string;
   handleEventClick: (event: GoogleCalendarEvent) => void;
   handleOverflowDayOpen: (
     dayObj: OverflowDay,
@@ -662,7 +662,7 @@ export function MonthCalendarView({
   showGregorian,
   isMobileViewport,
   maxVisibleMonthEvents,
-  getCalendarColor,
+  getEventColor,
   handleEventClick,
   handleOverflowDayOpen,
   handleCreateFromDay,
@@ -726,7 +726,7 @@ export function MonthCalendarView({
                       const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
                       const age = originalYear && dayObj.hYear ? dayObj.hYear - originalYear : 0;
                       const ageSuffix = isHebCal ? ` (${age})` : '';
-                      const eventColor = getCalendarColor(event.calendarId);
+                      const eventColor = getEventColor(event);
                       const timeLabel = formatEventTimeLabel(event, timeLocale);
                       const chipLabel = `${event.summary}${ageSuffix}`;
                       const isTimedEvent = Boolean(timeLabel);
@@ -802,7 +802,7 @@ interface ScheduleCalendarViewProps {
   showGregorian: boolean;
   scheduleDays: CalendarDay[];
   hMonthNameHebrew: string;
-  getCalendarColor: (calendarId?: string) => string;
+  getEventColor: (event: GoogleCalendarEvent) => string;
   handleEventClick: (event: GoogleCalendarEvent) => void;
   isCalendarLoading: boolean;
   handleCreateFromDay: (dayObj: OverflowDay) => void;
@@ -815,7 +815,7 @@ export function ScheduleCalendarView({
   showGregorian,
   scheduleDays,
   hMonthNameHebrew: _hMonthNameHebrew,
-  getCalendarColor,
+  getEventColor,
   handleEventClick,
   isCalendarLoading,
   handleCreateFromDay,
@@ -862,7 +862,7 @@ export function ScheduleCalendarView({
                     const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
                     const age = originalYear && dayObj.hYear ? dayObj.hYear - originalYear : 0;
                     const ageSuffix = isHebCal ? ` (${age})` : '';
-                    const eventColor = getCalendarColor(event.calendarId);
+                    const eventColor = getEventColor(event);
                     const start = event.start?.dateTime || event.start?.date;
                     const end = event.end?.dateTime || event.end?.date;
                     const timeLabel = event.start?.dateTime
@@ -920,7 +920,7 @@ interface DayEventsPopoverProps {
   overflowTop: number;
   overflowLeft: number;
   showGregorian: boolean;
-  getCalendarColor: (calendarId?: string) => string;
+  getEventColor: (event: GoogleCalendarEvent) => string;
   setOverflowDay: React.Dispatch<React.SetStateAction<OverflowDay | null>>;
   handleOverflowEventClick: (event: GoogleCalendarEvent) => void;
 }
@@ -935,7 +935,7 @@ export function DayEventsPopover({
   overflowTop,
   overflowLeft,
   showGregorian,
-  getCalendarColor,
+  getEventColor,
   setOverflowDay,
   handleOverflowEventClick,
 }: DayEventsPopoverProps) {
@@ -987,7 +987,7 @@ export function DayEventsPopover({
             const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
             const age = originalYear && overflowDay.hYear ? overflowDay.hYear - originalYear : 0;
             const ageSuffix = isHebCal ? ` (${age})` : '';
-            const eventColor = getCalendarColor(event.calendarId);
+            const eventColor = getEventColor(event);
             const start = event.start?.dateTime || event.start?.date;
             const timeLabel =
               start && event.start?.dateTime

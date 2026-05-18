@@ -1,4 +1,8 @@
-import type { Calendar, GoogleCalendarColors } from '../types/appTypes';
+import type {
+  Calendar,
+  GoogleCalendarColors,
+  GoogleCalendarEvent,
+} from '../types/appTypes';
 
 const FALLBACK_CALENDAR_COLORS = [
   '#0038A8',
@@ -26,4 +30,21 @@ export function resolveCalendarColor(
   if (mappedGoogleColor) return mappedGoogleColor;
 
   return FALLBACK_CALENDAR_COLORS[index % FALLBACK_CALENDAR_COLORS.length];
+}
+
+export function resolveEventColor(
+  event: GoogleCalendarEvent,
+  calendars: Calendar[],
+  googleColors: GoogleCalendarColors | null = null,
+): string {
+  if (event?.backgroundColor) return event.backgroundColor;
+
+  const mappedEventColor = googleColors?.event?.[event?.colorId || '']?.background;
+  if (mappedEventColor) return mappedEventColor;
+
+  const calendar = calendars.find((cal) => cal.id === event?.calendarId);
+  const calendarIndex = calendar ? calendars.indexOf(calendar) : 0;
+  return calendar
+    ? resolveCalendarColor(calendar, calendarIndex, googleColors)
+    : FALLBACK_CALENDAR_COLORS[0];
 }

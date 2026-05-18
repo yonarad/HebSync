@@ -101,6 +101,9 @@ export interface GoogleCalendarEvent {
   summary?: string;
   description?: string;
   location?: string;
+  colorId?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
   start?: GoogleCalendarDateTime;
   end?: GoogleCalendarDateTime;
   recurrence?: string[];
