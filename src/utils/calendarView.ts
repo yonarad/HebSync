@@ -9,6 +9,60 @@ import type {
   OverflowPopoverLayout,
 } from '../types/appTypes';
 
+function getSortableEventDate(event: GoogleCalendarEvent): Date | null {
+  const startValue = event.start?.dateTime || event.start?.date;
+  if (!startValue) return null;
+
+  const parsedDate = event.start?.dateTime
+    ? new Date(startValue)
+    : new Date(`${startValue}T12:00:00`);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+export function compareDayEvents(
+  a: GoogleCalendarEvent,
+  b: GoogleCalendarEvent,
+): number {
+  const aIsTimed = Boolean(a.start?.dateTime);
+  const bIsTimed = Boolean(b.start?.dateTime);
+
+  if (aIsTimed !== bIsTimed) {
+    return aIsTimed ? -1 : 1;
+  }
+
+  const aDate = getSortableEventDate(a);
+  const bDate = getSortableEventDate(b);
+
+  if (aDate && bDate) {
+    const dateDiff = aDate.getTime() - bDate.getTime();
+    if (dateDiff !== 0) return dateDiff;
+  } else if (aDate || bDate) {
+    return aDate ? -1 : 1;
+  }
+
+  const aEnd = getSortableEventDate({
+    ...a,
+    start: a.end,
+  });
+  const bEnd = getSortableEventDate({
+    ...b,
+    start: b.end,
+  });
+
+  if (aEnd && bEnd) {
+    const endDiff = aEnd.getTime() - bEnd.getTime();
+    if (endDiff !== 0) return endDiff;
+  } else if (aEnd || bEnd) {
+    return aEnd ? -1 : 1;
+  }
+
+  const summaryDiff = (a.summary || '').localeCompare(b.summary || '', 'he');
+  if (summaryDiff !== 0) return summaryDiff;
+
+  return (a.calendarId || '').localeCompare(b.calendarId || '', 'he');
+}
+
 export function buildMonthDays(
   viewHDate: HDate,
   calendarEvents: GoogleCalendarEvent[],
@@ -31,18 +85,18 @@ export function buildMonthDays(
       gDate.getMonth() === today.getMonth() &&
       gDate.getDate() === today.getDate();
 
-    const dayEvents = calendarEvents.filter((event) => {
-      const start = event.start?.date || event.start?.dateTime;
-      if (!start) return false;
-      const eDate = event.start?.date
-        ? new Date(`${start}T12:00:00`)
-        : new Date(start);
-      return (
-        eDate.getFullYear() === gDate.getFullYear() &&
-        eDate.getMonth() === gDate.getMonth() &&
-        eDate.getDate() === gDate.getDate()
-      );
-    });
+    const dayEvents = calendarEvents
+      .filter((event) => {
+        const eventDate = getSortableEventDate(event);
+        if (!eventDate) return false;
+
+        return (
+          eventDate.getFullYear() === gDate.getFullYear() &&
+          eventDate.getMonth() === gDate.getMonth() &&
+          eventDate.getDate() === gDate.getDate()
+        );
+      })
+      .sort(compareDayEvents);
 
     days.push({
       hDay: d,
@@ -106,11 +160,7 @@ export function buildScheduleDays(
     .filter((dayObj): dayObj is CalendarDay => Boolean(dayObj?.events?.length))
     .map((dayObj) => ({
       ...dayObj,
-      events: [...dayObj.events].sort((a, b) => {
-        const aStart = a.start?.dateTime || a.start?.date || '';
-        const bStart = b.start?.dateTime || b.start?.date || '';
-        return aStart.localeCompare(bStart);
-      }),
+      events: [...dayObj.events].sort(compareDayEvents),
     }));
 }
 

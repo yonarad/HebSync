@@ -189,7 +189,7 @@ export default function PrivacyPolicy() {
             body: [
               'The authentication session cookie is retained for up to 30 days unless the user disconnects earlier.',
               'The temporary OAuth state cookie is retained for up to 10 minutes while completing Google sign-in.',
-              'Server-side access and refresh tokens are retained so the service can securely call Google Calendar. On disconnect, those tokens are revoked or cleared and active sessions are removed.',
+              'Server-side access and refresh tokens are retained so the service can securely call Google Calendar. Refresh tokens are encrypted before storage. Access tokens are kept server-side only and refreshed or replaced as needed for Google Calendar requests.',
               'Client-side localStorage entries remain in the browser until logout, manual clearing, or site data removal.',
               'Disconnecting revokes Google access and ends active sessions. Full deletion from within the app also removes the saved HebSync connection record from the database.',
             ],
@@ -219,7 +219,16 @@ export default function PrivacyPolicy() {
             title: 'International transfers and security',
             body: [
               'Your data may be processed outside your country by Google and the service infrastructure providers.',
-              'HebSync uses HTTP-only session cookies, CSRF protection, and encrypted refresh-token storage to reduce reasonable security risk.',
+              'HebSync uses HTTPS in production, HTTP-only and SameSite session cookies, CSRF protection, backend authorization checks, hashed server-side session records, and encrypted refresh-token storage.',
+              'Sensitive Google Calendar data is processed only to provide the user-requested calendar features, is not sold, is not used for advertising, and can be removed by disconnecting the Google account or using the in-app deletion flow.',
+            ],
+          },
+          {
+            title: 'How sensitive Google data is protected',
+            body: [
+              'Google OAuth tokens are handled on the server side. Refresh tokens are encrypted before they are written to storage, and session identifiers are stored as hashes rather than in plain text.',
+              'The browser stores only minimal sign-in state needed for the app experience. HebSync does not place Google refresh tokens or CSRF secrets in localStorage.',
+              'When a user disconnects the service or deletes account data from within the app, HebSync revokes Google access when possible, clears stored tokens, removes active sessions, and deletes the saved connection record used by the service.',
             ],
           },
           {

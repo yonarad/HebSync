@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { HDate } from '@hebcal/core';
-import { getEventOccurrenceHebrewYear, getHebrewMonthGregorianRange } from '../utils/calendarView';
+import {
+  buildMonthDays,
+  buildScheduleDays,
+  getEventOccurrenceHebrewYear,
+  getHebrewMonthGregorianRange,
+} from '../utils/calendarView';
 
 describe('getHebrewMonthGregorianRange', () => {
   it('uses an exclusive end that includes the final day of the Hebrew month', () => {
@@ -39,5 +44,67 @@ describe('getEventOccurrenceHebrewYear', () => {
     expect(getEventOccurrenceHebrewYear(event)).toBe(
       new HDate(new Date('2027-05-07T08:00:00.000Z')).getFullYear(),
     );
+  });
+});
+
+describe('day event sorting', () => {
+  it('sorts events inside a day by time before falling back to calendar order', () => {
+    const eventDate = new Date('2026-05-18T12:00:00');
+    const viewHDate = new HDate(eventDate);
+    const calendarEvents = [
+      {
+        id: 'late-from-a',
+        summary: 'Late from A',
+        calendarId: 'calendar-a',
+        start: {
+          dateTime: '2026-05-18T14:00:00.000Z',
+        },
+        end: {
+          dateTime: '2026-05-18T15:00:00.000Z',
+        },
+      },
+      {
+        id: 'early-from-b',
+        summary: 'Early from B',
+        calendarId: 'calendar-b',
+        start: {
+          dateTime: '2026-05-18T09:00:00.000Z',
+        },
+        end: {
+          dateTime: '2026-05-18T10:00:00.000Z',
+        },
+      },
+      {
+        id: 'mid-from-a',
+        summary: 'Mid from A',
+        calendarId: 'calendar-a',
+        start: {
+          dateTime: '2026-05-18T11:30:00.000Z',
+        },
+        end: {
+          dateTime: '2026-05-18T12:00:00.000Z',
+        },
+      },
+    ];
+
+    const days = buildMonthDays(viewHDate, calendarEvents);
+    const dayWithEvents = days.find(
+      (day) =>
+        day?.gDate.getFullYear() === eventDate.getFullYear() &&
+        day?.gDate.getMonth() === eventDate.getMonth() &&
+        day?.gDate.getDate() === eventDate.getDate(),
+    );
+    const scheduleDays = buildScheduleDays(days);
+
+    expect(dayWithEvents?.events.map((event) => event.id)).toEqual([
+      'early-from-b',
+      'mid-from-a',
+      'late-from-a',
+    ]);
+    expect(scheduleDays[0].events.map((event) => event.id)).toEqual([
+      'early-from-b',
+      'mid-from-a',
+      'late-from-a',
+    ]);
   });
 });

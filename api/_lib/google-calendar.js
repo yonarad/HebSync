@@ -12,7 +12,8 @@ function createAuthExpiredError(message) {
 }
 
 async function readGoogleResponse(response, fallbackMessage) {
-  let message = fallbackMessage;
+  let message;
+  let parseError = null;
 
   try {
     const payload = await response.clone().json();
@@ -20,13 +21,18 @@ async function readGoogleResponse(response, fallbackMessage) {
       payload?.error?.message ||
       payload?.error_description ||
       fallbackMessage;
-  } catch {
+  } catch (error) {
+    parseError = error;
     const text = await response.text().catch(() => '');
     message = text || fallbackMessage;
   }
 
   if (response.status === 401 || response.status === 403) {
     throw createAuthExpiredError(message);
+  }
+
+  if (parseError instanceof Error) {
+    throw new Error(message, { cause: parseError });
   }
 
   throw new Error(message);

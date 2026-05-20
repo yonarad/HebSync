@@ -10,7 +10,6 @@ import {
   doesHebrewMonthExistInYear,
   validateHebrewDateForYear,
 } from '../utils/hebcal';
-import { HDate } from '@hebcal/core';
 
 describe('Hebcal Utils', () => {
 
