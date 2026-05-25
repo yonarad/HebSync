@@ -165,4 +165,24 @@ describe('useMyCalendarData', () => {
     expect(createNewCalendar).toHaveBeenCalledWith('New Calendar');
     expect(fetchAllCalendars).toHaveBeenCalledTimes(2);
   });
+
+  it('marks auth redirect as in progress immediately after selecting a login scope', async () => {
+    const { result } = renderHook(() => useMyCalendarData({ t }));
+
+    await waitFor(() => {
+      expect(result.current.hasResolvedSession).toBe(true);
+    });
+
+    act(() => {
+      result.current.onLoginSelect(SCOPE_MODES.APP_CREATED);
+    });
+
+    expect(result.current.isAuthRedirecting).toBe(true);
+    expect(result.current.showLoginModal).toBe(false);
+    expect(authenticateWithGoogle).toHaveBeenCalledWith(
+      SCOPE_MODES.APP_CREATED,
+      undefined,
+      expect.any(Function),
+    );
+  });
 });

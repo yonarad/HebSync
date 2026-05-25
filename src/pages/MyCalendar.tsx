@@ -8,6 +8,7 @@ import {
   isRecurringEvent,
   revokeAccess,
   searchEvents,
+  SCOPE_MODES,
   supportsFutureScopedChanges,
   type RecurringEventActionScope,
 } from '../utils/googleApi';
@@ -88,8 +89,10 @@ export default function MyCalendar() {
     handleLogin,
     handleRefreshCalendars,
     hasLoadedCalendarData,
+    hasResolvedSession,
     hasWriteAccess,
     hebSyncCalendars,
+    isAuthRedirecting,
     isAllCalendarsMode,
     isAuthenticated,
     isCalendarLoading,
@@ -104,6 +107,8 @@ export default function MyCalendar() {
     promptForEditingUpgrade,
     selectedCalendarIds,
     setIsAuthenticated,
+    setLoginModalInitialScopeMode,
+    setLoginModalMode,
     setShowGregorian,
     setShowLoginModal,
     setViewHDate,
@@ -138,6 +143,7 @@ export default function MyCalendar() {
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<GoogleCalendarEvent[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [hasAutoPromptedLogin, setHasAutoPromptedLogin] = useState(false);
   const [recurringActionMode, setRecurringActionMode] = useState<'delete' | 'update' | null>(null);
   const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
   const {
@@ -241,6 +247,32 @@ export default function MyCalendar() {
     setCreatePrefillDate(null);
     setIsAddEventModalOpen(true);
   }, [hasWriteAccess, isAuthenticated]);
+
+  useEffect(() => {
+    if (
+      !hasResolvedSession ||
+      isAuthenticated ||
+      showLoginModal ||
+      hasAutoPromptedLogin ||
+      isAuthRedirecting
+    ) {
+      return;
+    }
+
+    setLoginModalMode('connect');
+    setLoginModalInitialScopeMode(SCOPE_MODES.APP_CREATED);
+    setShowLoginModal(true);
+    setHasAutoPromptedLogin(true);
+  }, [
+    hasAutoPromptedLogin,
+    hasResolvedSession,
+    isAuthRedirecting,
+    isAuthenticated,
+    setLoginModalInitialScopeMode,
+    setLoginModalMode,
+    setShowLoginModal,
+    showLoginModal,
+  ]);
 
   const handleRevoke = async (): Promise<void> => {
     if (!window.confirm(t('revokeAccessConfirm'))) return;
@@ -393,16 +425,28 @@ export default function MyCalendar() {
     });
   const scheduleDays = buildScheduleDays(days);
   const isScheduleLoading =
-    isCalendarLoading ||
-    (isAuthenticated && isFetchingGoogle) ||
-    !hasLoadedCalendarData;
+    !hasResolvedSession ||
+    (isAuthenticated &&
+      (isCalendarLoading || isFetchingGoogle || !hasLoadedCalendarData));
   const isMonthLoading = isScheduleLoading;
   const emptyStateMessage =
-    calendars.length === 0
+    !isAuthenticated
+      ? t('loginRequiredInCalendarView')
+      : calendars.length === 0
       ? t('noCalendarsYetInCalendarView')
       : selectedCalendarIds.length === 0
         ? t('noSelectedCalendarsInCalendarView')
         : t('noEventsInView');
+  const emptyStateAction = !isAuthenticated ? (
+    <button
+      type="button"
+      onClick={handleLogin}
+      className="pointer-events-auto inline-flex items-center gap-2 rounded-2xl bg-[#0038A8] px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
+    >
+      <LogIn className="h-4 w-4" />
+      <span>{t('login')}</span>
+    </button>
+  ) : undefined;
 
   const performSearch = async (): Promise<void> => {
     const query = searchFilters.query?.trim() || '';
@@ -674,6 +718,7 @@ export default function MyCalendar() {
                   handleCreateFromDay={handleCreateFromDay}
                   isCalendarLoading={isMonthLoading}
                   emptyStateMessage={emptyStateMessage}
+                  emptyStateAction={emptyStateAction}
                 />
               ) : (
                 <ScheduleCalendarView
@@ -687,6 +732,7 @@ export default function MyCalendar() {
                   isCalendarLoading={isScheduleLoading}
                   handleCreateFromDay={handleCreateFromDay}
                   emptyStateMessage={emptyStateMessage}
+                  emptyStateAction={emptyStateAction}
                 />
               )}
             </div>

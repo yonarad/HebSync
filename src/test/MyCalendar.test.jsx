@@ -107,6 +107,7 @@ vi.mock('react-i18next', () => ({
         untitledEvent: 'Untitled event',
         discardEventConfirm: 'Discard event draft?',
         noCalendarsYetInCalendarView: 'No calendars are available yet. Create a calendar from the sidebar to start adding events.',
+        loginRequiredInCalendarView: 'Connect your Google account to view calendars and start managing Hebrew events here.',
         noSelectedCalendarsInCalendarView: 'There are calendars available, but none are selected. Choose one or more calendars from the sidebar.',
         noEventsInView: 'The selected calendars do not have events in this time range.',
         deletingEvent: 'Deleting...',
@@ -785,8 +786,24 @@ describe('My Calendar Component', () => {
     expect(await screen.findByText('reauthorize')).toBeInTheDocument();
   });
 
+  it('should auto-open the login modal and explain auth is required for unauthenticated calendar visits', async () => {
+    vi.mocked(googleApi.getAccessToken).mockReturnValueOnce(null);
+    vi.mocked(googleApi.fetchSession).mockResolvedValueOnce(null);
+
+    render(
+      <BrowserRouter>
+        <MyCalendar />
+      </BrowserRouter>
+    );
+
+    expect(await screen.findByTestId('login-modal')).toBeInTheDocument();
+    expect(await screen.findByText('Connect your Google account to view calendars and start managing Hebrew events here.')).toBeInTheDocument();
+    expect(await screen.findAllByText('login')).not.toHaveLength(0);
+  });
+
   it('should open the login modal in connect mode when unauthenticated user clicks login', async () => {
     vi.mocked(googleApi.getAccessToken).mockReturnValueOnce(null);
+    vi.mocked(googleApi.fetchSession).mockResolvedValueOnce(null);
     render(
       <BrowserRouter>
         <MyCalendar />

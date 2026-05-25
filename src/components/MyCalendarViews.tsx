@@ -116,13 +116,20 @@ function CalendarLoadingOverlay({ t }: { t: (key: string) => string }) {
   );
 }
 
-function CalendarEmptyState({ message }: { message: string }) {
+function CalendarEmptyState({
+  message,
+  action,
+}: {
+  message: string;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="flex h-full items-center justify-center p-6">
       <div className="max-w-md rounded-3xl border border-dashed border-slate-300 bg-slate-50/90 px-6 py-8 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
         <p className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
           {message}
         </p>
+        {action ? <div className="mt-5 flex justify-center">{action}</div> : null}
       </div>
     </div>
   );
@@ -653,6 +660,7 @@ interface MonthCalendarViewProps {
   handleCreateFromDay: (dayObj: OverflowDay) => void;
   isCalendarLoading: boolean;
   emptyStateMessage: string;
+  emptyStateAction?: React.ReactNode;
 }
 
 export function MonthCalendarView({
@@ -668,6 +676,7 @@ export function MonthCalendarView({
   handleCreateFromDay,
   isCalendarLoading,
   emptyStateMessage,
+  emptyStateAction,
 }: MonthCalendarViewProps) {
   const timeLocale = isRtl ? 'he-IL' : 'en-US';
   const hasVisibleEvents = days.some((dayObj) => dayObj?.events?.length > 0);
@@ -787,7 +796,7 @@ export function MonthCalendarView({
         </div>
         {!isCalendarLoading && emptyStateMessage && !hasVisibleEvents ? (
           <div className="pointer-events-none absolute inset-0 z-[5]">
-            <CalendarEmptyState message={emptyStateMessage} />
+            <CalendarEmptyState message={emptyStateMessage} action={emptyStateAction} />
           </div>
         ) : null}
         {isCalendarLoading ? <CalendarLoadingOverlay t={t} /> : null}
@@ -807,6 +816,7 @@ interface ScheduleCalendarViewProps {
   isCalendarLoading: boolean;
   handleCreateFromDay: (dayObj: OverflowDay) => void;
   emptyStateMessage: string;
+  emptyStateAction?: React.ReactNode;
 }
 
 export function ScheduleCalendarView({
@@ -820,12 +830,16 @@ export function ScheduleCalendarView({
   isCalendarLoading,
   handleCreateFromDay,
   emptyStateMessage,
+  emptyStateAction,
 }: ScheduleCalendarViewProps) {
   return (
     <div className="relative flex-1 overflow-hidden bg-white dark:bg-slate-900">
       <div className="h-full overflow-y-auto px-3 py-3 pb-14 dark:bg-slate-900 md:px-5 md:py-4 md:pb-12">
         {scheduleDays.length === 0 ? (
-          <CalendarEmptyState message={emptyStateMessage || t('noEventsInView')} />
+          <CalendarEmptyState
+            message={emptyStateMessage || t('noEventsInView')}
+            action={emptyStateAction}
+          />
         ) : (
           <div className="space-y-3">
             {scheduleDays.map((dayObj) => (

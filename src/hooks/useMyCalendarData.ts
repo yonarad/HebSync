@@ -37,12 +37,14 @@ interface UseMyCalendarDataParams {
 
 export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!getAccessToken());
+  const [hasResolvedSession, setHasResolvedSession] = useState(false);
   const [myEvents, setMyEvents] = useState<MyCalendarEventListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoadingCount, setIsGoogleLoadingCount] = useState(0);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [hasLoadedCalendarData, setHasLoadedCalendarData] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isAuthRedirecting, setIsAuthRedirecting] = useState(false);
   const [loginModalMode, setLoginModalMode] = useState<LoginModalMode>('connect');
   const [loginModalInitialScopeMode, setLoginModalInitialScopeMode] = useState<Exclude<ScopeMode, null>>(SCOPE_MODES.APP_CREATED);
   const [scopeMode, setScopeMode] = useState<ScopeMode>(getScopeMode());
@@ -79,12 +81,14 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
         if (isMounted) {
           setIsAuthenticated(!!session);
           setScopeMode(session?.scopeMode || null);
+          setHasResolvedSession(true);
         }
       })
       .catch(() => {
         if (isMounted) {
           setIsAuthenticated(false);
           setScopeMode(null);
+          setHasResolvedSession(true);
         }
       });
 
@@ -133,6 +137,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
       setSelectedCalendarIds([]);
       setCalendarEvents([]);
       setMyEvents([]);
+      setIsAuthRedirecting(false);
       setLoginModalMode('reauthorize');
       setShowLoginModal(true);
     };
@@ -209,14 +214,17 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   }, [isAuthenticated, viewHDate, selectedCalendarIds]);
 
   const handleLogin = (): void => {
+    setIsAuthRedirecting(false);
     setLoginModalMode('connect');
     setLoginModalInitialScopeMode(SCOPE_MODES.APP_CREATED);
     setShowLoginModal(true);
   };
 
   const onLoginSelect = (selectedScopeMode: Exclude<ScopeMode, null>): void => {
+    setIsAuthRedirecting(true);
     setShowLoginModal(false);
     authenticateWithGoogle(selectedScopeMode, undefined, (error: Error) => {
+      setIsAuthRedirecting(false);
       alert(t('loginErrorWithMessage', { message: error.message }));
     });
   };
@@ -310,7 +318,9 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     handleRefreshCalendars,
     hasLoadedCalendarData,
     hasWriteAccess,
+    hasResolvedSession,
     hebSyncCalendars,
+    isAuthRedirecting,
     isAllCalendarsMode,
     isAuthenticated,
     isCalendarLoading,

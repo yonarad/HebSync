@@ -246,6 +246,7 @@
     "selectedCountSuffix": "מסומנים",
     "noCalendarsAvailable": "עדיין אין יומנים זמינים.",
     "noCalendarsYetInCalendarView": "עדיין אין יומנים זמינים. אפשר ליצור יומן מסרגל הצד כדי להתחיל להוסיף אירועים.",
+    "loginRequiredInCalendarView": "כדי לראות יומנים ולהתחיל לנהל כאן אירועים עבריים, צריך לחבר את חשבון Google שלך.",
     "noSelectedCalendarsInCalendarView": "יש יומנים זמינים, אבל אף יומן לא מסומן. אפשר לבחור יומן אחד או יותר מסרגל הצד.",
     "aboutHebSync": "אודות HebSync",
     "aboutHebSyncHint": "הסבר קצר והגדרה ראשונית.",
