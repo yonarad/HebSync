@@ -850,7 +850,7 @@ export function ScheduleCalendarView({
                 <button
                   type="button"
                   onClick={() => handleCreateFromDay(dayObj)}
-                  className={`pt-1 transition-colors hover:text-[#1a73e8] ${isRtl ? 'text-right' : 'text-left'}`}
+                  className="flex flex-col items-center pt-1 text-center transition-colors hover:text-[#1a73e8]"
                   aria-label={t('createEventOnDay', {
                     hebrewDay: dayObj.hDayGematriya,
                     gregorianDay: dayObj.gDay,
@@ -859,14 +859,19 @@ export function ScheduleCalendarView({
                   <div className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-black md:h-9 md:w-9 md:text-[15px] ${dayObj.isToday ? 'bg-[#1a73e8] text-white' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'}`}>
                     {dayObj.hDayGematriya}
                   </div>
-                  <div className="mt-1 text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
+                  <div className="mt-1 text-center text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
                     {t(`days.${dayObj.weekday}`)}
                   </div>
-                  {showGregorian ? (
-                    <div className="text-[9px] font-medium text-slate-400 dark:text-slate-500 md:text-[10px]">
-                      {dayObj.gMonthLabel} {dayObj.gDay}
-                    </div>
-                  ) : null}
+                  <div
+                    aria-hidden={!showGregorian}
+                    className={`text-center text-[9px] font-medium md:text-[10px] ${
+                      showGregorian
+                        ? 'text-slate-400 dark:text-slate-500'
+                        : 'invisible'
+                    }`}
+                  >
+                    {dayObj.gMonthLabel} {dayObj.gDay}
+                  </div>
                 </button>
 
                 <div className="space-y-1.5">
