@@ -503,6 +503,24 @@ export function CalendarToolbar({
 }: CalendarToolbarProps) {
   const [isDisplayMenuOpen, setIsDisplayMenuOpen] = useState(false);
   const displayMenuRef = useRef<HTMLDivElement | null>(null);
+  const handleSelectAllDisplayOptions = (): void => {
+    setShowGregorian(true);
+    setShowEventAges(true);
+    setShowHolidayEvents(true);
+    setShowNationalHolidays(true);
+    setShowRoshChodesh(true);
+    setShowFasts(true);
+    setShowWeeklyParsha(true);
+  };
+  const handleClearAllDisplayOptions = (): void => {
+    setShowGregorian(false);
+    setShowEventAges(false);
+    setShowHolidayEvents(false);
+    setShowNationalHolidays(false);
+    setShowRoshChodesh(false);
+    setShowFasts(false);
+    setShowWeeklyParsha(false);
+  };
 
   useEffect(() => {
     if (!isDisplayMenuOpen) return undefined;
@@ -612,6 +630,23 @@ export function CalendarToolbar({
                 role="menu"
                 className={`absolute top-full z-30 mt-2 min-w-[220px] rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700 dark:bg-slate-900 ${isRtl ? 'left-0' : 'right-0'}`}
               >
+                <div className="mb-1 flex items-center justify-between gap-2 px-1">
+                  <button
+                    type="button"
+                    onClick={handleSelectAllDisplayOptions}
+                    className="rounded-lg px-2 py-1 text-xs font-medium text-[#0038A8] transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    {t('selectAllDisplayOptions')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearAllDisplayOptions}
+                    className="rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    {t('clearAllDisplayOptions')}
+                  </button>
+                </div>
+                <div className="mb-1 border-t border-slate-200 dark:border-slate-700" />
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
                   <input
                     type="checkbox"

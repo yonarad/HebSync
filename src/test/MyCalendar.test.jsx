@@ -95,6 +95,8 @@ vi.mock('react-i18next', () => ({
         showRoshChodesh: 'Show Rosh Chodesh',
         showFasts: 'Show fasts',
         showWeeklyParsha: 'Show weekly parsha',
+        selectAllDisplayOptions: 'Select all',
+        clearAllDisplayOptions: 'Clear all',
         searchEvents: 'Search events',
         searchEventsPlaceholder: 'Search events',
         toggleAdvancedSearch: 'Toggle advanced search',

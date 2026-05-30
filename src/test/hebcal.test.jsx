@@ -133,14 +133,14 @@ describe('Hebcal Utils', () => {
 
   describe('getHolidayLabels', () => {
     it('returns holiday labels in Hebrew for a holiday date', () => {
-      expect(
-        getHolidayLabels(new Date('2026-09-12T12:00:00Z'), {
-          includeFasts: false,
-          includeHolidayEvents: true,
-          includeNationalHolidays: false,
-          includeRoshChodesh: false,
-        }),
-      ).toContain('ראש השנה 5787');
+      const labels = getHolidayLabels(new Date('2026-09-12T12:00:00Z'), {
+        includeFasts: false,
+        includeHolidayEvents: true,
+        includeNationalHolidays: false,
+        includeRoshChodesh: false,
+      });
+
+      expect(labels.some((label) => label.includes('ראש השנה') && !label.includes('5787'))).toBe(true);
     });
 
     it('returns holiday labels in English when requested', () => {

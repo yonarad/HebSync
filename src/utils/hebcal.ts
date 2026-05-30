@@ -168,6 +168,10 @@ interface HolidayLabelOptions {
   locale?: string;
 }
 
+function usesHebrewLocale(locale: string): boolean {
+  return locale.toLowerCase().startsWith('he');
+}
+
 const NATIONAL_HOLIDAY_NAMES = new Set([
   'Yom HaAtzma’ut',
   'Yom Yerushalayim',
@@ -262,7 +266,20 @@ export function getHolidayLabels(
         (includeFasts && isFast)
       );
     })
-    .map((event) => event.render(locale));
+    .map((event) => {
+      const label = event.render(locale);
+
+      if (!usesHebrewLocale(locale)) {
+        return label;
+      }
+
+      const match = /^ראש השנה (\d+)$/.exec(label);
+      if (!match) {
+        return label;
+      }
+
+      return `ראש השנה ${formatHebrewYear(match[1])}`;
+    });
 }
 
 export function generateRdates(
