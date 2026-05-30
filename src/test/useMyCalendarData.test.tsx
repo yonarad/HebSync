@@ -205,6 +205,11 @@ describe('useMyCalendarData', () => {
       JSON.stringify({
         showGregorian: false,
         showEventAges: false,
+        showHolidayEvents: false,
+        showNationalHolidays: false,
+        showRoshChodesh: false,
+        showFasts: false,
+        showWeeklyParsha: true,
       }),
     );
 
@@ -216,5 +221,33 @@ describe('useMyCalendarData', () => {
 
     expect(result.current.showGregorian).toBe(false);
     expect(result.current.showEventAges).toBe(false);
+    expect(result.current.showHolidayEvents).toBe(false);
+    expect(result.current.showNationalHolidays).toBe(false);
+    expect(result.current.showRoshChodesh).toBe(false);
+    expect(result.current.showFasts).toBe(false);
+    expect(result.current.showWeeklyParsha).toBe(true);
+  });
+
+  it('defaults holiday display groups to true when there is no saved preference', async () => {
+    const { result } = renderHook(() => useMyCalendarData({ t }));
+
+    await waitFor(() => {
+      expect(result.current.hasResolvedSession).toBe(true);
+    });
+
+    expect(result.current.showHolidayEvents).toBe(true);
+    expect(result.current.showNationalHolidays).toBe(true);
+    expect(result.current.showRoshChodesh).toBe(true);
+    expect(result.current.showFasts).toBe(true);
+  });
+
+  it('defaults weekly parsha display to true when there is no saved preference', async () => {
+    const { result } = renderHook(() => useMyCalendarData({ t }));
+
+    await waitFor(() => {
+      expect(result.current.hasResolvedSession).toBe(true);
+    });
+
+    expect(result.current.showWeeklyParsha).toBe(true);
   });
 });

@@ -18,6 +18,12 @@ describe('ScheduleCalendarView', () => {
           return key;
         }}
         isRtl
+        showEventAges={false}
+        showFasts={false}
+        showHolidayEvents={false}
+        showNationalHolidays={false}
+        showRoshChodesh={false}
+        showWeeklyParsha={false}
         showGregorian={false}
         scheduleDays={[
           {

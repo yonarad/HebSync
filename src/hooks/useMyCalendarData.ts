@@ -38,20 +38,49 @@ interface UseMyCalendarDataParams {
 const DISPLAY_OPTIONS_STORAGE_KEY = 'hebsync.calendar.displayOptions';
 const SELECTED_CALENDAR_IDS_STORAGE_KEY = 'hebsync.calendar.selectedCalendarIds';
 
-function readDisplayOptions(): { showGregorian: boolean; showEventAges: boolean } {
+function readDisplayOptions(): {
+  showGregorian: boolean;
+  showEventAges: boolean;
+  showFasts: boolean;
+  showHolidayEvents: boolean;
+  showNationalHolidays: boolean;
+  showRoshChodesh: boolean;
+  showWeeklyParsha: boolean;
+} {
   if (typeof window === 'undefined') {
-    return { showGregorian: true, showEventAges: true };
+    return {
+      showGregorian: true,
+      showEventAges: true,
+      showFasts: true,
+      showHolidayEvents: true,
+      showNationalHolidays: true,
+      showRoshChodesh: true,
+      showWeeklyParsha: true,
+    };
   }
 
   try {
     const raw = window.localStorage.getItem(DISPLAY_OPTIONS_STORAGE_KEY);
     if (!raw) {
-      return { showGregorian: true, showEventAges: true };
+      return {
+        showGregorian: true,
+        showEventAges: true,
+        showFasts: true,
+        showHolidayEvents: true,
+        showNationalHolidays: true,
+        showRoshChodesh: true,
+        showWeeklyParsha: true,
+      };
     }
 
     const parsed = JSON.parse(raw) as Partial<{
       showGregorian: boolean;
       showEventAges: boolean;
+      showFasts: boolean;
+      showHolidayEvents: boolean;
+      showNationalHolidays: boolean;
+      showRoshChodesh: boolean;
+      showWeeklyParsha: boolean;
     }>;
 
     return {
@@ -59,9 +88,33 @@ function readDisplayOptions(): { showGregorian: boolean; showEventAges: boolean 
         typeof parsed.showGregorian === 'boolean' ? parsed.showGregorian : true,
       showEventAges:
         typeof parsed.showEventAges === 'boolean' ? parsed.showEventAges : true,
+      showFasts:
+        typeof parsed.showFasts === 'boolean' ? parsed.showFasts : true,
+      showHolidayEvents:
+        typeof parsed.showHolidayEvents === 'boolean'
+          ? parsed.showHolidayEvents
+          : true,
+      showNationalHolidays:
+        typeof parsed.showNationalHolidays === 'boolean'
+          ? parsed.showNationalHolidays
+          : true,
+      showRoshChodesh:
+        typeof parsed.showRoshChodesh === 'boolean'
+          ? parsed.showRoshChodesh
+          : true,
+      showWeeklyParsha:
+        typeof parsed.showWeeklyParsha === 'boolean' ? parsed.showWeeklyParsha : true,
     };
   } catch {
-    return { showGregorian: true, showEventAges: true };
+    return {
+      showGregorian: true,
+      showEventAges: true,
+      showFasts: true,
+      showHolidayEvents: true,
+      showNationalHolidays: true,
+      showRoshChodesh: true,
+      showWeeklyParsha: true,
+    };
   }
 }
 
@@ -108,6 +161,11 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const [googleCalendarColors, setGoogleCalendarColors] = useState<GoogleCalendarColors | null>(null);
   const [showGregorian, setShowGregorian] = useState(initialDisplayOptions.showGregorian);
   const [showEventAges, setShowEventAges] = useState(initialDisplayOptions.showEventAges);
+  const [showFasts, setShowFasts] = useState(initialDisplayOptions.showFasts);
+  const [showHolidayEvents, setShowHolidayEvents] = useState(initialDisplayOptions.showHolidayEvents);
+  const [showNationalHolidays, setShowNationalHolidays] = useState(initialDisplayOptions.showNationalHolidays);
+  const [showRoshChodesh, setShowRoshChodesh] = useState(initialDisplayOptions.showRoshChodesh);
+  const [showWeeklyParsha, setShowWeeklyParsha] = useState(initialDisplayOptions.showWeeklyParsha);
   const [viewMode, setViewMode] = useState<CalendarViewMode>(() => {
     if (typeof window === 'undefined') return 'month';
     return window.innerWidth < 768 ? 'schedule' : 'month';
@@ -197,9 +255,22 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
       JSON.stringify({
         showGregorian,
         showEventAges,
+        showFasts,
+        showHolidayEvents,
+        showNationalHolidays,
+        showRoshChodesh,
+        showWeeklyParsha,
       }),
     );
-  }, [showEventAges, showGregorian]);
+  }, [
+    showEventAges,
+    showFasts,
+    showGregorian,
+    showHolidayEvents,
+    showNationalHolidays,
+    showRoshChodesh,
+    showWeeklyParsha,
+  ]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || calendars.length === 0) return;
@@ -429,12 +500,22 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     setMyEvents,
     setSelectedCalendarIds,
     setShowEventAges,
+    setShowFasts,
     setShowGregorian,
+    setShowHolidayEvents,
+    setShowNationalHolidays,
+    setShowWeeklyParsha,
     setShowLoginModal,
+    setShowRoshChodesh,
     setViewHDate,
     setViewMode,
     showEventAges,
+    showFasts,
     showGregorian,
+    showHolidayEvents,
+    showNationalHolidays,
+    showRoshChodesh,
+    showWeeklyParsha,
     showLoginModal,
     toggleCalendar,
     selectAllCalendars,

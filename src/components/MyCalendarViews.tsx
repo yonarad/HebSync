@@ -1,7 +1,13 @@
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { HEBREW_MONTHS, formatHebrewYear, gematriya } from '../utils/hebcal';
+import {
+  HEBREW_MONTHS,
+  formatHebrewYear,
+  gematriya,
+  getHolidayLabels,
+  getShabbatParshaName,
+} from '../utils/hebcal';
 import { getEventOccurrenceHebrewYear } from '../utils/calendarView';
 import type {
   Calendar,
@@ -116,6 +122,14 @@ function getEventAgeSuffix(
     originalYear && occurrenceHebrewYear ? occurrenceHebrewYear - originalYear : 0;
 
   return isHebCal ? ` (${age})` : '';
+}
+
+function getParshaLocale(isRtl: boolean): string {
+  return isRtl ? 'he-x-NoNikud' : 'en';
+}
+
+function getHolidayLocale(isRtl: boolean): string {
+  return isRtl ? 'he-x-NoNikud' : 'en';
 }
 
 function CalendarLoadingOverlay({ t }: { t: (key: string) => string }) {
@@ -439,7 +453,17 @@ interface CalendarToolbarProps {
   gMonthRange: string;
   viewMode: CalendarViewMode;
   showEventAges: boolean;
+  showFasts: boolean;
+  showHolidayEvents: boolean;
+  showNationalHolidays: boolean;
+  showRoshChodesh: boolean;
+  showWeeklyParsha: boolean;
   setShowEventAges: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowFasts: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowHolidayEvents: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowNationalHolidays: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowRoshChodesh: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowWeeklyParsha: React.Dispatch<React.SetStateAction<boolean>>;
   setViewMode: React.Dispatch<React.SetStateAction<CalendarViewMode>>;
   showGregorian: boolean;
   setShowGregorian: React.Dispatch<React.SetStateAction<boolean>>;
@@ -458,7 +482,17 @@ export function CalendarToolbar({
   gMonthRange,
   viewMode,
   showEventAges,
+  showFasts,
+  showHolidayEvents,
+  showNationalHolidays,
+  showRoshChodesh,
+  showWeeklyParsha,
   setShowEventAges,
+  setShowFasts,
+  setShowHolidayEvents,
+  setShowNationalHolidays,
+  setShowRoshChodesh,
+  setShowWeeklyParsha,
   setViewMode,
   showGregorian,
   setShowGregorian,
@@ -596,6 +630,51 @@ export function CalendarToolbar({
                   />
                   <span>{t('showEventAges')}</span>
                 </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={showHolidayEvents}
+                    onChange={(event) => setShowHolidayEvents(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showHolidayEvents')}</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={showNationalHolidays}
+                    onChange={(event) => setShowNationalHolidays(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showNationalHolidays')}</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={showRoshChodesh}
+                    onChange={(event) => setShowRoshChodesh(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showRoshChodesh')}</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={showFasts}
+                    onChange={(event) => setShowFasts(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showFasts')}</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={showWeeklyParsha}
+                    onChange={(event) => setShowWeeklyParsha(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showWeeklyParsha')}</span>
+                </label>
               </div>
             ) : null}
           </div>
@@ -727,6 +806,11 @@ interface MonthCalendarViewProps {
   isRtl: boolean;
   days: Array<CalendarDay | null>;
   showEventAges: boolean;
+  showFasts: boolean;
+  showHolidayEvents: boolean;
+  showNationalHolidays: boolean;
+  showRoshChodesh: boolean;
+  showWeeklyParsha: boolean;
   showGregorian: boolean;
   isMobileViewport: boolean;
   maxVisibleMonthEvents: number;
@@ -747,6 +831,11 @@ export function MonthCalendarView({
   isRtl,
   days,
   showEventAges,
+  showFasts,
+  showHolidayEvents,
+  showNationalHolidays,
+  showRoshChodesh,
+  showWeeklyParsha,
   showGregorian,
   isMobileViewport,
   maxVisibleMonthEvents,
@@ -790,24 +879,57 @@ export function MonthCalendarView({
                     gregorianDay: dayObj.gDay,
                   })}
                 >
+                  {(() => {
+                    const holidayLabel =
+                      showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+                        ? getHolidayLabels(dayObj.gDate, {
+                            includeFasts: showFasts,
+                            includeHolidayEvents: showHolidayEvents,
+                            includeNationalHolidays: showNationalHolidays,
+                            includeRoshChodesh: showRoshChodesh,
+                            locale: getHolidayLocale(isRtl),
+                          }).join(' · ')
+                        : '';
+                    const parshaLabel =
+                      showWeeklyParsha && dayObj.isShabbat
+                        ? getShabbatParshaName(dayObj.gDate, {
+                            locale: getParshaLocale(isRtl),
+                          })
+                        : null;
+
+                    return (
                   <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-start text-right' : 'justify-start text-left'}`}>
-                    <div className="flex w-full min-w-0 flex-nowrap items-baseline gap-0.5 justify-start">
-                      <span className={`inline-flex h-6 items-center px-0 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:justify-center md:rounded-full md:px-1.5 md:text-sm ${
-                        dayObj.isToday
-                          ? 'min-w-6 justify-center rounded-full bg-[#1a73e8] px-1 text-white shadow-sm md:min-w-7'
-                          : 'justify-start text-slate-800 dark:text-slate-100'
-                      }`}>
-                        {isMobileViewport
-                          ? formatMobileHebrewDayLabel(dayObj.hDayGematriya)
-                          : dayObj.hDayGematriya}
-                      </span>
-                      {showGregorian && (
-                        <span className="min-w-0 truncate text-[9px] font-medium leading-none text-slate-400 dark:text-slate-500 md:text-[10px]">
-                          ({dayObj.gDay})
-                        </span>
-                      )}
+                      <div className="flex w-full min-w-0 flex-col">
+                        <div className="flex w-full min-w-0 flex-nowrap items-baseline gap-0.5 justify-start">
+                          <span className={`inline-flex h-6 items-center px-0 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:justify-center md:rounded-full md:px-1.5 md:text-sm ${
+                            dayObj.isToday
+                              ? 'min-w-6 justify-center rounded-full bg-[#1a73e8] px-1 text-white shadow-sm md:min-w-7'
+                              : 'justify-start text-slate-800 dark:text-slate-100'
+                          }`}>
+                            {isMobileViewport
+                              ? formatMobileHebrewDayLabel(dayObj.hDayGematriya)
+                              : dayObj.hDayGematriya}
+                          </span>
+                          {showGregorian && (
+                            <span className="min-w-0 truncate text-[9px] font-medium leading-none text-slate-400 dark:text-slate-500 md:text-[10px]">
+                              ({dayObj.gDay})
+                            </span>
+                          )}
+                        </div>
+                        {parshaLabel ? (
+                          <div className="mt-0.5 truncate text-[9px] font-medium leading-tight text-amber-700 dark:text-amber-300 md:text-[10px]">
+                            {parshaLabel}
+                          </div>
+                        ) : null}
+                        {holidayLabel ? (
+                          <div className="mt-0.5 truncate text-[9px] font-medium leading-tight text-rose-700 dark:text-rose-300 md:text-[10px]">
+                            {holidayLabel}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
+                    );
+                  })()}
                   <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0 pb-0.5">
                     {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
                       const ageSuffix = getEventAgeSuffix(event, dayObj.hYear, showEventAges);
@@ -885,6 +1007,11 @@ interface ScheduleCalendarViewProps {
   t: (key: string, options?: Record<string, unknown>) => string;
   isRtl: boolean;
   showEventAges: boolean;
+  showFasts: boolean;
+  showHolidayEvents: boolean;
+  showNationalHolidays: boolean;
+  showRoshChodesh: boolean;
+  showWeeklyParsha: boolean;
   showGregorian: boolean;
   scheduleDays: CalendarDay[];
   hMonthNameHebrew: string;
@@ -900,6 +1027,11 @@ export function ScheduleCalendarView({
   t,
   isRtl,
   showEventAges,
+  showFasts,
+  showHolidayEvents,
+  showNationalHolidays,
+  showRoshChodesh,
+  showWeeklyParsha,
   showGregorian,
   scheduleDays,
   hMonthNameHebrew: _hMonthNameHebrew,
@@ -921,6 +1053,25 @@ export function ScheduleCalendarView({
         ) : (
           <div className="space-y-3">
             {scheduleDays.map((dayObj) => (
+              (() => {
+                const holidayLabel =
+                  showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+                    ? getHolidayLabels(dayObj.gDate, {
+                        includeFasts: showFasts,
+                        includeHolidayEvents: showHolidayEvents,
+                        includeNationalHolidays: showNationalHolidays,
+                        includeRoshChodesh: showRoshChodesh,
+                        locale: getHolidayLocale(isRtl),
+                      }).join(' · ')
+                    : '';
+                const parshaLabel =
+                  showWeeklyParsha && dayObj.isShabbat
+                    ? getShabbatParshaName(dayObj.gDate, {
+                        locale: getParshaLocale(isRtl),
+                      })
+                    : null;
+
+                return (
               <section
                 key={dayObj.gDate.toISOString()}
                 className="grid grid-cols-[44px_minmax(0,1fr)] gap-0.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[60px_minmax(0,1fr)] md:gap-1"
@@ -940,6 +1091,16 @@ export function ScheduleCalendarView({
                   <div className="mt-1 text-center text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
                     {t(`days.${dayObj.weekday}`)}
                   </div>
+                  {parshaLabel ? (
+                    <div className="mt-1 text-center text-[9px] font-medium leading-tight text-amber-700 dark:text-amber-300 md:text-[10px]">
+                      {parshaLabel}
+                    </div>
+                  ) : null}
+                  {holidayLabel ? (
+                    <div className="mt-1 text-center text-[9px] font-medium leading-tight text-rose-700 dark:text-rose-300 md:text-[10px]">
+                      {holidayLabel}
+                    </div>
+                  ) : null}
                   <div
                     aria-hidden={!showGregorian}
                     className={`text-center text-[9px] font-medium md:text-[10px] ${
@@ -996,6 +1157,8 @@ export function ScheduleCalendarView({
                   })}
                 </div>
               </section>
+                );
+              })()
             ))}
           </div>
         )}

@@ -3,12 +3,14 @@ import {
   gematriya,
   gregorianToHebrew,
   getDaysInHebrewMonth,
+  getHolidayLabels,
   getMonthsForYear,
   generateRdates,
   getPreviewDates,
   requires30thFallbackDecision,
   doesHebrewMonthExistInYear,
   validateHebrewDateForYear,
+  getShabbatParshaName,
 } from '../utils/hebcal';
 
 describe('Hebcal Utils', () => {
@@ -110,6 +112,142 @@ describe('Hebcal Utils', () => {
         expect(m.id).toBeTruthy();
         expect(m.label).toBeTruthy();
       });
+    });
+  });
+
+  describe('getShabbatParshaName', () => {
+    it('returns the weekly parsha in Hebrew for a regular Shabbat in Israel', () => {
+      expect(getShabbatParshaName(new Date('2026-06-06T12:00:00Z'))).toBe('פרשת שלח־לך');
+    });
+
+    it('returns the weekly parsha in English when requested', () => {
+      expect(
+        getShabbatParshaName(new Date('2026-06-06T12:00:00Z'), { locale: 'en' }),
+      ).toBe('Parashat Sh’lach');
+    });
+
+    it('returns null for a non-Shabbat date', () => {
+      expect(getShabbatParshaName(new Date('2026-06-07T12:00:00Z'))).toBeNull();
+    });
+  });
+
+  describe('getHolidayLabels', () => {
+    it('returns holiday labels in Hebrew for a holiday date', () => {
+      expect(
+        getHolidayLabels(new Date('2026-09-12T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: true,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+        }),
+      ).toContain('ראש השנה 5787');
+    });
+
+    it('returns holiday labels in English when requested', () => {
+      expect(
+        getHolidayLabels(new Date('2026-09-12T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: true,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+          locale: 'en',
+        }),
+      ).toContain('Rosh Hashana 5787');
+    });
+
+    it('includes only whitelisted minor holidays under holiday events', () => {
+      const minorHolidayLabels = getHolidayLabels(new Date('2026-03-03T22:00:00Z'), {
+        includeFasts: false,
+        includeHolidayEvents: true,
+        includeNationalHolidays: false,
+        includeRoshChodesh: false,
+        locale: 'en',
+      });
+
+      expect(minorHolidayLabels).toSatisfy((labels) =>
+        labels.includes('Purim') || labels.includes('Shushan Purim'),
+      );
+
+      expect(
+        getHolidayLabels(new Date('2026-07-29T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: true,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+          locale: 'en',
+        }),
+      ).toContain('Tu B’Av');
+
+      expect(
+        getHolidayLabels(new Date('2026-09-05T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: true,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+          locale: 'en',
+        }),
+      ).toContain('Leil Selichot');
+    });
+
+    it('returns Rosh Chodesh labels only when requested', () => {
+      expect(
+        getHolidayLabels(new Date('2026-06-16T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: false,
+          includeNationalHolidays: false,
+          includeRoshChodesh: true,
+        }),
+      ).toContain('ראש חודש תמוז');
+    });
+
+    it('returns fast labels only when requested and excludes Yom Kippur Katan', () => {
+      expect(
+        getHolidayLabels(new Date('2026-07-01T21:00:00Z'), {
+          includeFasts: true,
+          includeHolidayEvents: false,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+        }),
+      ).toContain('צום י״ז בתמוז');
+
+      expect(
+        getHolidayLabels(new Date('2026-07-13T21:00:00Z'), {
+          includeFasts: true,
+          includeHolidayEvents: false,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+        }),
+      ).not.toContain('יום כיפור קטן');
+    });
+
+    it('returns only selected national observances when requested', () => {
+      expect(
+        getHolidayLabels(new Date('2026-04-20T21:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: false,
+          includeNationalHolidays: true,
+          includeRoshChodesh: false,
+        }),
+      ).toContain('יום הזכרון');
+
+      expect(
+        getHolidayLabels(new Date('2026-04-22T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: false,
+          includeNationalHolidays: true,
+          includeRoshChodesh: false,
+          locale: 'en',
+        }),
+      ).toContain('Yom HaAtzma’ut');
+
+      expect(
+        getHolidayLabels(new Date('2026-01-26T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: false,
+          includeNationalHolidays: true,
+          includeRoshChodesh: false,
+        }),
+      ).not.toContain('יום השפה העברית');
     });
   });
 

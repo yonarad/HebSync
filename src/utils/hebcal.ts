@@ -1,4 +1,11 @@
-import { HDate, gematriya as hGematriya } from '@hebcal/core';
+import {
+  HDate,
+  ParshaEvent,
+  flags,
+  getHolidaysOnDate,
+  getSedra,
+  gematriya as hGematriya,
+} from '@hebcal/core';
 import type {
   FallbackChoice,
   HebrewMonthOption,
@@ -144,6 +151,118 @@ export function validateHebrewDateForYear(
 export function gregorianToHebrew(date: Date, afterSunset = false): HDate {
   const hdate = new HDate(date);
   return afterSunset ? hdate.next() : hdate;
+}
+
+interface ShabbatParshaOptions {
+  il?: boolean;
+  locale?: string;
+  includeHolidayReadings?: boolean;
+}
+
+interface HolidayLabelOptions {
+  il?: boolean;
+  includeFasts?: boolean;
+  includeHolidayEvents?: boolean;
+  includeNationalHolidays?: boolean;
+  includeRoshChodesh?: boolean;
+  locale?: string;
+}
+
+const NATIONAL_HOLIDAY_NAMES = new Set([
+  'Yom HaAtzma’ut',
+  'Yom Yerushalayim',
+  'Sigd',
+  'Yom HaShoah',
+  'Yom HaZikaron',
+]);
+
+function normalizeHebcalDesc(value: string): string {
+  return value.replace(/[’']/g, "'");
+}
+
+const NORMALIZED_NATIONAL_HOLIDAY_NAMES = new Set(
+  [...NATIONAL_HOLIDAY_NAMES, "Yom HaAtzma'ut"].map(normalizeHebcalDesc),
+);
+
+const MINOR_HOLIDAY_NAMES = new Set([
+  'Tu BiShvat',
+  'Purim',
+  'Shushan Purim',
+  'Pesach Sheni',
+  'Lag BaOmer',
+  "Tu B'Av",
+  'Leil Selichot',
+  'Chanukah: 1 Candle',
+  'Chanukah: 2 Candles',
+  'Chanukah: 3 Candles',
+  'Chanukah: 4 Candles',
+  'Chanukah: 5 Candles',
+  'Chanukah: 6 Candles',
+  'Chanukah: 7 Candles',
+  'Chanukah: 8 Candles',
+  'Chanukah: 8th Day',
+]);
+
+const NORMALIZED_MINOR_HOLIDAY_NAMES = new Set(
+  [...MINOR_HOLIDAY_NAMES].map(normalizeHebcalDesc),
+);
+
+export function getShabbatParshaName(
+  date: Date,
+  options: ShabbatParshaOptions = {},
+): string | null {
+  const { il = true, locale = 'he-x-NoNikud', includeHolidayReadings = false } = options;
+  const hdate = new HDate(date);
+
+  if (hdate.getDay() !== 6) {
+    return null;
+  }
+
+  const sedra = getSedra(hdate.getFullYear(), il).lookup(hdate);
+  if (sedra.chag && !includeHolidayReadings) {
+    return null;
+  }
+
+  return new ParshaEvent(sedra).render(locale);
+}
+
+export function getHolidayLabels(
+  date: Date,
+  options: HolidayLabelOptions = {},
+): string[] {
+  const {
+    il = true,
+    includeFasts = true,
+    includeHolidayEvents = true,
+    includeNationalHolidays = true,
+    includeRoshChodesh = true,
+    locale = 'he-x-NoNikud',
+  } = options;
+  const holidays = getHolidaysOnDate(date, il) || [];
+
+  return holidays
+    .filter((event) => {
+      const mask = event.getFlags();
+      const desc = normalizeHebcalDesc(event.getDesc());
+      const isYomKippurKatan = Boolean(mask & flags.YOM_KIPPUR_KATAN);
+      const isNationalHoliday = Boolean(mask & flags.MODERN_HOLIDAY) &&
+        NORMALIZED_NATIONAL_HOLIDAY_NAMES.has(desc);
+      const isMinorHoliday = Boolean(mask & flags.MINOR_HOLIDAY) &&
+        NORMALIZED_MINOR_HOLIDAY_NAMES.has(desc);
+      const isHolidayEvent =
+        Boolean(mask & (flags.CHAG | flags.CHOL_HAMOED | flags.EREV)) || isMinorHoliday;
+      const isRoshChodesh = Boolean(mask & flags.ROSH_CHODESH);
+      const isFast =
+        !isYomKippurKatan && Boolean(mask & (flags.MAJOR_FAST | flags.MINOR_FAST));
+
+      return (
+        (includeHolidayEvents && isHolidayEvent) ||
+        (includeNationalHolidays && isNationalHoliday) ||
+        (includeRoshChodesh && isRoshChodesh) ||
+        (includeFasts && isFast)
+      );
+    })
+    .map((event) => event.render(locale));
 }
 
 export function generateRdates(

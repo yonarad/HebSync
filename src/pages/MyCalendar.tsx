@@ -108,14 +108,24 @@ export default function MyCalendar() {
     selectedCalendarIds,
     setIsAuthenticated,
     setShowEventAges,
+    setShowFasts,
     setLoginModalInitialScopeMode,
     setLoginModalMode,
     setShowGregorian,
+    setShowHolidayEvents,
     setShowLoginModal,
+    setShowNationalHolidays,
+    setShowRoshChodesh,
+    setShowWeeklyParsha,
     setViewHDate,
     setViewMode,
     showEventAges,
+    showFasts,
     showGregorian,
+    showHolidayEvents,
+    showNationalHolidays,
+    showRoshChodesh,
+    showWeeklyParsha,
     showLoginModal,
     toggleCalendar,
     selectAllCalendars,
@@ -685,7 +695,17 @@ export default function MyCalendar() {
               gMonthRange={gMonthRange}
               viewMode={viewMode}
               showEventAges={showEventAges}
+              showFasts={showFasts}
+              showHolidayEvents={showHolidayEvents}
+              showNationalHolidays={showNationalHolidays}
+              showRoshChodesh={showRoshChodesh}
+              showWeeklyParsha={showWeeklyParsha}
               setShowEventAges={setShowEventAges}
+              setShowFasts={setShowFasts}
+              setShowHolidayEvents={setShowHolidayEvents}
+              setShowNationalHolidays={setShowNationalHolidays}
+              setShowRoshChodesh={setShowRoshChodesh}
+              setShowWeeklyParsha={setShowWeeklyParsha}
               setViewMode={setViewMode}
               showGregorian={showGregorian}
               setShowGregorian={setShowGregorian}
@@ -715,6 +735,11 @@ export default function MyCalendar() {
                   isRtl={isRtl}
                   days={days}
                   showEventAges={showEventAges}
+                  showFasts={showFasts}
+                  showHolidayEvents={showHolidayEvents}
+                  showNationalHolidays={showNationalHolidays}
+                  showRoshChodesh={showRoshChodesh}
+                  showWeeklyParsha={showWeeklyParsha}
                   showGregorian={showGregorian}
                   isMobileViewport={isMobileViewport}
                   maxVisibleMonthEvents={maxVisibleMonthEvents}
@@ -731,6 +756,11 @@ export default function MyCalendar() {
                   t={t}
                   isRtl={isRtl}
                   showEventAges={showEventAges}
+                  showFasts={showFasts}
+                  showHolidayEvents={showHolidayEvents}
+                  showNationalHolidays={showNationalHolidays}
+                  showRoshChodesh={showRoshChodesh}
+                  showWeeklyParsha={showWeeklyParsha}
                   showGregorian={showGregorian}
                   scheduleDays={scheduleDays}
                   hMonthNameHebrew={hMonthNameHebrew}
