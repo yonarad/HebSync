@@ -107,12 +107,14 @@ export default function MyCalendar() {
     promptForEditingUpgrade,
     selectedCalendarIds,
     setIsAuthenticated,
+    setShowEventAges,
     setLoginModalInitialScopeMode,
     setLoginModalMode,
     setShowGregorian,
     setShowLoginModal,
     setViewHDate,
     setViewMode,
+    showEventAges,
     showGregorian,
     showLoginModal,
     toggleCalendar,
@@ -682,6 +684,8 @@ export default function MyCalendar() {
               hYear={hYear}
               gMonthRange={gMonthRange}
               viewMode={viewMode}
+              showEventAges={showEventAges}
+              setShowEventAges={setShowEventAges}
               setViewMode={setViewMode}
               showGregorian={showGregorian}
               setShowGregorian={setShowGregorian}
@@ -698,6 +702,7 @@ export default function MyCalendar() {
                   isRtl={isRtl}
                   isSearchLoading={isSearchLoading}
                   searchResults={searchResults}
+                  showEventAges={showEventAges}
                   showGregorian={showGregorian}
                   getEventColor={getEventColor}
                   handleEventClick={handleEventClick}
@@ -709,6 +714,7 @@ export default function MyCalendar() {
                   t={t}
                   isRtl={isRtl}
                   days={days}
+                  showEventAges={showEventAges}
                   showGregorian={showGregorian}
                   isMobileViewport={isMobileViewport}
                   maxVisibleMonthEvents={maxVisibleMonthEvents}
@@ -724,6 +730,7 @@ export default function MyCalendar() {
                 <ScheduleCalendarView
                   t={t}
                   isRtl={isRtl}
+                  showEventAges={showEventAges}
                   showGregorian={showGregorian}
                   scheduleDays={scheduleDays}
                   hMonthNameHebrew={hMonthNameHebrew}
@@ -769,6 +776,7 @@ export default function MyCalendar() {
         overflowPopoverMargin={overflowPopoverMargin}
         overflowTop={overflowTop}
         overflowLeft={overflowLeft}
+        showEventAges={showEventAges}
         showGregorian={showGregorian}
         getEventColor={getEventColor}
         setOverflowDay={setOverflowDay}
@@ -843,7 +851,7 @@ export default function MyCalendar() {
                     const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
                     const occurrenceHebrewYear = getEventOccurrenceHebrewYear(selectedEvent);
                     const age = (originalYear && occurrenceHebrewYear) ? (occurrenceHebrewYear - originalYear) : 0;
-                    const ageSuffix = isHebCal ? ` (${age})` : '';
+                    const ageSuffix = isHebCal && showEventAges ? ` (${age})` : '';
                     const timeRange = formatEventTimeRange(selectedEvent);
                     return (
                       <>

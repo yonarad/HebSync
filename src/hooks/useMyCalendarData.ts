@@ -35,7 +35,60 @@ interface UseMyCalendarDataParams {
   t: (key: string, options?: Record<string, unknown>) => string;
 }
 
+const DISPLAY_OPTIONS_STORAGE_KEY = 'hebsync.calendar.displayOptions';
+const SELECTED_CALENDAR_IDS_STORAGE_KEY = 'hebsync.calendar.selectedCalendarIds';
+
+function readDisplayOptions(): { showGregorian: boolean; showEventAges: boolean } {
+  if (typeof window === 'undefined') {
+    return { showGregorian: true, showEventAges: true };
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DISPLAY_OPTIONS_STORAGE_KEY);
+    if (!raw) {
+      return { showGregorian: true, showEventAges: true };
+    }
+
+    const parsed = JSON.parse(raw) as Partial<{
+      showGregorian: boolean;
+      showEventAges: boolean;
+    }>;
+
+    return {
+      showGregorian:
+        typeof parsed.showGregorian === 'boolean' ? parsed.showGregorian : true,
+      showEventAges:
+        typeof parsed.showEventAges === 'boolean' ? parsed.showEventAges : true,
+    };
+  } catch {
+    return { showGregorian: true, showEventAges: true };
+  }
+}
+
+function readSavedSelectedCalendarIds(): string[] | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(SELECTED_CALENDAR_IDS_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed.filter((value): value is string => typeof value === 'string');
+  } catch {
+    return null;
+  }
+}
+
 export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
+  const initialDisplayOptions = readDisplayOptions();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!getAccessToken());
   const [hasResolvedSession, setHasResolvedSession] = useState(false);
   const [myEvents, setMyEvents] = useState<MyCalendarEventListItem[]>([]);
@@ -53,7 +106,8 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const [viewHDate, setViewHDate] = useState<HDate>(new HDate());
   const [calendarEvents, setCalendarEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleCalendarColors, setGoogleCalendarColors] = useState<GoogleCalendarColors | null>(null);
-  const [showGregorian, setShowGregorian] = useState(true);
+  const [showGregorian, setShowGregorian] = useState(initialDisplayOptions.showGregorian);
+  const [showEventAges, setShowEventAges] = useState(initialDisplayOptions.showEventAges);
   const [viewMode, setViewMode] = useState<CalendarViewMode>(() => {
     if (typeof window === 'undefined') return 'month';
     return window.innerWidth < 768 ? 'schedule' : 'month';
@@ -111,9 +165,16 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
       const hebSyncCalendarIds = calendarsWithColors
         .filter(isHebSyncCalendar)
         .map((calendar) => calendar.id);
+      const savedSelectedCalendarIds = readSavedSelectedCalendarIds();
+      const nextSelectedCalendarIds =
+        savedSelectedCalendarIds === null
+          ? hebSyncCalendarIds
+          : savedSelectedCalendarIds.filter((calendarId) =>
+              calendarsWithColors.some((calendar) => calendar.id === calendarId),
+            );
       setCalendars(calendarsWithColors);
       setGoogleCalendarColors(googleColors);
-      setSelectedCalendarIds(hebSyncCalendarIds);
+      setSelectedCalendarIds(nextSelectedCalendarIds);
     } catch (error) {
       if (isAuthError(error)) return;
       console.error('Failed to load calendars', error);
@@ -127,6 +188,27 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
       loadCalendars();
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    window.localStorage.setItem(
+      DISPLAY_OPTIONS_STORAGE_KEY,
+      JSON.stringify({
+        showGregorian,
+        showEventAges,
+      }),
+    );
+  }, [showEventAges, showGregorian]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || calendars.length === 0) return;
+
+    window.localStorage.setItem(
+      SELECTED_CALENDAR_IDS_STORAGE_KEY,
+      JSON.stringify(selectedCalendarIds),
+    );
+  }, [calendars, selectedCalendarIds]);
 
   useEffect(() => {
     const handleAuthExpired = () => {
@@ -346,10 +428,12 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     setLoginModalInitialScopeMode,
     setMyEvents,
     setSelectedCalendarIds,
+    setShowEventAges,
     setShowGregorian,
     setShowLoginModal,
     setViewHDate,
     setViewMode,
+    showEventAges,
     showGregorian,
     showLoginModal,
     toggleCalendar,

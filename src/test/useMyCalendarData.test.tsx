@@ -70,6 +70,7 @@ describe('useMyCalendarData', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   it('loads calendars and selects only HebSync calendars by default', async () => {
@@ -184,5 +185,36 @@ describe('useMyCalendarData', () => {
       undefined,
       expect.any(Function),
     );
+  });
+
+  it('restores selected calendars from localStorage when available', async () => {
+    localStorage.setItem('hebsync.calendar.selectedCalendarIds', JSON.stringify(['other']));
+
+    const { result } = renderHook(() => useMyCalendarData({ t }));
+
+    await waitFor(() => {
+      expect(result.current.calendars).toHaveLength(2);
+    });
+
+    expect(result.current.selectedCalendarIds).toEqual(['other']);
+  });
+
+  it('restores display options from localStorage', async () => {
+    localStorage.setItem(
+      'hebsync.calendar.displayOptions',
+      JSON.stringify({
+        showGregorian: false,
+        showEventAges: false,
+      }),
+    );
+
+    const { result } = renderHook(() => useMyCalendarData({ t }));
+
+    await waitFor(() => {
+      expect(result.current.hasResolvedSession).toBe(true);
+    });
+
+    expect(result.current.showGregorian).toBe(false);
+    expect(result.current.showEventAges).toBe(false);
   });
 });

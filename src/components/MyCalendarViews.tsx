@@ -1,6 +1,6 @@
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
-import { useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { HEBREW_MONTHS, formatHebrewYear, gematriya } from '../utils/hebcal';
 import { getEventOccurrenceHebrewYear } from '../utils/calendarView';
 import type {
@@ -100,6 +100,22 @@ function formatHebrewEventDateLabel(value: string, isDateTime: boolean): string 
 
 function formatMobileHebrewDayLabel(label: string): string {
   return label.replace(/['"׳״]/g, '');
+}
+
+function getEventAgeSuffix(
+  event: GoogleCalendarEvent,
+  occurrenceHebrewYear: number | null | undefined,
+  showEventAges: boolean,
+): string {
+  if (!showEventAges) return '';
+
+  const props = event.extendedProperties?.private || {};
+  const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
+  const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
+  const age =
+    originalYear && occurrenceHebrewYear ? occurrenceHebrewYear - originalYear : 0;
+
+  return isHebCal ? ` (${age})` : '';
 }
 
 function CalendarLoadingOverlay({ t }: { t: (key: string) => string }) {
@@ -422,6 +438,8 @@ interface CalendarToolbarProps {
   hYear: string;
   gMonthRange: string;
   viewMode: CalendarViewMode;
+  showEventAges: boolean;
+  setShowEventAges: React.Dispatch<React.SetStateAction<boolean>>;
   setViewMode: React.Dispatch<React.SetStateAction<CalendarViewMode>>;
   showGregorian: boolean;
   setShowGregorian: React.Dispatch<React.SetStateAction<boolean>>;
@@ -439,6 +457,8 @@ export function CalendarToolbar({
   hYear,
   gMonthRange,
   viewMode,
+  showEventAges,
+  setShowEventAges,
   setViewMode,
   showGregorian,
   setShowGregorian,
@@ -447,6 +467,33 @@ export function CalendarToolbar({
   setViewHDate,
   isSearchActive,
 }: CalendarToolbarProps) {
+  const [isDisplayMenuOpen, setIsDisplayMenuOpen] = useState(false);
+  const displayMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isDisplayMenuOpen) return undefined;
+
+    const handlePointerDown = (event: MouseEvent): void => {
+      if (!displayMenuRef.current?.contains(event.target as Node)) {
+        setIsDisplayMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: globalThis.KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setIsDisplayMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isDisplayMenuOpen]);
+
   return (
     <section className="px-1 py-0">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -515,10 +562,43 @@ export function CalendarToolbar({
               {t('viewSchedule')}
             </button>
           </div>
-          <label className="flex h-[34px] items-center gap-2 cursor-pointer rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-[#0038A8]" />
-            <span>{t('showGregorianDates')}</span>
-          </label>
+          <div className="relative" ref={displayMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsDisplayMenuOpen((prev) => !prev)}
+              className="flex h-[34px] items-center gap-2 rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              aria-expanded={isDisplayMenuOpen}
+              aria-haspopup="menu"
+            >
+              <span>{t('displayOptions')}</span>
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isDisplayMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isDisplayMenuOpen ? (
+              <div
+                role="menu"
+                className={`absolute top-full z-30 mt-2 min-w-[220px] rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700 dark:bg-slate-900 ${isRtl ? 'left-0' : 'right-0'}`}
+              >
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={showGregorian}
+                    onChange={(event) => setShowGregorian(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showGregorianDates')}</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={showEventAges}
+                    onChange={(event) => setShowEventAges(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showEventAges')}</span>
+                </label>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </section>
@@ -530,6 +610,7 @@ interface SearchResultsViewProps {
   isRtl: boolean;
   isSearchLoading: boolean;
   searchResults: GoogleCalendarEvent[];
+  showEventAges: boolean;
   showGregorian: boolean;
   getEventColor: (event: GoogleCalendarEvent) => string;
   handleEventClick: (event: GoogleCalendarEvent) => void;
@@ -542,6 +623,7 @@ export function SearchResultsView({
   isRtl,
   isSearchLoading,
   searchResults,
+  showEventAges,
   showGregorian,
   getEventColor,
   handleEventClick,
@@ -580,12 +662,8 @@ export function SearchResultsView({
               const startValue = event.start?.dateTime || event.start?.date || '';
               const endValue = event.end?.dateTime || event.end?.date || '';
               const isTimed = Boolean(event.start?.dateTime);
-              const props = event.extendedProperties?.private || {};
-              const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-              const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
               const occurrenceHebrewYear = getEventOccurrenceHebrewYear(event);
-              const age = originalYear && occurrenceHebrewYear ? occurrenceHebrewYear - originalYear : 0;
-              const ageSuffix = isHebCal ? ` (${age})` : '';
+              const ageSuffix = getEventAgeSuffix(event, occurrenceHebrewYear, showEventAges);
               const locale = isRtl ? 'he-IL' : 'en-US';
               const dateLabel = startValue
                 ? formatEventDateLabel(startValue, locale, isTimed)
@@ -648,6 +726,7 @@ interface MonthCalendarViewProps {
   t: (key: string, options?: Record<string, unknown>) => string;
   isRtl: boolean;
   days: Array<CalendarDay | null>;
+  showEventAges: boolean;
   showGregorian: boolean;
   isMobileViewport: boolean;
   maxVisibleMonthEvents: number;
@@ -667,6 +746,7 @@ export function MonthCalendarView({
   t,
   isRtl,
   days,
+  showEventAges,
   showGregorian,
   isMobileViewport,
   maxVisibleMonthEvents,
@@ -730,11 +810,7 @@ export function MonthCalendarView({
                   </div>
                   <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0 pb-0.5">
                     {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
-                      const props = event.extendedProperties?.private || {};
-                      const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-                      const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
-                      const age = originalYear && dayObj.hYear ? dayObj.hYear - originalYear : 0;
-                      const ageSuffix = isHebCal ? ` (${age})` : '';
+                      const ageSuffix = getEventAgeSuffix(event, dayObj.hYear, showEventAges);
                       const eventColor = getEventColor(event);
                       const timeLabel = formatEventTimeLabel(event, timeLocale);
                       const chipLabel = `${event.summary}${ageSuffix}`;
@@ -808,6 +884,7 @@ export function MonthCalendarView({
 interface ScheduleCalendarViewProps {
   t: (key: string, options?: Record<string, unknown>) => string;
   isRtl: boolean;
+  showEventAges: boolean;
   showGregorian: boolean;
   scheduleDays: CalendarDay[];
   hMonthNameHebrew: string;
@@ -822,6 +899,7 @@ interface ScheduleCalendarViewProps {
 export function ScheduleCalendarView({
   t,
   isRtl,
+  showEventAges,
   showGregorian,
   scheduleDays,
   hMonthNameHebrew: _hMonthNameHebrew,
@@ -878,9 +956,7 @@ export function ScheduleCalendarView({
                   {dayObj.events.map((event, idx) => {
                     const props = event.extendedProperties?.private || {};
                     const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-                    const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
-                    const age = originalYear && dayObj.hYear ? dayObj.hYear - originalYear : 0;
-                    const ageSuffix = isHebCal ? ` (${age})` : '';
+                    const ageSuffix = getEventAgeSuffix(event, dayObj.hYear, showEventAges);
                     const eventColor = getEventColor(event);
                     const start = event.start?.dateTime || event.start?.date;
                     const end = event.end?.dateTime || event.end?.date;
@@ -938,6 +1014,7 @@ interface DayEventsPopoverProps {
   overflowPopoverMargin: number;
   overflowTop: number;
   overflowLeft: number;
+  showEventAges: boolean;
   showGregorian: boolean;
   getEventColor: (event: GoogleCalendarEvent) => string;
   setOverflowDay: React.Dispatch<React.SetStateAction<OverflowDay | null>>;
@@ -953,6 +1030,7 @@ export function DayEventsPopover({
   overflowPopoverMargin,
   overflowTop,
   overflowLeft,
+  showEventAges,
   showGregorian,
   getEventColor,
   setOverflowDay,
@@ -1003,9 +1081,7 @@ export function DayEventsPopover({
           {overflowDay.events.map((event, idx) => {
             const props = event.extendedProperties?.private || {};
             const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-            const originalYear = isHebCal ? parseInt(props.originalHebrewYear || '', 10) : null;
-            const age = originalYear && overflowDay.hYear ? overflowDay.hYear - originalYear : 0;
-            const ageSuffix = isHebCal ? ` (${age})` : '';
+            const ageSuffix = getEventAgeSuffix(event, overflowDay.hYear, showEventAges);
             const eventColor = getEventColor(event);
             const start = event.start?.dateTime || event.start?.date;
             const timeLabel =

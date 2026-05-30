@@ -255,7 +255,9 @@
       "6": "Sat"
     },
     "refreshCalendars": "Refresh calendars",
+    "displayOptions": "Display",
     "showGregorianDates": "Show Gregorian dates",
+    "showEventAges": "Show event ages",
     "searchEvents": "Search events",
     "searchEventsPlaceholder": "Search events",
     "toggleAdvancedSearch": "Toggle advanced search",

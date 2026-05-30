@@ -87,7 +87,9 @@ vi.mock('react-i18next', () => ({
         moreEvents: `${options?.count ?? 0} more events`,
         viewMonth: 'Month',
         viewSchedule: 'Schedule',
+        displayOptions: 'Display',
         showGregorianDates: 'Show Gregorian dates',
+        showEventAges: 'Show event ages',
         searchEvents: 'Search events',
         searchEventsPlaceholder: 'Search events',
         toggleAdvancedSearch: 'Toggle advanced search',
@@ -176,6 +178,7 @@ const flattenLocaleEntries = (value, prefix = '') => {
 describe('My Calendar Component', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    localStorage.clear();
     sessionStorage.clear();
   });
 
