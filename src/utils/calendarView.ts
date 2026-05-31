@@ -14,6 +14,16 @@ import type {
   OverflowPopoverLayout,
 } from '../types/appTypes';
 
+export const OVERFLOW_POPOVER_DEFAULT_WIDTH = 220;
+export const OVERFLOW_POPOVER_MARGIN = 12;
+export const OVERFLOW_POPOVER_MAX_HEIGHT = 480;
+export const OVERFLOW_POPOVER_BASE_HEIGHT = 96;
+export const OVERFLOW_POPOVER_EVENT_ROW_HEIGHT = 32;
+export const OVERFLOW_POPOVER_MIN_WIDTH = 160;
+export const OVERFLOW_POPOVER_MOBILE_MIN_WIDTH = 220;
+export const OVERFLOW_POPOVER_MOBILE_MAX_WIDTH = 280;
+export const OVERFLOW_POPOVER_MOBILE_WIDTH_FACTOR = 2.2;
+
 interface ScheduleDayDisplayOptions {
   showFasts: boolean;
   showHolidayEvents: boolean;
@@ -302,8 +312,8 @@ export function getOverflowPopoverLayout({
   overflowDay,
   viewportWidth,
   viewportHeight,
-  overflowPopoverWidth = 220,
-  overflowPopoverMargin = 12,
+  overflowPopoverWidth = OVERFLOW_POPOVER_DEFAULT_WIDTH,
+  overflowPopoverMargin = OVERFLOW_POPOVER_MARGIN,
 }: {
   overflowDay: OverflowDay | null;
   viewportWidth: number;
@@ -312,7 +322,10 @@ export function getOverflowPopoverLayout({
   overflowPopoverMargin?: number;
 }): OverflowPopoverLayout {
   const overflowAnchorRect = overflowDay?.anchorRect;
-  const maxAllowedWidth = Math.max(160, viewportWidth - overflowPopoverMargin * 2);
+  const maxAllowedWidth = Math.max(
+    OVERFLOW_POPOVER_MIN_WIDTH,
+    viewportWidth - overflowPopoverMargin * 2,
+  );
   const anchorWidth = overflowAnchorRect
     ? Math.max(0, overflowAnchorRect.right - overflowAnchorRect.left)
     : 0;
@@ -320,7 +333,15 @@ export function getOverflowPopoverLayout({
   const resolvedOverflowPopoverWidth = isMobileViewport
     ? Math.min(
         maxAllowedWidth,
-        Math.max(220, Math.min(280, anchorWidth > 0 ? anchorWidth * 2.2 : 260)),
+        Math.max(
+          OVERFLOW_POPOVER_MOBILE_MIN_WIDTH,
+          Math.min(
+            OVERFLOW_POPOVER_MOBILE_MAX_WIDTH,
+            anchorWidth > 0
+              ? anchorWidth * OVERFLOW_POPOVER_MOBILE_WIDTH_FACTOR
+              : 260,
+          ),
+        ),
       )
     : anchorWidth > 0
       ? Math.min(anchorWidth, maxAllowedWidth)
@@ -328,11 +349,12 @@ export function getOverflowPopoverLayout({
   const overflowEventCount = overflowDay?.events?.length ?? 0;
   const overflowPopoverMaxHeight = Math.min(
     viewportHeight - overflowPopoverMargin * 2,
-    480,
+    OVERFLOW_POPOVER_MAX_HEIGHT,
   );
   const overflowPopoverHeight = Math.min(
     overflowPopoverMaxHeight,
-    96 + overflowEventCount * 32,
+    OVERFLOW_POPOVER_BASE_HEIGHT +
+      overflowEventCount * OVERFLOW_POPOVER_EVENT_ROW_HEIGHT,
   );
   const anchorTop = overflowAnchorRect?.top ?? 120;
   const anchorBottom = overflowAnchorRect?.bottom ?? 120;

@@ -10,7 +10,11 @@ import {
   getShabbatParshaDetail,
   getShabbatParshaName,
 } from '../utils/hebcal';
-import { getEventOccurrenceHebrewYear } from '../utils/calendarView';
+import {
+  getEventOccurrenceHebrewYear,
+  OVERFLOW_POPOVER_EVENT_ROW_HEIGHT,
+  OVERFLOW_POPOVER_MARGIN,
+} from '../utils/calendarView';
 import type {
   Calendar,
   CalendarDay,
@@ -150,6 +154,136 @@ function getParshaLocale(isRtl: boolean): string {
 
 function getHolidayLocale(isRtl: boolean): string {
   return isRtl ? 'he-x-NoNikud' : 'en';
+}
+
+const MONTH_EVENT_STACK_CLASS = 'flex min-h-0 w-full flex-col gap-0.5';
+const MONTH_EVENT_TEXT_CLASS = 'text-[10px] font-bold leading-tight';
+const MONTH_TIMED_EVENT_CLASS =
+  'rounded-sm px-0.5 py-0.5 text-slate-700 dark:text-slate-100';
+const MONTH_ALL_DAY_EVENT_CLASS = 'rounded-md px-1.5 py-0.5 text-white';
+const MONTH_HEBCAL_CHIP_CLASS =
+  'w-full flex-none overflow-hidden rounded-md px-1.5 py-0.5 text-[10px] font-bold leading-tight';
+const MORE_EVENTS_BUTTON_CLASS =
+  'block w-full overflow-hidden truncate rounded-sm px-0.5 py-0.5 text-right text-[10px] font-bold leading-tight whitespace-nowrap text-[#1a73e8] translate-y-px hover:underline dark:text-blue-300';
+const MORE_EVENTS_MEASURE_CLASS =
+  'pointer-events-none absolute -left-[9999px] top-0 w-full overflow-hidden truncate rounded-sm px-0.5 py-0.5 text-right text-[10px] font-bold leading-tight whitespace-nowrap text-[#1a73e8] translate-y-px';
+const MOBILE_VIEWPORT_BREAKPOINT = 768;
+
+function renderCompactHebcalChip({
+  label,
+  isRtl,
+  tone,
+  onClick,
+  title,
+  measure = false,
+}: {
+  label: string;
+  isRtl: boolean;
+  tone: 'amber' | 'rose';
+  onClick?: () => void;
+  title?: string;
+  measure?: boolean;
+}) {
+  const toneClass =
+    tone === 'amber'
+      ? 'bg-amber-50/85 text-amber-800 ring-1 ring-inset ring-amber-200/70 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-900/60'
+      : 'bg-rose-50/85 text-rose-800 ring-1 ring-inset ring-rose-200/70 dark:bg-rose-950/25 dark:text-rose-200 dark:ring-rose-900/60';
+  const alignmentClass = isRtl ? 'text-right' : 'text-left';
+
+  if (measure) {
+    return (
+      <div
+        data-month-measure-item="true"
+        className={`${MONTH_HEBCAL_CHIP_CLASS} ${toneClass} ${alignmentClass}`}
+      >
+        <div className="truncate">{label}</div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative ${MONTH_HEBCAL_CHIP_CLASS} cursor-pointer ${toneClass} transition-all hover:opacity-80 ${alignmentClass}`}
+      title={title ?? label}
+    >
+      <div className="truncate">{label}</div>
+    </button>
+  );
+}
+
+function renderCompactEventChip({
+  event,
+  chipLabel,
+  eventColor,
+  timeLabel,
+  isRtl,
+  onClick,
+  measure = false,
+  chipKey,
+}: {
+  event: GoogleCalendarEvent;
+  chipLabel: string;
+  eventColor: string;
+  timeLabel: string;
+  isRtl: boolean;
+  onClick?: () => void;
+  measure?: boolean;
+  chipKey: string;
+}) {
+  const isTimedEvent = Boolean(timeLabel);
+  const alignmentClass = isRtl ? 'text-right' : 'text-left';
+  const content = isTimedEvent ? (
+    <div className="flex w-full">
+      <div className={`inline-flex min-w-0 items-center gap-1 ${isRtl ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: eventColor }}
+        />
+        <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+          {timeLabel}
+        </span>
+        <span className="min-w-0 truncate">{chipLabel}</span>
+      </div>
+    </div>
+  ) : (
+    <div className="truncate">{chipLabel}</div>
+  );
+
+  if (measure) {
+    return (
+      <div
+        key={chipKey}
+        data-month-measure-item="true"
+        data-month-measure-event="true"
+        className={`w-full flex-none overflow-hidden ${MONTH_EVENT_TEXT_CLASS} ${alignmentClass} ${
+          isTimedEvent ? MONTH_TIMED_EVENT_CLASS : MONTH_ALL_DAY_EVENT_CLASS
+        }`}
+        style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      key={chipKey}
+      type="button"
+      onClick={onClick}
+      className={`group relative w-full flex-none cursor-pointer overflow-hidden ${MONTH_EVENT_TEXT_CLASS} transition-all ${alignmentClass} ${
+        isTimedEvent
+          ? `${MONTH_TIMED_EVENT_CLASS} hover:bg-slate-100/80 dark:hover:bg-slate-800/70`
+          : `${MONTH_ALL_DAY_EVENT_CLASS} hover:brightness-95`
+      }`}
+      style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
+      title={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
+      aria-label={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
+    >
+      {content}
+    </button>
+  );
 }
 
 function CalendarLoadingOverlay({ t }: { t: (key: string) => string }) {
@@ -1055,7 +1189,7 @@ export function MonthCalendarView({
       <div
         ref={moreButtonMeasureRef}
         aria-hidden="true"
-        className="pointer-events-none absolute -left-[9999px] top-0 w-full overflow-hidden truncate rounded-sm px-0.5 py-0.5 text-right text-[10px] font-bold leading-tight whitespace-nowrap text-[#1a73e8] translate-y-px"
+        className={MORE_EVENTS_MEASURE_CLASS}
       >
         {t('moreEvents', { count: 99 })}
       </div>
@@ -1142,7 +1276,7 @@ export function MonthCalendarView({
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-0 overflow-hidden opacity-0"
                     >
-                      <div className="flex min-h-0 w-full flex-col gap-0.5">
+                      <div className={MONTH_EVENT_STACK_CLASS}>
                         {(() => {
                           const monthParshaLabel =
                             showWeeklyParsha && dayObj.isShabbat
@@ -1156,12 +1290,12 @@ export function MonthCalendarView({
                           }
 
                           return (
-                            <div
-                              data-month-measure-item="true"
-                              className={`w-full flex-none overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 ${isRtl ? 'text-right' : 'text-left'}`}
-                            >
-                              <div className="truncate">{monthParshaLabel}</div>
-                            </div>
+                            renderCompactHebcalChip({
+                              label: monthParshaLabel,
+                              isRtl,
+                              tone: 'amber',
+                              measure: true,
+                            })
                           );
                         })()}
                         {(() => {
@@ -1182,12 +1316,12 @@ export function MonthCalendarView({
                           }
 
                           return (
-                            <div
-                              data-month-measure-item="true"
-                              className={`w-full flex-none overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 ${isRtl ? 'text-right' : 'text-left'}`}
-                            >
-                              <div className="truncate">{monthHolidayLabel}</div>
-                            </div>
+                            renderCompactHebcalChip({
+                              label: monthHolidayLabel,
+                              isRtl,
+                              tone: 'rose',
+                              measure: true,
+                            })
                           );
                         })()}
                         {dayObj.events.map((event, idx) => {
@@ -1195,42 +1329,19 @@ export function MonthCalendarView({
                           const eventColor = getEventColor(event);
                           const timeLabel = formatEventTimeLabel(event, timeLocale);
                           const chipLabel = `${event.summary}${ageSuffix}`;
-                          const isTimedEvent = Boolean(timeLabel);
-
-                          return (
-                            <div
-                              key={`measure-${idx}`}
-                              data-month-measure-item="true"
-                              data-month-measure-event="true"
-                              className={`w-full flex-none overflow-hidden text-[10px] font-bold leading-tight ${isRtl ? 'text-right' : 'text-left'} ${
-                                isTimedEvent
-                                  ? 'rounded-sm px-0.5 py-0.5 text-slate-700 dark:text-slate-100'
-                                  : 'rounded-md px-1.5 py-0.5 text-white'
-                              }`}
-                              style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
-                            >
-                              {isTimedEvent ? (
-                                <div className="flex w-full">
-                                  <div className={`inline-flex min-w-0 items-center gap-1 ${isRtl ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
-                                    <span
-                                      className="h-2 w-2 shrink-0 rounded-full"
-                                      style={{ backgroundColor: eventColor }}
-                                    />
-                                    <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
-                                      {timeLabel}
-                                    </span>
-                                    <span className="min-w-0 truncate">{chipLabel}</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="truncate">{chipLabel}</div>
-                              )}
-                            </div>
-                          );
+                          return renderCompactEventChip({
+                            event,
+                            chipLabel,
+                            eventColor,
+                            timeLabel,
+                            isRtl,
+                            measure: true,
+                            chipKey: `measure-${idx}`,
+                          });
                         })}
                       </div>
                     </div>
-                    <div className="flex min-h-0 w-full flex-col gap-0.5 overflow-hidden">
+                    <div className={`${MONTH_EVENT_STACK_CLASS} overflow-hidden`}>
                     {(() => {
                       const monthParshaLabel =
                         showWeeklyParsha && dayObj.isShabbat
@@ -1244,22 +1355,19 @@ export function MonthCalendarView({
                       }
 
                       return (
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
+                        renderCompactHebcalChip({
+                          label: monthParshaLabel,
+                          isRtl,
+                          tone: 'amber',
+                          onClick: () => {
                             const detail = getShabbatParshaDetail(dayObj.gDate, {
                               locale: getParshaLocale(isRtl),
                             });
                             if (detail) {
                               handleHebcalDetailsClick(t('parshaDetails'), [detail]);
                             }
-                          }}
-                          className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 transition-all hover:opacity-80 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
-                          title={monthParshaLabel}
-                        >
-                          <div className="truncate">{monthParshaLabel}</div>
-                        </button>
+                          },
+                        })
                       );
                     })()}
                     {(() => {
@@ -1280,10 +1388,11 @@ export function MonthCalendarView({
                       }
 
                       return (
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
+                        renderCompactHebcalChip({
+                          label: monthHolidayLabel,
+                          isRtl,
+                          tone: 'rose',
+                          onClick: () => {
                             const details = getHolidayDetails(dayObj.gDate, {
                               includeFasts: showFasts,
                               includeHolidayEvents: showHolidayEvents,
@@ -1295,12 +1404,8 @@ export function MonthCalendarView({
                             if (details.length > 0) {
                               handleHebcalDetailsClick(t('holidayDetails'), details);
                             }
-                          }}
-                          className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 transition-all hover:opacity-80 dark:bg-rose-950/25 dark:text-rose-200 dark:ring-rose-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
-                          title={monthHolidayLabel}
-                        >
-                          <div className="truncate">{monthHolidayLabel}</div>
-                        </button>
+                          },
+                        })
                       );
                     })()}
                     {dayObj.events.slice(0, visibleEventCounts[getMonthDayKey(dayObj)] ?? maxVisibleMonthEvents).map((event, idx) => {
@@ -1308,42 +1413,15 @@ export function MonthCalendarView({
                       const eventColor = getEventColor(event);
                       const timeLabel = formatEventTimeLabel(event, timeLocale);
                       const chipLabel = `${event.summary}${ageSuffix}`;
-                      const isTimedEvent = Boolean(timeLabel);
-                      return (
-                        <button
-                          key={idx}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEventClick(event);
-                          }}
-                          type="button"
-                          className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${isRtl ? 'text-right' : 'text-left'} ${
-                            isTimedEvent
-                              ? 'rounded-sm px-0.5 py-0.5 text-slate-700 hover:bg-slate-100/80 dark:text-slate-100 dark:hover:bg-slate-800/70'
-                              : 'rounded-md px-1.5 py-0.5 text-white hover:brightness-95'
-                          }`}
-                          style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
-                          title={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
-                          aria-label={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
-                        >
-                          {isTimedEvent ? (
-                            <div className="flex w-full">
-                              <div className={`inline-flex min-w-0 items-center gap-1 ${isRtl ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
-                                <span
-                                  className="h-2 w-2 shrink-0 rounded-full"
-                                  style={{ backgroundColor: eventColor }}
-                                />
-                                <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
-                                  {timeLabel}
-                                </span>
-                                <span className="min-w-0 truncate">{chipLabel}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="truncate">{chipLabel}</div>
-                          )}
-                        </button>
-                      );
+                      return renderCompactEventChip({
+                        event,
+                        chipLabel,
+                        eventColor,
+                        timeLabel,
+                        isRtl,
+                        chipKey: String(idx),
+                        onClick: () => handleEventClick(event),
+                      });
                     })}
                     </div>
                     {dayObj.events.length > (visibleEventCounts[getMonthDayKey(dayObj)] ?? maxVisibleMonthEvents) && (
@@ -1353,7 +1431,7 @@ export function MonthCalendarView({
                           event.stopPropagation();
                           handleOverflowDayOpen(dayObj, event);
                         }}
-                        className="block w-full overflow-hidden truncate rounded-sm px-0.5 py-0.5 text-right text-[10px] font-bold leading-tight whitespace-nowrap text-[#1a73e8] translate-y-px hover:underline dark:text-blue-300"
+                        className={MORE_EVENTS_BUTTON_CLASS}
                         aria-label={t('moreEvents', {
                           count:
                             dayObj.events.length -
@@ -1667,7 +1745,7 @@ export function DayEventsPopover({
 
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const isMobileViewport = viewportWidth < 768;
+    const isMobileViewport = viewportWidth < MOBILE_VIEWPORT_BREAKPOINT;
     const anchorRect = overflowDay.anchorRect;
     const width = Math.min(
       overflowPopoverWidth,
@@ -1798,28 +1876,28 @@ export function DayEventsPopover({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-0 pb-0.5 pt-0.5">
-            <div className="flex min-h-0 w-full flex-col gap-0.5">
+            <div className={MONTH_EVENT_STACK_CLASS}>
               {popoverParshaLabel ? (
-                <button
-                  type="button"
-                  onClick={() => {
+                renderCompactHebcalChip({
+                  label: popoverParshaLabel,
+                  isRtl,
+                  tone: 'amber',
+                  onClick: () => {
                     const detail = getShabbatParshaDetail(overflowDay.gDate, {
                       locale: getParshaLocale(isRtl),
                     });
                     if (detail) {
                       handleHebcalDetailsClick(parshaDetailsLabel, [detail]);
                     }
-                  }}
-                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 transition-all hover:opacity-80 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
-                  title={popoverParshaLabel}
-                >
-                  <div className="truncate">{popoverParshaLabel}</div>
-                </button>
+                  },
+                })
               ) : null}
               {popoverHolidayLabel ? (
-                <button
-                  type="button"
-                  onClick={() => {
+                renderCompactHebcalChip({
+                  label: popoverHolidayLabel,
+                  isRtl,
+                  tone: 'rose',
+                  onClick: () => {
                     const details = getHolidayDetails(overflowDay.gDate, {
                       includeFasts: showFasts,
                       includeHolidayEvents: showHolidayEvents,
@@ -1831,52 +1909,23 @@ export function DayEventsPopover({
                     if (details.length > 0) {
                       handleHebcalDetailsClick(holidayDetailsLabel, details);
                     }
-                  }}
-                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 transition-all hover:opacity-80 dark:bg-rose-950/25 dark:text-rose-200 dark:ring-rose-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
-                  title={popoverHolidayLabel}
-                >
-                  <div className="truncate">{popoverHolidayLabel}</div>
-                </button>
+                  },
+                })
               ) : null}
               {overflowDay.events.map((event, idx) => {
                 const ageSuffix = getEventAgeSuffix(event, overflowDay.hYear, showEventAges);
                 const eventColor = getEventColor(event);
                 const timeLabel = formatEventTimeLabel(event, isRtl ? 'he-IL' : 'en-US');
                 const chipLabel = `${event.summary}${ageSuffix}`;
-                const isTimedEvent = Boolean(timeLabel);
-
-                return (
-                  <button
-                    key={`${event.id || event.summary}-${idx}`}
-                    type="button"
-                    onClick={() => handleOverflowEventClick(event)}
-                    className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${isRtl ? 'text-right' : 'text-left'} ${
-                      isTimedEvent
-                        ? 'rounded-sm px-0.5 py-0.5 text-slate-700 hover:bg-slate-100/80 dark:text-slate-100 dark:hover:bg-slate-800/70'
-                        : 'rounded-md px-1.5 py-0.5 text-white hover:brightness-95'
-                    }`}
-                    style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
-                    title={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
-                    aria-label={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
-                  >
-                    {isTimedEvent ? (
-                      <div className="flex w-full">
-                        <div className={`inline-flex min-w-0 items-center gap-1 ${isRtl ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
-                          <span
-                            className="h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: eventColor }}
-                          />
-                          <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
-                            {timeLabel}
-                          </span>
-                          <span className="min-w-0 truncate">{chipLabel}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="truncate">{chipLabel}</div>
-                    )}
-                  </button>
-                );
+                return renderCompactEventChip({
+                  event,
+                  chipLabel,
+                  eventColor,
+                  timeLabel,
+                  isRtl,
+                  chipKey: `${event.id || event.summary}-${idx}`,
+                  onClick: () => handleOverflowEventClick(event),
+                });
               })}
             </div>
           </div>
