@@ -740,7 +740,10 @@ export default function MyCalendar() {
           handleOpenLanding={handleOpenLanding}
         />
 
-        <main className="min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_32%),linear-gradient(180deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8">
+        <main
+          data-testid="calendar-main"
+          className="min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(0,56,168,0.08),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.94))] px-4 pb-4 pt-0 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_32%),linear-gradient(180deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.96))] md:px-6 md:pb-6 md:pt-1 xl:px-8 xl:pb-8"
+        >
           <div className="mx-auto flex h-full min-h-0 w-full max-w-[1680px] flex-col gap-3">
             <CalendarToolbar
               isRtl={isRtl}
@@ -773,7 +776,10 @@ export default function MyCalendar() {
               isSearchActive={isSearchActive}
             />
 
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] dark:border-slate-700/60 dark:bg-slate-900">
+            <div
+              data-testid="calendar-surface"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] dark:border-slate-700/60 dark:bg-slate-900"
+            >
               {isSearchActive ? (
                 <SearchResultsView
                   t={t}

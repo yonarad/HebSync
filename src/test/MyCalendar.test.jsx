@@ -854,4 +854,95 @@ describe('My Calendar Component', () => {
     fireEvent.click(screen.getByText('login'));
     expect(await screen.findByText('connect')).toBeInTheDocument();
   });
+
+  it('should open event details when clicking an event chip in month view and not open add event modal', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-05-18T12:00:00Z'));
+    try {
+      vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+        {
+          id: 'cal1',
+          summary: 'HebSync',
+          accessRole: 'owner',
+          description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+        },
+      ]);
+      vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+        {
+          id: 'evt1',
+          summary: 'Month Event 1',
+          description: 'Event description',
+          calendarId: 'cal1',
+          start: { date: '2026-05-18' },
+          extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
+        },
+      ]);
+
+      renderDashboard();
+
+      // Find the event chip
+      const eventChips = await screen.findAllByTestId('event-chip');
+      expect(eventChips[0]).toBeInTheDocument();
+      expect(eventChips[0]).toHaveTextContent('Month Event 1');
+
+      // Click the event chip
+      fireEvent.click(eventChips[0]);
+
+      // Verify event details modal is open
+      expect(await screen.findByText('eventDetails')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: /Month Event 1/ })).toBeInTheDocument();
+
+      // Verify add event modal did NOT open
+      expect(screen.queryByText('addEventTitle')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('should open holiday details when clicking a hebcal holiday chip in month view and not open add event modal', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-05-18T12:00:00Z'));
+    try {
+      localStorage.setItem(
+        'hebsync.calendar.displayOptions',
+        JSON.stringify({
+          showGregorian: true,
+          showEventAges: true,
+          showFasts: true,
+          showHolidayEvents: true,
+          showNationalHolidays: true,
+          showRoshChodesh: true,
+          showSpecialShabbat: true,
+          showWeeklyParsha: true,
+        }),
+      );
+
+      vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+        {
+          id: 'cal1',
+          summary: 'HebSync',
+          accessRole: 'owner',
+          description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+        },
+      ]);
+      vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([]);
+
+      renderDashboard();
+
+      // Find the holiday chip
+      const holidayChips = await screen.findAllByTestId('hebcal-chip');
+      expect(holidayChips[0]).toBeInTheDocument();
+
+      // Click the holiday chip
+      fireEvent.click(holidayChips[0]);
+
+      // Verify day/holiday details modal is open
+      expect(await screen.findByText('Day details')).toBeInTheDocument();
+
+      // Verify add event modal did NOT open
+      expect(screen.queryByText('addEventTitle')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
