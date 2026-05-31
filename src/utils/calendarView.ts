@@ -270,22 +270,29 @@ export function getOverflowPopoverLayout({
 }): OverflowPopoverLayout {
   const overflowAnchorRect = overflowDay?.anchorRect;
   const overflowEventCount = overflowDay?.events?.length ?? 0;
-  const overflowPopoverHeight = Math.min(
+  const overflowPopoverMaxHeight = Math.min(
     viewportHeight - overflowPopoverMargin * 2,
-    56 + overflowEventCount * 44,
+    480,
   );
-  const overflowPreferredTop = (overflowAnchorRect?.bottom ?? 120) + 8;
-  const overflowAboveTop = (overflowAnchorRect?.top ?? 120) - overflowPopoverHeight - 8;
-  const overflowTop = Math.max(
-    overflowPopoverMargin,
-    Math.min(
-      overflowPreferredTop + overflowPopoverHeight <=
-        viewportHeight - overflowPopoverMargin
-        ? overflowPreferredTop
-        : overflowAboveTop,
-      viewportHeight - overflowPopoverHeight - overflowPopoverMargin,
-    ),
+  const overflowPopoverHeight = Math.min(
+    overflowPopoverMaxHeight,
+    96 + overflowEventCount * 32,
   );
+  const anchorTop = overflowAnchorRect?.top ?? 120;
+  const anchorBottom = overflowAnchorRect?.bottom ?? 120;
+  const fitsBelow = anchorTop + overflowPopoverHeight <= viewportHeight - overflowPopoverMargin;
+  const fitsAbove = anchorBottom - overflowPopoverHeight >= overflowPopoverMargin;
+  const overflowTop = fitsBelow
+    ? anchorTop
+    : fitsAbove
+      ? anchorBottom - overflowPopoverHeight
+      : Math.max(
+          overflowPopoverMargin,
+          Math.min(
+            anchorTop,
+            viewportHeight - overflowPopoverHeight - overflowPopoverMargin,
+          ),
+        );
   const overflowLeft = Math.max(
     overflowPopoverMargin,
     Math.min(
@@ -298,6 +305,7 @@ export function getOverflowPopoverLayout({
   return {
     overflowPopoverWidth,
     overflowPopoverMargin,
+    overflowPopoverMaxHeight,
     overflowTop,
     overflowLeft,
   };

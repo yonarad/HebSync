@@ -333,7 +333,8 @@ export default function MyCalendar() {
     dayObj: OverflowDay,
     event: React.MouseEvent<HTMLButtonElement>,
   ): void => {
-    const rect = event.currentTarget.getBoundingClientRect();
+    const dayCell = event.currentTarget.closest('[data-calendar-day-cell="true"]');
+    const rect = (dayCell instanceof HTMLElement ? dayCell : event.currentTarget).getBoundingClientRect();
     setOverflowDay({
       ...dayObj,
       anchorRect: {
@@ -469,12 +470,17 @@ export default function MyCalendar() {
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900;
   const isMobileViewport = viewportWidth < 768;
   const maxVisibleMonthEvents = isMobileViewport ? 3 : 4;
-  const { overflowPopoverWidth, overflowPopoverMargin, overflowTop, overflowLeft } =
-    getOverflowPopoverLayout({
-      overflowDay,
-      viewportWidth,
-      viewportHeight,
-    });
+  const {
+    overflowPopoverWidth,
+    overflowPopoverMargin,
+    overflowPopoverMaxHeight,
+    overflowTop,
+    overflowLeft,
+  } = getOverflowPopoverLayout({
+    overflowDay,
+    viewportWidth,
+    viewportHeight,
+  });
   const scheduleDays = buildScheduleDays(days, {
     showFasts,
     showHolidayEvents,
@@ -850,15 +856,24 @@ export default function MyCalendar() {
         isRtl={isRtl}
         closeDayEventsLabel={closeDayEventsLabel}
         dayEventsDialogLabel={dayEventsDialogLabel}
+        holidayDetailsLabel={t('holidayDetails')}
+        parshaDetailsLabel={t('parshaDetails')}
         overflowPopoverWidth={overflowPopoverWidth}
         overflowPopoverMargin={overflowPopoverMargin}
+        overflowPopoverMaxHeight={overflowPopoverMaxHeight}
         overflowTop={overflowTop}
         overflowLeft={overflowLeft}
         showEventAges={showEventAges}
         showGregorian={showGregorian}
+        showFasts={showFasts}
+        showHolidayEvents={showHolidayEvents}
+        showNationalHolidays={showNationalHolidays}
+        showRoshChodesh={showRoshChodesh}
+        showWeeklyParsha={showWeeklyParsha}
         getEventColor={getEventColor}
         setOverflowDay={setOverflowDay}
         handleOverflowEventClick={handleOverflowEventClick}
+        handleHebcalDetailsClick={handleHebcalDetailsClick}
       />
 
       {selectedHebcalDetails && (

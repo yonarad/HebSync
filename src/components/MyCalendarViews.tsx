@@ -911,6 +911,7 @@ export function MonthCalendarView({
                 <div
                   role="button"
                   tabIndex={0}
+                  data-calendar-day-cell="true"
                   onClick={() => handleCreateFromDay(dayObj)}
                   onKeyDown={(event) => activateOnKeyboard(event, () => handleCreateFromDay(dayObj))}
                   className={`flex h-full min-h-0 cursor-pointer flex-col overflow-hidden px-1 py-1 transition-colors hover:bg-slate-50/80 md:px-2 md:py-1.5 dark:hover:bg-slate-800/40 ${dayObj.isToday ? 'bg-blue-50/60 dark:bg-blue-950/20' : ''}`}
@@ -1316,15 +1317,24 @@ interface DayEventsPopoverProps {
   isRtl: boolean;
   closeDayEventsLabel: string;
   dayEventsDialogLabel: string;
+  holidayDetailsLabel: string;
+  parshaDetailsLabel: string;
   overflowPopoverWidth: number;
   overflowPopoverMargin: number;
+  overflowPopoverMaxHeight: number;
   overflowTop: number;
   overflowLeft: number;
   showEventAges: boolean;
   showGregorian: boolean;
+  showFasts: boolean;
+  showHolidayEvents: boolean;
+  showNationalHolidays: boolean;
+  showRoshChodesh: boolean;
+  showWeeklyParsha: boolean;
   getEventColor: (event: GoogleCalendarEvent) => string;
   setOverflowDay: React.Dispatch<React.SetStateAction<OverflowDay | null>>;
   handleOverflowEventClick: (event: GoogleCalendarEvent) => void;
+  handleHebcalDetailsClick: (title: string, details: HebcalDisplayDetail[]) => void;
 }
 
 export function DayEventsPopover({
@@ -1332,17 +1342,42 @@ export function DayEventsPopover({
   isRtl,
   closeDayEventsLabel,
   dayEventsDialogLabel,
+  holidayDetailsLabel,
+  parshaDetailsLabel,
   overflowPopoverWidth,
   overflowPopoverMargin,
+  overflowPopoverMaxHeight,
   overflowTop,
   overflowLeft,
   showEventAges,
   showGregorian,
+  showFasts,
+  showHolidayEvents,
+  showNationalHolidays,
+  showRoshChodesh,
+  showWeeklyParsha,
   getEventColor,
   setOverflowDay,
   handleOverflowEventClick,
+  handleHebcalDetailsClick,
 }: DayEventsPopoverProps) {
   if (!overflowDay) return null;
+  const popoverParshaLabel =
+    showWeeklyParsha && overflowDay.isShabbat
+      ? getShabbatParshaName(overflowDay.gDate, {
+          locale: getParshaLocale(isRtl),
+        })
+      : null;
+  const popoverHolidayLabel =
+    showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+      ? getHolidayLabels(overflowDay.gDate, {
+          includeFasts: showFasts,
+          includeHolidayEvents: showHolidayEvents,
+          includeNationalHolidays: showNationalHolidays,
+          includeRoshChodesh: showRoshChodesh,
+          locale: getHolidayLocale(isRtl),
+        }).join(' ֲ· ')
+      : '';
 
   return (
     <div className="fixed inset-0 z-40" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -1356,78 +1391,117 @@ export function DayEventsPopover({
         role="dialog"
         aria-modal="true"
         aria-label={dayEventsDialogLabel}
-        className="absolute z-10 overflow-hidden rounded-[0.9rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+        className="absolute z-10 flex overflow-hidden rounded-[0.9rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
         style={{
           width: `${overflowPopoverWidth}px`,
           maxWidth: `calc(100vw - ${overflowPopoverMargin * 2}px)`,
+          maxHeight: `${overflowPopoverMaxHeight}px`,
           top: `${overflowTop}px`,
           left: `${overflowLeft}px`,
         }}
       >
-        <div className="flex items-start justify-between border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
-          <button
-            type="button"
-            onClick={() => setOverflowDay(null)}
-            className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-          <div className="text-center">
-            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
-              {showGregorian ? `${overflowDay.gDay}` : ''}
+        <div className="flex min-h-0 w-full flex-1 flex-col">
+          <div className="flex items-start justify-between border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setOverflowDay(null)}
+              className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+            <div className="text-center">
+              <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                {showGregorian ? `${overflowDay.gDay}` : ''}
+              </div>
+              <div className="mt-0.5 text-lg font-black text-slate-900 dark:text-slate-50">
+                {overflowDay.hDayGematriya}
+              </div>
             </div>
-            <div className="mt-0.5 text-lg font-black text-slate-900 dark:text-slate-50">
-              {overflowDay.hDayGematriya}
+            <div className="w-5" />
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5">
+            <div className="space-y-1">
+              {popoverParshaLabel ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const detail = getShabbatParshaDetail(overflowDay.gDate, {
+                      locale: getParshaLocale(isRtl),
+                    });
+                    if (detail) {
+                      handleHebcalDetailsClick(parshaDetailsLabel, [detail]);
+                    }
+                  }}
+                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-1 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 transition-all hover:opacity-80 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
+                  title={popoverParshaLabel}
+                >
+                  <div className="truncate">{popoverParshaLabel}</div>
+                </button>
+              ) : null}
+              {popoverHolidayLabel ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const details = getHolidayDetails(overflowDay.gDate, {
+                      includeFasts: showFasts,
+                      includeHolidayEvents: showHolidayEvents,
+                      includeNationalHolidays: showNationalHolidays,
+                      includeRoshChodesh: showRoshChodesh,
+                      locale: getHolidayLocale(isRtl),
+                    });
+                    if (details.length > 0) {
+                      handleHebcalDetailsClick(holidayDetailsLabel, details);
+                    }
+                  }}
+                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-1 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 transition-all hover:opacity-80 dark:bg-rose-950/25 dark:text-rose-200 dark:ring-rose-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
+                  title={popoverHolidayLabel}
+                >
+                  <div className="truncate">{popoverHolidayLabel}</div>
+                </button>
+              ) : null}
+              {overflowDay.events.map((event, idx) => {
+                const ageSuffix = getEventAgeSuffix(event, overflowDay.hYear, showEventAges);
+                const eventColor = getEventColor(event);
+                const timeLabel = formatEventTimeLabel(event, isRtl ? 'he-IL' : 'en-US');
+                const chipLabel = `${event.summary}${ageSuffix}`;
+                const isTimedEvent = Boolean(timeLabel);
+
+                return (
+                  <button
+                    key={`${event.id || event.summary}-${idx}`}
+                    type="button"
+                    onClick={() => handleOverflowEventClick(event)}
+                    className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${isRtl ? 'text-right' : 'text-left'} ${
+                      isTimedEvent
+                        ? 'rounded-sm px-0.5 py-0.5 text-slate-700 hover:bg-slate-100/80 dark:text-slate-100 dark:hover:bg-slate-800/70'
+                        : 'rounded-md px-1.5 py-1 text-white hover:brightness-95'
+                    }`}
+                    style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
+                    title={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
+                    aria-label={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
+                  >
+                    {isTimedEvent ? (
+                      <div className="flex w-full">
+                        <div className={`inline-flex min-w-0 items-center gap-1 ${isRtl ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: eventColor }}
+                          />
+                          <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                            {timeLabel}
+                          </span>
+                          <span className="min-w-0 truncate">{chipLabel}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="truncate">{chipLabel}</div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="w-5" />
-        </div>
-
-        <div className="space-y-1 px-1.5 py-1.5">
-          {overflowDay.events.map((event, idx) => {
-            const props = event.extendedProperties?.private || {};
-            const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
-            const ageSuffix = getEventAgeSuffix(event, overflowDay.hYear, showEventAges);
-            const eventColor = getEventColor(event);
-            const start = event.start?.dateTime || event.start?.date;
-            const timeLabel =
-              start && event.start?.dateTime
-                ? new Date(start).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : null;
-
-            return (
-              <button
-                key={`${event.id || event.summary}-${idx}`}
-                type="button"
-                onClick={() => handleOverflowEventClick(event)}
-                className={`w-full overflow-hidden rounded-md border text-right transition-all ${
-                  isHebCal
-                    ? 'border-transparent text-white hover:brightness-95'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700'
-                }`}
-                style={
-                  isHebCal
-                    ? { backgroundColor: eventColor }
-                    : {
-                        backgroundColor: hexToRgba(eventColor, 0.22),
-                        boxShadow: `inset 3px 0 0 ${eventColor}`,
-                      }
-                }
-              >
-                <div className="px-2 py-1.5">
-                  <div className="truncate text-[10px] font-bold leading-4">{event.summary}{ageSuffix}</div>
-                  {timeLabel && (
-                    <div className={`mt-0.5 text-[9px] font-semibold ${isHebCal ? 'text-white/85' : 'text-slate-400 dark:text-slate-300'}`}>
-                      {timeLabel}
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
         </div>
       </div>
     </div>

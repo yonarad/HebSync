@@ -5,6 +5,7 @@ import {
   buildScheduleDays,
   getEventOccurrenceHebrewYear,
   getHebrewMonthGregorianRange,
+  getOverflowPopoverLayout,
 } from '../utils/calendarView';
 
 describe('getHebrewMonthGregorianRange', () => {
@@ -200,5 +201,46 @@ describe('day event sorting', () => {
           day.gDate.getDate() === 12,
       ),
     ).toBe(true);
+  });
+});
+
+describe('overflow popover layout', () => {
+  it('keeps a tall popover near the day cell instead of jumping far upward', () => {
+    const layout = getOverflowPopoverLayout({
+      overflowDay: {
+        hDay: 1,
+        hDayGematriya: 'א',
+        hMonthName: 'Sivan',
+        gDay: 25,
+        gMonthLabel: 'May',
+        gDate: new Date('2026-05-25T12:00:00'),
+        events: Array.from({ length: 20 }, (_, index) => ({
+          id: `event-${index}`,
+          summary: `Event ${index}`,
+          start: {
+            dateTime: `2026-05-25T0${index % 9}:00:00.000Z`,
+          },
+          end: {
+            dateTime: `2026-05-25T0${(index % 9) + 1}:00:00.000Z`,
+          },
+        })),
+        hYear: 5786,
+        isToday: false,
+        isShabbat: false,
+        weekday: 1,
+        anchorRect: {
+          top: 640,
+          left: 500,
+          right: 620,
+          bottom: 760,
+        },
+      },
+      viewportWidth: 1280,
+      viewportHeight: 900,
+    });
+
+    expect(layout.overflowPopoverMaxHeight).toBe(480);
+    expect(layout.overflowTop).toBe(280);
+    expect(layout.overflowLeft).toBe(400);
   });
 });

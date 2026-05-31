@@ -175,6 +175,7 @@ export interface HebrewMonthMeta {
 export interface OverflowPopoverLayout {
   overflowPopoverWidth: number;
   overflowPopoverMargin: number;
+  overflowPopoverMaxHeight: number;
   overflowTop: number;
   overflowLeft: number;
 }
