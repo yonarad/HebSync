@@ -67,6 +67,15 @@ vi.mock('../utils/googleApi', () => ({
 describe('useMyCalendarData', () => {
   const t = (key: string, options?: Record<string, unknown>) =>
     options?.message ? `${key}:${options.message}` : key;
+  const createDeferred = <T,>() => {
+    let resolve!: (value: T) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -249,5 +258,103 @@ describe('useMyCalendarData', () => {
     });
 
     expect(result.current.showWeeklyParsha).toBe(true);
+  });
+
+  it('ignores stale calendar responses when selection changes mid-request', async () => {
+    const firstRangeRequest = createDeferred<Array<{ id: string; calendarId: string }>>();
+    const secondRangeRequest = createDeferred<Array<{ id: string; calendarId: string }>>();
+    const firstEventsRequest = createDeferred<
+      Array<{
+        id: string;
+        calendarId: string;
+        summary: string;
+        start: { date: string };
+        extendedProperties: { private: { eventID: string; originalHebrewYear: string } };
+      }>
+    >();
+    const secondEventsRequest = createDeferred<
+      Array<{
+        id: string;
+        calendarId: string;
+        summary: string;
+        start: { date: string };
+        extendedProperties: { private: { eventID: string; originalHebrewYear: string } };
+      }>
+    >();
+
+    vi.mocked(fetchEventsInRange)
+      .mockImplementationOnce(async () => firstRangeRequest.promise as never)
+      .mockImplementationOnce(async () => secondRangeRequest.promise as never);
+    vi.mocked(fetchMyAppEvents)
+      .mockImplementationOnce(async () => firstEventsRequest.promise as never)
+      .mockImplementationOnce(async () => secondEventsRequest.promise as never);
+
+    const { result } = renderHook(() => useMyCalendarData({ t }));
+
+    await waitFor(() => {
+      expect(result.current.selectedCalendarIds).toEqual(['heb']);
+    });
+
+    act(() => {
+      result.current.toggleCalendar('other');
+    });
+
+    await waitFor(() => {
+      expect(result.current.selectedCalendarIds).toEqual(['heb', 'other']);
+    });
+
+    await act(async () => {
+      firstRangeRequest.resolve([{ id: 'stale-range', calendarId: 'heb' }]);
+      firstEventsRequest.resolve([
+        {
+          id: 'stale-list',
+          calendarId: 'heb',
+          summary: 'Old Event',
+          start: { date: '2026-05-10' },
+          extendedProperties: {
+            private: {
+              eventID: 'old',
+              originalHebrewYear: '5780',
+            },
+          },
+        },
+      ]);
+      await Promise.resolve();
+    });
+
+    expect(result.current.calendarEvents).toEqual([]);
+    expect(result.current.myEvents).toEqual([]);
+
+    await act(async () => {
+      secondRangeRequest.resolve([{ id: 'fresh-range', calendarId: 'other' }]);
+      secondEventsRequest.resolve([
+        {
+          id: 'fresh-list',
+          calendarId: 'other',
+          summary: 'Fresh Event',
+          start: { date: '2026-05-11' },
+          extendedProperties: {
+            private: {
+              eventID: 'fresh',
+              originalHebrewYear: '5781',
+            },
+          },
+        },
+      ]);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.calendarEvents).toEqual([
+        { id: 'fresh-range', calendarId: 'other' },
+      ]);
+      expect(result.current.myEvents).toEqual([
+        expect.objectContaining({
+          id: 'fresh-list',
+          calendarId: 'other',
+          title: 'Fresh Event',
+        }),
+      ]);
+    });
   });
 });

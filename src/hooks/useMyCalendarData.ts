@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HDate } from '@hebcal/core';
 import { getHebrewMonthGregorianRange } from '../utils/calendarView';
 import {
@@ -170,6 +170,9 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     if (typeof window === 'undefined') return 'month';
     return window.innerWidth < 768 ? 'schedule' : 'month';
   });
+  const calendarLoadRequestIdRef = useRef(0);
+  const calendarDataRequestIdRef = useRef(0);
+  const eventsLoadRequestIdRef = useRef(0);
 
   const isFetchingGoogle = isGoogleLoadingCount > 0;
   const isAllCalendarsMode = usesAllCalendarsMode(scopeMode);
@@ -210,6 +213,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   }, []);
 
   const loadCalendars = async (): Promise<void> => {
+    const requestId = ++calendarLoadRequestIdRef.current;
     setIsGoogleLoadingCount((count) => count + 1);
     try {
       const [fetchedCalendars, googleColors] = await Promise.all([
@@ -230,6 +234,9 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
           : savedSelectedCalendarIds.filter((calendarId) =>
               calendarsWithColors.some((calendar) => calendar.id === calendarId),
             );
+      if (requestId !== calendarLoadRequestIdRef.current) {
+        return;
+      }
       setCalendars(calendarsWithColors);
       setGoogleCalendarColors(googleColors);
       setSelectedCalendarIds(nextSelectedCalendarIds);
@@ -302,6 +309,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   }, []);
 
   const loadCalendarData = async (): Promise<void> => {
+    const requestId = ++calendarDataRequestIdRef.current;
     setIsCalendarLoading(true);
     try {
       const { timeMin, timeMax } = getHebrewMonthGregorianRange(viewHDate);
@@ -310,17 +318,23 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
         timeMax,
         selectedCalendarIds,
       );
+      if (requestId !== calendarDataRequestIdRef.current) {
+        return;
+      }
       setCalendarEvents(events);
     } catch (error) {
       if (isAuthError(error)) return;
       console.error(error);
     } finally {
-      setIsCalendarLoading(false);
-      setHasLoadedCalendarData(true);
+      if (requestId === calendarDataRequestIdRef.current) {
+        setIsCalendarLoading(false);
+        setHasLoadedCalendarData(true);
+      }
     }
   };
 
   const loadEvents = async (): Promise<void> => {
+    const requestId = ++eventsLoadRequestIdRef.current;
     setIsLoading(true);
     setIsGoogleLoadingCount((count) => count + 1);
     try {
@@ -340,6 +354,9 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
           date: item.start?.date || t('unknownDate'),
         };
       });
+      if (requestId !== eventsLoadRequestIdRef.current) {
+        return;
+      }
       setMyEvents(formattedEvents);
     } catch (error) {
       console.error(error);
@@ -347,7 +364,9 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
         setIsAuthenticated(false);
       }
     } finally {
-      setIsLoading(false);
+      if (requestId === eventsLoadRequestIdRef.current) {
+        setIsLoading(false);
+      }
       setIsGoogleLoadingCount((count) => Math.max(0, count - 1));
     }
   };
@@ -359,6 +378,10 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
         loadCalendarData();
         loadEvents();
       } else {
+        calendarDataRequestIdRef.current += 1;
+        eventsLoadRequestIdRef.current += 1;
+        setIsCalendarLoading(false);
+        setIsLoading(false);
         setCalendarEvents([]);
         setMyEvents([]);
         setHasLoadedCalendarData(true);
