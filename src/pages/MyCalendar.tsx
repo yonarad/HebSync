@@ -76,6 +76,7 @@ function formatHebcalCategory(
     modern: 'hebcalCategoryModern',
     minor: 'hebcalCategoryMinor',
     parashat: 'hebcalCategoryParashat',
+    shabbat: 'hebcalCategoryShabbat',
   };
 
   const translationKey = categoryKeyMap[category.toLowerCase()];
@@ -139,6 +140,7 @@ export default function MyCalendar() {
     setShowLoginModal,
     setShowNationalHolidays,
     setShowRoshChodesh,
+    setShowSpecialShabbat,
     setShowWeeklyParsha,
     setViewHDate,
     setViewMode,
@@ -148,6 +150,7 @@ export default function MyCalendar() {
     showHolidayEvents,
     showNationalHolidays,
     showRoshChodesh,
+    showSpecialShabbat,
     showWeeklyParsha,
     showLoginModal,
     toggleCalendar,
@@ -486,6 +489,7 @@ export default function MyCalendar() {
     showHolidayEvents,
     showNationalHolidays,
     showRoshChodesh,
+    showSpecialShabbat,
     showWeeklyParsha,
   });
   const isScheduleLoading =
@@ -751,12 +755,14 @@ export default function MyCalendar() {
               showHolidayEvents={showHolidayEvents}
               showNationalHolidays={showNationalHolidays}
               showRoshChodesh={showRoshChodesh}
+              showSpecialShabbat={showSpecialShabbat}
               showWeeklyParsha={showWeeklyParsha}
               setShowEventAges={setShowEventAges}
               setShowFasts={setShowFasts}
               setShowHolidayEvents={setShowHolidayEvents}
               setShowNationalHolidays={setShowNationalHolidays}
               setShowRoshChodesh={setShowRoshChodesh}
+              setShowSpecialShabbat={setShowSpecialShabbat}
               setShowWeeklyParsha={setShowWeeklyParsha}
               setViewMode={setViewMode}
               showGregorian={showGregorian}
@@ -791,6 +797,7 @@ export default function MyCalendar() {
                   showHolidayEvents={showHolidayEvents}
                   showNationalHolidays={showNationalHolidays}
                   showRoshChodesh={showRoshChodesh}
+                  showSpecialShabbat={showSpecialShabbat}
                   showWeeklyParsha={showWeeklyParsha}
                   showGregorian={showGregorian}
                   isMobileViewport={isMobileViewport}
@@ -813,6 +820,7 @@ export default function MyCalendar() {
                   showHolidayEvents={showHolidayEvents}
                   showNationalHolidays={showNationalHolidays}
                   showRoshChodesh={showRoshChodesh}
+                  showSpecialShabbat={showSpecialShabbat}
                   showWeeklyParsha={showWeeklyParsha}
                   showGregorian={showGregorian}
                   scheduleDays={scheduleDays}
@@ -869,6 +877,7 @@ export default function MyCalendar() {
         showHolidayEvents={showHolidayEvents}
         showNationalHolidays={showNationalHolidays}
         showRoshChodesh={showRoshChodesh}
+        showSpecialShabbat={showSpecialShabbat}
         showWeeklyParsha={showWeeklyParsha}
         getEventColor={getEventColor}
         setOverflowDay={setOverflowDay}

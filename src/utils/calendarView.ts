@@ -19,6 +19,7 @@ interface ScheduleDayDisplayOptions {
   showHolidayEvents: boolean;
   showNationalHolidays: boolean;
   showRoshChodesh: boolean;
+  showSpecialShabbat: boolean;
   showWeeklyParsha: boolean;
 }
 
@@ -213,6 +214,7 @@ export function buildScheduleDays(
     showHolidayEvents,
     showNationalHolidays,
     showRoshChodesh,
+    showSpecialShabbat,
     showWeeklyParsha,
   }: ScheduleDayDisplayOptions,
 ): CalendarDay[] {
@@ -227,12 +229,13 @@ export function buildScheduleDays(
       }
 
       const hasHolidayDetails =
-        showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+        showHolidayEvents || showNationalHolidays || showRoshChodesh || showSpecialShabbat || showFasts
           ? getHolidayDetails(dayObj.gDate, {
               includeFasts: showFasts,
               includeHolidayEvents: showHolidayEvents,
               includeNationalHolidays: showNationalHolidays,
               includeRoshChodesh: showRoshChodesh,
+              includeSpecialShabbat: showSpecialShabbat,
             }).length > 0
           : false;
 

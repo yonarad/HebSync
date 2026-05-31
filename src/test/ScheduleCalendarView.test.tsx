@@ -23,6 +23,7 @@ describe('ScheduleCalendarView', () => {
         showHolidayEvents={false}
         showNationalHolidays={false}
         showRoshChodesh={false}
+        showSpecialShabbat={false}
         showWeeklyParsha={false}
         showGregorian={false}
         scheduleDays={[
@@ -89,6 +90,7 @@ describe('ScheduleCalendarView', () => {
         showHolidayEvents={false}
         showNationalHolidays={false}
         showRoshChodesh={false}
+        showSpecialShabbat={false}
         showWeeklyParsha={false}
         showGregorian
         scheduleDays={[

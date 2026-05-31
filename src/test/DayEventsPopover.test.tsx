@@ -56,6 +56,7 @@ describe('DayEventsPopover', () => {
         showHolidayEvents
         showNationalHolidays={false}
         showRoshChodesh
+        showSpecialShabbat={false}
         showWeeklyParsha
         getEventColor={(event) => (event.summary === 'All Day Event' ? '#1a73e8' : '#d93025')}
         setOverflowDay={vi.fn()}

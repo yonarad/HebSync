@@ -166,6 +166,7 @@ interface HolidayLabelOptions {
   includeHolidayEvents?: boolean;
   includeNationalHolidays?: boolean;
   includeRoshChodesh?: boolean;
+  includeSpecialShabbat?: boolean;
   locale?: string;
 }
 
@@ -242,6 +243,7 @@ function shouldIncludeHolidayEvent(
   const isHolidayEvent =
     Boolean(mask & (flags.CHAG | flags.CHOL_HAMOED | flags.EREV)) || isMinorHoliday;
   const isRoshChodesh = Boolean(mask & flags.ROSH_CHODESH);
+  const isSpecialShabbat = Boolean(mask & flags.SPECIAL_SHABBAT);
   const isFast =
     !isYomKippurKatan && Boolean(mask & (flags.MAJOR_FAST | flags.MINOR_FAST));
 
@@ -249,6 +251,7 @@ function shouldIncludeHolidayEvent(
     (options.includeHolidayEvents && isHolidayEvent) ||
     (options.includeNationalHolidays && isNationalHoliday) ||
     (options.includeRoshChodesh && isRoshChodesh) ||
+    (options.includeSpecialShabbat && isSpecialShabbat) ||
     (options.includeFasts && isFast)
   );
 }
@@ -333,6 +336,7 @@ export function getHolidayDetails(
     includeHolidayEvents: options.includeHolidayEvents ?? true,
     includeNationalHolidays: options.includeNationalHolidays ?? true,
     includeRoshChodesh: options.includeRoshChodesh ?? true,
+    includeSpecialShabbat: options.includeSpecialShabbat ?? true,
     locale: options.locale ?? 'he-x-NoNikud',
   };
   const holidays = getHolidaysOnDate(date, normalizedOptions.il) || [];

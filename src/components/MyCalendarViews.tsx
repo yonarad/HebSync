@@ -477,12 +477,14 @@ interface CalendarToolbarProps {
   showHolidayEvents: boolean;
   showNationalHolidays: boolean;
   showRoshChodesh: boolean;
+  showSpecialShabbat: boolean;
   showWeeklyParsha: boolean;
   setShowEventAges: React.Dispatch<React.SetStateAction<boolean>>;
   setShowFasts: React.Dispatch<React.SetStateAction<boolean>>;
   setShowHolidayEvents: React.Dispatch<React.SetStateAction<boolean>>;
   setShowNationalHolidays: React.Dispatch<React.SetStateAction<boolean>>;
   setShowRoshChodesh: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowSpecialShabbat: React.Dispatch<React.SetStateAction<boolean>>;
   setShowWeeklyParsha: React.Dispatch<React.SetStateAction<boolean>>;
   setViewMode: React.Dispatch<React.SetStateAction<CalendarViewMode>>;
   showGregorian: boolean;
@@ -506,12 +508,14 @@ export function CalendarToolbar({
   showHolidayEvents,
   showNationalHolidays,
   showRoshChodesh,
+  showSpecialShabbat,
   showWeeklyParsha,
   setShowEventAges,
   setShowFasts,
   setShowHolidayEvents,
   setShowNationalHolidays,
   setShowRoshChodesh,
+  setShowSpecialShabbat,
   setShowWeeklyParsha,
   setViewMode,
   showGregorian,
@@ -529,6 +533,7 @@ export function CalendarToolbar({
     setShowHolidayEvents(true);
     setShowNationalHolidays(true);
     setShowRoshChodesh(true);
+    setShowSpecialShabbat(true);
     setShowFasts(true);
     setShowWeeklyParsha(true);
   };
@@ -538,6 +543,7 @@ export function CalendarToolbar({
     setShowHolidayEvents(false);
     setShowNationalHolidays(false);
     setShowRoshChodesh(false);
+    setShowSpecialShabbat(false);
     setShowFasts(false);
     setShowWeeklyParsha(false);
   };
@@ -715,6 +721,15 @@ export function CalendarToolbar({
                 <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
                   <input
                     type="checkbox"
+                    checked={showSpecialShabbat}
+                    onChange={(event) => setShowSpecialShabbat(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span>{t('showSpecialShabbat')}</span>
+                </label>
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <input
+                    type="checkbox"
                     checked={showFasts}
                     onChange={(event) => setShowFasts(event.target.checked)}
                     className="h-4 w-4 rounded border-slate-300 text-[#0038A8]"
@@ -865,6 +880,7 @@ interface MonthCalendarViewProps {
   showHolidayEvents: boolean;
   showNationalHolidays: boolean;
   showRoshChodesh: boolean;
+  showSpecialShabbat: boolean;
   showWeeklyParsha: boolean;
   showGregorian: boolean;
   isMobileViewport: boolean;
@@ -891,6 +907,7 @@ export function MonthCalendarView({
   showHolidayEvents,
   showNationalHolidays,
   showRoshChodesh,
+  showSpecialShabbat,
   showWeeklyParsha,
   showGregorian,
   isMobileViewport,
@@ -1072,12 +1089,13 @@ export function MonthCalendarView({
                 >
                   {(() => {
                     const holidayLabel =
-                      showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+                      showHolidayEvents || showNationalHolidays || showRoshChodesh || showSpecialShabbat || showFasts
                         ? getHolidayLabels(dayObj.gDate, {
                             includeFasts: showFasts,
                             includeHolidayEvents: showHolidayEvents,
                             includeNationalHolidays: showNationalHolidays,
                             includeRoshChodesh: showRoshChodesh,
+                            includeSpecialShabbat: showSpecialShabbat,
                             locale: getHolidayLocale(isRtl),
                           }).join(' · ')
                         : '';
@@ -1148,14 +1166,15 @@ export function MonthCalendarView({
                         })()}
                         {(() => {
                           const monthHolidayLabel =
-                            showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+                            showHolidayEvents || showNationalHolidays || showRoshChodesh || showSpecialShabbat || showFasts
                               ? getHolidayLabels(dayObj.gDate, {
                                   includeFasts: showFasts,
                                   includeHolidayEvents: showHolidayEvents,
                                   includeNationalHolidays: showNationalHolidays,
                                   includeRoshChodesh: showRoshChodesh,
+                                  includeSpecialShabbat: showSpecialShabbat,
                                   locale: getHolidayLocale(isRtl),
-                                }).join(' ײ²ֲ· ')
+                                }).join(' · ')
                               : '';
 
                           if (!monthHolidayLabel) {
@@ -1245,14 +1264,15 @@ export function MonthCalendarView({
                     })()}
                     {(() => {
                       const monthHolidayLabel =
-                        showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
-                          ? getHolidayLabels(dayObj.gDate, {
-                              includeFasts: showFasts,
-                              includeHolidayEvents: showHolidayEvents,
-                              includeNationalHolidays: showNationalHolidays,
-                              includeRoshChodesh: showRoshChodesh,
-                              locale: getHolidayLocale(isRtl),
-                            }).join(' ֲ· ')
+                      showHolidayEvents || showNationalHolidays || showRoshChodesh || showSpecialShabbat || showFasts
+                        ? getHolidayLabels(dayObj.gDate, {
+                            includeFasts: showFasts,
+                            includeHolidayEvents: showHolidayEvents,
+                            includeNationalHolidays: showNationalHolidays,
+                            includeRoshChodesh: showRoshChodesh,
+                            includeSpecialShabbat: showSpecialShabbat,
+                            locale: getHolidayLocale(isRtl),
+                          }).join(' · ')
                           : '';
 
                       if (!monthHolidayLabel) {
@@ -1269,6 +1289,7 @@ export function MonthCalendarView({
                               includeHolidayEvents: showHolidayEvents,
                               includeNationalHolidays: showNationalHolidays,
                               includeRoshChodesh: showRoshChodesh,
+                              includeSpecialShabbat: showSpecialShabbat,
                               locale: getHolidayLocale(isRtl),
                             });
                             if (details.length > 0) {
@@ -1373,6 +1394,7 @@ interface ScheduleCalendarViewProps {
   showHolidayEvents: boolean;
   showNationalHolidays: boolean;
   showRoshChodesh: boolean;
+  showSpecialShabbat: boolean;
   showWeeklyParsha: boolean;
   showGregorian: boolean;
   scheduleDays: CalendarDay[];
@@ -1394,6 +1416,7 @@ export function ScheduleCalendarView({
   showHolidayEvents,
   showNationalHolidays,
   showRoshChodesh,
+  showSpecialShabbat,
   showWeeklyParsha,
   showGregorian,
   scheduleDays,
@@ -1419,12 +1442,13 @@ export function ScheduleCalendarView({
             {scheduleDays.map((dayObj) => (
               (() => {
                 const holidayLabel =
-                  showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+                  showHolidayEvents || showNationalHolidays || showRoshChodesh || showSpecialShabbat || showFasts
                     ? getHolidayLabels(dayObj.gDate, {
                         includeFasts: showFasts,
                         includeHolidayEvents: showHolidayEvents,
                         includeNationalHolidays: showNationalHolidays,
                         includeRoshChodesh: showRoshChodesh,
+                        includeSpecialShabbat: showSpecialShabbat,
                         locale: getHolidayLocale(isRtl),
                       }).join(' · ')
                     : '';
@@ -1498,6 +1522,7 @@ export function ScheduleCalendarView({
                           includeHolidayEvents: showHolidayEvents,
                           includeNationalHolidays: showNationalHolidays,
                           includeRoshChodesh: showRoshChodesh,
+                          includeSpecialShabbat: showSpecialShabbat,
                           locale: getHolidayLocale(isRtl),
                         });
                         if (details.length > 0) {
@@ -1591,6 +1616,7 @@ interface DayEventsPopoverProps {
   showHolidayEvents: boolean;
   showNationalHolidays: boolean;
   showRoshChodesh: boolean;
+  showSpecialShabbat: boolean;
   showWeeklyParsha: boolean;
   getEventColor: (event: GoogleCalendarEvent) => string;
   setOverflowDay: React.Dispatch<React.SetStateAction<OverflowDay | null>>;
@@ -1616,6 +1642,7 @@ export function DayEventsPopover({
   showHolidayEvents,
   showNationalHolidays,
   showRoshChodesh,
+  showSpecialShabbat,
   showWeeklyParsha,
   getEventColor,
   setOverflowDay,
@@ -1630,14 +1657,15 @@ export function DayEventsPopover({
         })
       : null;
   const popoverHolidayLabel =
-    showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+    showHolidayEvents || showNationalHolidays || showRoshChodesh || showSpecialShabbat || showFasts
       ? getHolidayLabels(overflowDay.gDate, {
           includeFasts: showFasts,
           includeHolidayEvents: showHolidayEvents,
           includeNationalHolidays: showNationalHolidays,
           includeRoshChodesh: showRoshChodesh,
+          includeSpecialShabbat: showSpecialShabbat,
           locale: getHolidayLocale(isRtl),
-        }).join(' ֲ· ')
+        }).join(' · ')
       : '';
 
   return (
@@ -1709,6 +1737,7 @@ export function DayEventsPopover({
                       includeHolidayEvents: showHolidayEvents,
                       includeNationalHolidays: showNationalHolidays,
                       includeRoshChodesh: showRoshChodesh,
+                      includeSpecialShabbat: showSpecialShabbat,
                       locale: getHolidayLocale(isRtl),
                     });
                     if (details.length > 0) {

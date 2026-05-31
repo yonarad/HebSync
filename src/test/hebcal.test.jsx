@@ -260,6 +260,29 @@ describe('Hebcal Utils', () => {
         }),
       ).not.toContain('יום השפה העברית');
     });
+    it('returns special Shabbat labels only when requested', () => {
+      expect(
+        getHolidayLabels(new Date('2026-09-19T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: false,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+          includeSpecialShabbat: true,
+          locale: 'en',
+        }),
+      ).toContain('Shabbat Shuva');
+
+      expect(
+        getHolidayLabels(new Date('2026-09-19T12:00:00Z'), {
+          includeFasts: false,
+          includeHolidayEvents: false,
+          includeNationalHolidays: false,
+          includeRoshChodesh: false,
+          includeSpecialShabbat: false,
+          locale: 'en',
+        }),
+      ).not.toContain('Shabbat Shuva');
+    });
   });
 
   describe('getHolidayDetails', () => {

@@ -93,6 +93,7 @@ vi.mock('react-i18next', () => ({
         showHolidayEvents: 'Show holidays',
         showNationalHolidays: 'Show national observances',
         showRoshChodesh: 'Show Rosh Chodesh',
+        showSpecialShabbat: 'Show special Shabbatot',
         showFasts: 'Show fasts',
         showWeeklyParsha: 'Show weekly parsha',
         selectAllDisplayOptions: 'Select all',
@@ -107,6 +108,7 @@ vi.mock('react-i18next', () => ({
         hebcalCategoryModern: 'National',
         hebcalCategoryMinor: 'Minor',
         hebcalCategoryParashat: 'Parashat',
+        hebcalCategoryShabbat: 'Special Shabbat',
         searchEvents: 'Search events',
         searchEventsPlaceholder: 'Search events',
         toggleAdvancedSearch: 'Toggle advanced search',
@@ -182,6 +184,7 @@ const hideAllHebcalDisplayOptions = () => {
       showHolidayEvents: false,
       showNationalHolidays: false,
       showRoshChodesh: false,
+      showSpecialShabbat: false,
       showWeeklyParsha: false,
     }),
   );

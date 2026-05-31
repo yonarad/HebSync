@@ -217,6 +217,7 @@ describe('useMyCalendarData', () => {
         showHolidayEvents: false,
         showNationalHolidays: false,
         showRoshChodesh: false,
+        showSpecialShabbat: false,
         showFasts: false,
         showWeeklyParsha: true,
       }),
@@ -233,6 +234,7 @@ describe('useMyCalendarData', () => {
     expect(result.current.showHolidayEvents).toBe(false);
     expect(result.current.showNationalHolidays).toBe(false);
     expect(result.current.showRoshChodesh).toBe(false);
+    expect(result.current.showSpecialShabbat).toBe(false);
     expect(result.current.showFasts).toBe(false);
     expect(result.current.showWeeklyParsha).toBe(true);
   });
@@ -247,6 +249,7 @@ describe('useMyCalendarData', () => {
     expect(result.current.showHolidayEvents).toBe(true);
     expect(result.current.showNationalHolidays).toBe(true);
     expect(result.current.showRoshChodesh).toBe(true);
+    expect(result.current.showSpecialShabbat).toBe(true);
     expect(result.current.showFasts).toBe(true);
   });
 

@@ -45,6 +45,7 @@ function readDisplayOptions(): {
   showHolidayEvents: boolean;
   showNationalHolidays: boolean;
   showRoshChodesh: boolean;
+  showSpecialShabbat: boolean;
   showWeeklyParsha: boolean;
 } {
   if (typeof window === 'undefined') {
@@ -55,6 +56,7 @@ function readDisplayOptions(): {
       showHolidayEvents: true,
       showNationalHolidays: true,
       showRoshChodesh: true,
+      showSpecialShabbat: true,
       showWeeklyParsha: true,
     };
   }
@@ -69,6 +71,7 @@ function readDisplayOptions(): {
         showHolidayEvents: true,
         showNationalHolidays: true,
         showRoshChodesh: true,
+        showSpecialShabbat: true,
         showWeeklyParsha: true,
       };
     }
@@ -80,6 +83,7 @@ function readDisplayOptions(): {
       showHolidayEvents: boolean;
       showNationalHolidays: boolean;
       showRoshChodesh: boolean;
+      showSpecialShabbat: boolean;
       showWeeklyParsha: boolean;
     }>;
 
@@ -102,6 +106,10 @@ function readDisplayOptions(): {
         typeof parsed.showRoshChodesh === 'boolean'
           ? parsed.showRoshChodesh
           : true,
+      showSpecialShabbat:
+        typeof parsed.showSpecialShabbat === 'boolean'
+          ? parsed.showSpecialShabbat
+          : true,
       showWeeklyParsha:
         typeof parsed.showWeeklyParsha === 'boolean' ? parsed.showWeeklyParsha : true,
     };
@@ -113,6 +121,7 @@ function readDisplayOptions(): {
       showHolidayEvents: true,
       showNationalHolidays: true,
       showRoshChodesh: true,
+      showSpecialShabbat: true,
       showWeeklyParsha: true,
     };
   }
@@ -165,6 +174,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const [showHolidayEvents, setShowHolidayEvents] = useState(initialDisplayOptions.showHolidayEvents);
   const [showNationalHolidays, setShowNationalHolidays] = useState(initialDisplayOptions.showNationalHolidays);
   const [showRoshChodesh, setShowRoshChodesh] = useState(initialDisplayOptions.showRoshChodesh);
+  const [showSpecialShabbat, setShowSpecialShabbat] = useState(initialDisplayOptions.showSpecialShabbat);
   const [showWeeklyParsha, setShowWeeklyParsha] = useState(initialDisplayOptions.showWeeklyParsha);
   const [viewMode, setViewMode] = useState<CalendarViewMode>(() => {
     if (typeof window === 'undefined') return 'month';
@@ -266,6 +276,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
         showHolidayEvents,
         showNationalHolidays,
         showRoshChodesh,
+        showSpecialShabbat,
         showWeeklyParsha,
       }),
     );
@@ -276,6 +287,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     showHolidayEvents,
     showNationalHolidays,
     showRoshChodesh,
+    showSpecialShabbat,
     showWeeklyParsha,
   ]);
 
@@ -530,6 +542,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     setShowWeeklyParsha,
     setShowLoginModal,
     setShowRoshChodesh,
+    setShowSpecialShabbat,
     setViewHDate,
     setViewMode,
     showEventAges,
@@ -538,6 +551,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     showHolidayEvents,
     showNationalHolidays,
     showRoshChodesh,
+    showSpecialShabbat,
     showWeeklyParsha,
     showLoginModal,
     toggleCalendar,

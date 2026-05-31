@@ -100,6 +100,7 @@ describe('day event sorting', () => {
       showHolidayEvents: false,
       showNationalHolidays: false,
       showRoshChodesh: false,
+      showSpecialShabbat: false,
       showWeeklyParsha: false,
     });
 
@@ -166,6 +167,7 @@ describe('day event sorting', () => {
       showHolidayEvents: false,
       showNationalHolidays: false,
       showRoshChodesh: false,
+      showSpecialShabbat: false,
       showWeeklyParsha: false,
     });
 
@@ -240,6 +242,7 @@ describe('day event sorting', () => {
       showHolidayEvents: true,
       showNationalHolidays: false,
       showRoshChodesh: false,
+      showSpecialShabbat: false,
       showWeeklyParsha: false,
     });
 
