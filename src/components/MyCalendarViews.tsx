@@ -1249,8 +1249,6 @@ export function ScheduleCalendarView({
                     </button>
                   ) : null}
                   {dayObj.events.map((event, idx) => {
-                    const props = event.extendedProperties?.private || {};
-                    const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
                     const ageSuffix = getEventAgeSuffix(event, dayObj.hYear, showEventAges);
                     const eventColor = getEventColor(event);
                     const start = event.start?.dateTime || event.start?.date;
@@ -1258,32 +1256,43 @@ export function ScheduleCalendarView({
                     const timeLabel = event.start?.dateTime
                       ? `${new Date(start || '').toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}${end ? ` - ${new Date(end).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}`
                       : '';
+                    const isTimedEvent = Boolean(timeLabel);
+                    const eventLabel = `${event.summary}${ageSuffix}`;
 
                     return (
                       <button
                         key={`${event.id || event.summary}-${idx}`}
                         type="button"
                         onClick={() => handleEventClick(event)}
-                        className={`flex w-full items-start gap-2 rounded-2xl border px-2.5 py-2 text-right transition-all ${
-                          isHebCal
-                            ? 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
-                            : 'border-transparent hover:brightness-[0.98]'
+                        className={`flex w-full items-start rounded-2xl px-2.5 py-2 transition-all ${isRtl ? 'text-right' : 'text-left'} ${
+                          isTimedEvent
+                            ? 'gap-2 border border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
+                            : 'border border-transparent text-white hover:brightness-95'
                         }`}
-                        style={
-                          isHebCal
-                            ? undefined
-                            : {
-                                backgroundColor: hexToRgba(eventColor, 0.18),
-                              }
-                        }
+                        style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
+                        title={timeLabel ? `${eventLabel} ${timeLabel}` : eventLabel}
+                        aria-label={timeLabel ? `${eventLabel} ${timeLabel}` : eventLabel}
                       >
-                        <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventColor }} />
-                        <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
-                          <div className="truncate text-sm font-bold text-slate-900 dark:text-slate-50">{event.summary}{ageSuffix}</div>
-                        </div>
-                        {timeLabel && (
-                          <div className="shrink-0 pt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 md:text-xs">
-                            {timeLabel}
+                        {isTimedEvent ? (
+                          <>
+                            <span
+                              className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: eventColor }}
+                            />
+                            <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+                              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span className="shrink-0 text-[11px] font-semibold text-slate-500 dark:text-slate-400 md:text-xs">
+                                  {timeLabel}
+                                </span>
+                                <span className="min-w-0 truncate text-sm font-bold text-slate-900 dark:text-slate-50">
+                                  {eventLabel}
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="min-w-0 flex-1 truncate text-sm font-bold text-white">
+                            {eventLabel}
                           </div>
                         )}
                       </button>

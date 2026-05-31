@@ -41,7 +41,7 @@ export function compareDayEvents(
   const bIsTimed = Boolean(b.start?.dateTime);
 
   if (aIsTimed !== bIsTimed) {
-    return aIsTimed ? -1 : 1;
+    return aIsTimed ? 1 : -1;
   }
 
   const aDate = getSortableEventDate(a);

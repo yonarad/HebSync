@@ -114,6 +114,72 @@ describe('day event sorting', () => {
     ]);
   });
 
+  it('places all-day events before timed events in both month and schedule views', () => {
+    const eventDate = new Date('2026-05-18T12:00:00');
+    const viewHDate = new HDate(eventDate);
+    const calendarEvents = [
+      {
+        id: 'timed-early',
+        summary: 'Timed Early',
+        calendarId: 'calendar-a',
+        start: {
+          dateTime: '2026-05-18T09:00:00.000Z',
+        },
+        end: {
+          dateTime: '2026-05-18T10:00:00.000Z',
+        },
+      },
+      {
+        id: 'all-day',
+        summary: 'All Day',
+        calendarId: 'calendar-b',
+        start: {
+          date: '2026-05-18',
+        },
+        end: {
+          date: '2026-05-19',
+        },
+      },
+      {
+        id: 'timed-late',
+        summary: 'Timed Late',
+        calendarId: 'calendar-c',
+        start: {
+          dateTime: '2026-05-18T14:00:00.000Z',
+        },
+        end: {
+          dateTime: '2026-05-18T15:00:00.000Z',
+        },
+      },
+    ];
+
+    const days = buildMonthDays(viewHDate, calendarEvents);
+    const dayWithEvents = days.find(
+      (day) =>
+        day?.gDate.getFullYear() === eventDate.getFullYear() &&
+        day?.gDate.getMonth() === eventDate.getMonth() &&
+        day?.gDate.getDate() === eventDate.getDate(),
+    );
+    const scheduleDays = buildScheduleDays(days, {
+      showFasts: false,
+      showHolidayEvents: false,
+      showNationalHolidays: false,
+      showRoshChodesh: false,
+      showWeeklyParsha: false,
+    });
+
+    expect(dayWithEvents?.events.map((event) => event.id)).toEqual([
+      'all-day',
+      'timed-early',
+      'timed-late',
+    ]);
+    expect(scheduleDays[0].events.map((event) => event.id)).toEqual([
+      'all-day',
+      'timed-early',
+      'timed-late',
+    ]);
+  });
+
   it('includes days in schedule view when only Hebcal details are visible', () => {
     const viewHDate = new HDate(new Date('2026-09-12T12:00:00Z'));
     const days = buildMonthDays(viewHDate, []);
