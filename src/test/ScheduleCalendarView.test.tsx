@@ -54,6 +54,7 @@ describe('ScheduleCalendarView', () => {
         hMonthNameHebrew="סיוון"
         getEventColor={() => '#1a73e8'}
         handleEventClick={vi.fn()}
+        handleHebcalDetailsClick={vi.fn()}
         isCalendarLoading={false}
         handleCreateFromDay={vi.fn()}
         emptyStateMessage=""

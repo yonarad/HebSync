@@ -97,6 +97,16 @@ vi.mock('react-i18next', () => ({
         showWeeklyParsha: 'Show weekly parsha',
         selectAllDisplayOptions: 'Select all',
         clearAllDisplayOptions: 'Clear all',
+        holidayDetails: 'Day details',
+        parshaDetails: 'Weekly parsha details',
+        viewDetails: 'More details',
+        hebcalCategoryHoliday: 'Holiday',
+        hebcalCategoryMajor: 'Major',
+        hebcalCategoryFast: 'Fast',
+        hebcalCategoryRoshChodesh: 'Rosh Chodesh',
+        hebcalCategoryModern: 'National',
+        hebcalCategoryMinor: 'Minor',
+        hebcalCategoryParashat: 'Parashat',
         searchEvents: 'Search events',
         searchEventsPlaceholder: 'Search events',
         toggleAdvancedSearch: 'Toggle advanced search',
@@ -159,6 +169,21 @@ const renderDashboard = () => {
     <BrowserRouter>
       <MyCalendar />
     </BrowserRouter>
+  );
+};
+
+const hideAllHebcalDisplayOptions = () => {
+  localStorage.setItem(
+    'hebsync.calendar.displayOptions',
+    JSON.stringify({
+      showGregorian: true,
+      showEventAges: true,
+      showFasts: false,
+      showHolidayEvents: false,
+      showNationalHolidays: false,
+      showRoshChodesh: false,
+      showWeeklyParsha: false,
+    }),
   );
 };
 
@@ -687,6 +712,7 @@ describe('My Calendar Component', () => {
 
   it('should not get stuck in loading when the user has no calendars', async () => {
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([]);
+    hideAllHebcalDisplayOptions();
 
     renderDashboard();
 
@@ -707,6 +733,7 @@ describe('My Calendar Component', () => {
         accessRole: 'owner',
       },
     ]);
+    hideAllHebcalDisplayOptions();
 
     renderDashboard();
 
@@ -724,6 +751,7 @@ describe('My Calendar Component', () => {
       },
     ]);
     vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([]);
+    hideAllHebcalDisplayOptions();
 
     renderDashboard();
 

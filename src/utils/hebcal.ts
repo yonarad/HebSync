@@ -8,6 +8,7 @@ import {
 } from '@hebcal/core';
 import type {
   FallbackChoice,
+  HebcalDisplayDetail,
   HebrewMonthOption,
   PreviewOccurrence,
   SourceDateValidation,
@@ -172,6 +173,19 @@ function usesHebrewLocale(locale: string): boolean {
   return locale.toLowerCase().startsWith('he');
 }
 
+function formatHolidayLabel(label: string, locale: string): string {
+  if (!usesHebrewLocale(locale)) {
+    return label;
+  }
+
+  const match = /^ראש השנה (\d+)$/.exec(label);
+  if (!match) {
+    return label;
+  }
+
+  return `ראש השנה ${formatHebrewYear(match[1])}`;
+}
+
 const NATIONAL_HOLIDAY_NAMES = new Set([
   'Yom HaAtzma’ut',
   'Yom Yerushalayim',
@@ -211,6 +225,57 @@ const NORMALIZED_MINOR_HOLIDAY_NAMES = new Set(
   [...MINOR_HOLIDAY_NAMES].map(normalizeHebcalDesc),
 );
 
+function shouldIncludeHolidayEvent(
+  event: {
+    getDesc: () => string;
+    getFlags: () => number;
+  },
+  options: Required<HolidayLabelOptions>,
+): boolean {
+  const mask = event.getFlags();
+  const desc = normalizeHebcalDesc(event.getDesc());
+  const isYomKippurKatan = Boolean(mask & flags.YOM_KIPPUR_KATAN);
+  const isNationalHoliday = Boolean(mask & flags.MODERN_HOLIDAY) &&
+    NORMALIZED_NATIONAL_HOLIDAY_NAMES.has(desc);
+  const isMinorHoliday = Boolean(mask & flags.MINOR_HOLIDAY) &&
+    NORMALIZED_MINOR_HOLIDAY_NAMES.has(desc);
+  const isHolidayEvent =
+    Boolean(mask & (flags.CHAG | flags.CHOL_HAMOED | flags.EREV)) || isMinorHoliday;
+  const isRoshChodesh = Boolean(mask & flags.ROSH_CHODESH);
+  const isFast =
+    !isYomKippurKatan && Boolean(mask & (flags.MAJOR_FAST | flags.MINOR_FAST));
+
+  return (
+    (options.includeHolidayEvents && isHolidayEvent) ||
+    (options.includeNationalHolidays && isNationalHoliday) ||
+    (options.includeRoshChodesh && isRoshChodesh) ||
+    (options.includeFasts && isFast)
+  );
+}
+
+function eventToHebcalDisplayDetail(
+  event: {
+    getDesc: () => string;
+    render: (locale?: string) => string;
+    renderBrief: (locale?: string) => string;
+    getCategories: () => string[];
+    url: () => string | undefined;
+    memo?: string;
+    getEmoji?: () => string | null;
+  },
+  locale: string,
+): HebcalDisplayDetail {
+  return {
+    key: normalizeHebcalDesc(event.getDesc()),
+    title: formatHolidayLabel(event.render(locale), locale),
+    brief: formatHolidayLabel(event.renderBrief(locale), locale),
+    categories: event.getCategories(),
+    url: event.url(),
+    memo: event.memo ?? null,
+    emoji: event.getEmoji ? event.getEmoji() : null,
+  };
+}
+
 export function getShabbatParshaName(
   date: Date,
   options: ShabbatParshaOptions = {},
@@ -230,56 +295,58 @@ export function getShabbatParshaName(
   return new ParshaEvent(sedra).render(locale);
 }
 
+export function getShabbatParshaDetail(
+  date: Date,
+  options: ShabbatParshaOptions = {},
+): HebcalDisplayDetail | null {
+  const { il = true, locale = 'he-x-NoNikud', includeHolidayReadings = false } = options;
+  const hdate = new HDate(date);
+
+  if (hdate.getDay() !== 6) {
+    return null;
+  }
+
+  const sedra = getSedra(hdate.getFullYear(), il).lookup(hdate);
+  if (sedra.chag && !includeHolidayReadings) {
+    return null;
+  }
+
+  const event = new ParshaEvent(sedra);
+  return {
+    key: normalizeHebcalDesc(event.getDesc()),
+    title: event.render(locale),
+    brief: event.renderBrief(locale),
+    categories: event.getCategories(),
+    url: event.url(),
+    memo: event.memo ?? null,
+    emoji: event.getEmoji(),
+  };
+}
+
+export function getHolidayDetails(
+  date: Date,
+  options: HolidayLabelOptions = {},
+): HebcalDisplayDetail[] {
+  const normalizedOptions: Required<HolidayLabelOptions> = {
+    il: options.il ?? true,
+    includeFasts: options.includeFasts ?? true,
+    includeHolidayEvents: options.includeHolidayEvents ?? true,
+    includeNationalHolidays: options.includeNationalHolidays ?? true,
+    includeRoshChodesh: options.includeRoshChodesh ?? true,
+    locale: options.locale ?? 'he-x-NoNikud',
+  };
+  const holidays = getHolidaysOnDate(date, normalizedOptions.il) || [];
+
+  return holidays
+    .filter((event) => shouldIncludeHolidayEvent(event, normalizedOptions))
+    .map((event) => eventToHebcalDisplayDetail(event, normalizedOptions.locale));
+}
+
 export function getHolidayLabels(
   date: Date,
   options: HolidayLabelOptions = {},
 ): string[] {
-  const {
-    il = true,
-    includeFasts = true,
-    includeHolidayEvents = true,
-    includeNationalHolidays = true,
-    includeRoshChodesh = true,
-    locale = 'he-x-NoNikud',
-  } = options;
-  const holidays = getHolidaysOnDate(date, il) || [];
-
-  return holidays
-    .filter((event) => {
-      const mask = event.getFlags();
-      const desc = normalizeHebcalDesc(event.getDesc());
-      const isYomKippurKatan = Boolean(mask & flags.YOM_KIPPUR_KATAN);
-      const isNationalHoliday = Boolean(mask & flags.MODERN_HOLIDAY) &&
-        NORMALIZED_NATIONAL_HOLIDAY_NAMES.has(desc);
-      const isMinorHoliday = Boolean(mask & flags.MINOR_HOLIDAY) &&
-        NORMALIZED_MINOR_HOLIDAY_NAMES.has(desc);
-      const isHolidayEvent =
-        Boolean(mask & (flags.CHAG | flags.CHOL_HAMOED | flags.EREV)) || isMinorHoliday;
-      const isRoshChodesh = Boolean(mask & flags.ROSH_CHODESH);
-      const isFast =
-        !isYomKippurKatan && Boolean(mask & (flags.MAJOR_FAST | flags.MINOR_FAST));
-
-      return (
-        (includeHolidayEvents && isHolidayEvent) ||
-        (includeNationalHolidays && isNationalHoliday) ||
-        (includeRoshChodesh && isRoshChodesh) ||
-        (includeFasts && isFast)
-      );
-    })
-    .map((event) => {
-      const label = event.render(locale);
-
-      if (!usesHebrewLocale(locale)) {
-        return label;
-      }
-
-      const match = /^ראש השנה (\d+)$/.exec(label);
-      if (!match) {
-        return label;
-      }
-
-      return `ראש השנה ${formatHebrewYear(match[1])}`;
-    });
+  return getHolidayDetails(date, options).map((detail) => detail.title);
 }
 
 export function generateRdates(

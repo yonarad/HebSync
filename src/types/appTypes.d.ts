@@ -207,3 +207,13 @@ export interface SpecialDateMetadataInput {
 export interface CreateHebcalEventOptions {
   specialDate?: SpecialDateMetadataInput | null;
 }
+
+export interface HebcalDisplayDetail {
+  key: string;
+  title: string;
+  brief: string;
+  categories: string[];
+  url?: string;
+  memo?: string | null;
+  emoji?: string | null;
+}

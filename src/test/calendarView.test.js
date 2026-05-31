@@ -94,7 +94,13 @@ describe('day event sorting', () => {
         day?.gDate.getMonth() === eventDate.getMonth() &&
         day?.gDate.getDate() === eventDate.getDate(),
     );
-    const scheduleDays = buildScheduleDays(days);
+    const scheduleDays = buildScheduleDays(days, {
+      showFasts: false,
+      showHolidayEvents: false,
+      showNationalHolidays: false,
+      showRoshChodesh: false,
+      showWeeklyParsha: false,
+    });
 
     expect(dayWithEvents?.events.map((event) => event.id)).toEqual([
       'early-from-b',
@@ -106,5 +112,27 @@ describe('day event sorting', () => {
       'mid-from-a',
       'late-from-a',
     ]);
+  });
+
+  it('includes days in schedule view when only Hebcal details are visible', () => {
+    const viewHDate = new HDate(new Date('2026-09-12T12:00:00Z'));
+    const days = buildMonthDays(viewHDate, []);
+
+    const scheduleDays = buildScheduleDays(days, {
+      showFasts: false,
+      showHolidayEvents: true,
+      showNationalHolidays: false,
+      showRoshChodesh: false,
+      showWeeklyParsha: false,
+    });
+
+    expect(
+      scheduleDays.some(
+        (day) =>
+          day.gDate.getFullYear() === 2026 &&
+          day.gDate.getMonth() === 8 &&
+          day.gDate.getDate() === 12,
+      ),
+    ).toBe(true);
   });
 });

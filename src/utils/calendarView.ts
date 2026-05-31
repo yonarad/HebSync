@@ -1,5 +1,10 @@
 import { HDate, gematriya } from '@hebcal/core';
-import { HEBREW_MONTHS, formatHebrewYear } from './hebcal';
+import {
+  getHolidayDetails,
+  getShabbatParshaDetail,
+  HEBREW_MONTHS,
+  formatHebrewYear,
+} from './hebcal';
 import type {
   CalendarDay,
   GoogleCalendarEvent,
@@ -8,6 +13,14 @@ import type {
   OverflowDay,
   OverflowPopoverLayout,
 } from '../types/appTypes';
+
+interface ScheduleDayDisplayOptions {
+  showFasts: boolean;
+  showHolidayEvents: boolean;
+  showNationalHolidays: boolean;
+  showRoshChodesh: boolean;
+  showWeeklyParsha: boolean;
+}
 
 function getSortableEventDate(event: GoogleCalendarEvent): Date | null {
   const startValue = event.start?.dateTime || event.start?.date;
@@ -155,9 +168,42 @@ export function getEventOccurrenceHebrewYear(
 
 export function buildScheduleDays(
   days: Array<CalendarDay | null>,
+  {
+    showFasts,
+    showHolidayEvents,
+    showNationalHolidays,
+    showRoshChodesh,
+    showWeeklyParsha,
+  }: ScheduleDayDisplayOptions,
 ): CalendarDay[] {
   return days
-    .filter((dayObj): dayObj is CalendarDay => Boolean(dayObj?.events?.length))
+    .filter((dayObj): dayObj is CalendarDay => {
+      if (!dayObj) {
+        return false;
+      }
+
+      if (dayObj.events.length > 0) {
+        return true;
+      }
+
+      const hasHolidayDetails =
+        showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+          ? getHolidayDetails(dayObj.gDate, {
+              includeFasts: showFasts,
+              includeHolidayEvents: showHolidayEvents,
+              includeNationalHolidays: showNationalHolidays,
+              includeRoshChodesh: showRoshChodesh,
+            }).length > 0
+          : false;
+
+      if (hasHolidayDetails) {
+        return true;
+      }
+
+      return showWeeklyParsha
+        ? Boolean(getShabbatParshaDetail(dayObj.gDate))
+        : false;
+    })
     .map((dayObj) => ({
       ...dayObj,
       events: [...dayObj.events].sort(compareDayEvents),

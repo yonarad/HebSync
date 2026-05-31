@@ -3,12 +3,14 @@ import {
   gematriya,
   gregorianToHebrew,
   getDaysInHebrewMonth,
+  getHolidayDetails,
   getHolidayLabels,
   getMonthsForYear,
   generateRdates,
   getPreviewDates,
   requires30thFallbackDecision,
   doesHebrewMonthExistInYear,
+  getShabbatParshaDetail,
   validateHebrewDateForYear,
   getShabbatParshaName,
 } from '../utils/hebcal';
@@ -131,6 +133,15 @@ describe('Hebcal Utils', () => {
     });
   });
 
+  describe('getShabbatParshaDetail', () => {
+    it('returns parsha detail metadata for a regular Shabbat', () => {
+      const detail = getShabbatParshaDetail(new Date('2026-06-06T12:00:00Z'));
+
+      expect(detail?.title).toBe('פרשת שלח־לך');
+      expect(detail?.categories.length).toBeGreaterThan(0);
+    });
+  });
+
   describe('getHolidayLabels', () => {
     it('returns holiday labels in Hebrew for a holiday date', () => {
       const labels = getHolidayLabels(new Date('2026-09-12T12:00:00Z'), {
@@ -248,6 +259,20 @@ describe('Hebcal Utils', () => {
           includeRoshChodesh: false,
         }),
       ).not.toContain('יום השפה העברית');
+    });
+  });
+
+  describe('getHolidayDetails', () => {
+    it('returns holiday details with category metadata and optional url', () => {
+      const details = getHolidayDetails(new Date('2026-09-12T12:00:00Z'), {
+        includeFasts: false,
+        includeHolidayEvents: true,
+        includeNationalHolidays: false,
+        includeRoshChodesh: false,
+      });
+
+      expect(details[0]?.title).toContain('ראש השנה');
+      expect(details[0]?.categories.length).toBeGreaterThan(0);
     });
   });
 

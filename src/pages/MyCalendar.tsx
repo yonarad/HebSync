@@ -41,6 +41,7 @@ import type {
   AddEventPrefillDate,
   GoogleCalendarEvent,
   EventSearchParams,
+  HebcalDisplayDetail,
   OverflowDay,
   PendingCalendarCreateState,
 } from '../types/appTypes';
@@ -61,6 +62,28 @@ function toSearchBoundary(value: string | undefined, boundary: 'start' | 'end'):
   if (!value) return '';
   const suffix = boundary === 'start' ? 'T00:00:00.000Z' : 'T23:59:59.999Z';
   return `${value}${suffix}`;
+}
+
+function formatHebcalCategory(
+  category: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const categoryKeyMap: Record<string, string> = {
+    holiday: 'hebcalCategoryHoliday',
+    major: 'hebcalCategoryMajor',
+    fast: 'hebcalCategoryFast',
+    roshchodesh: 'hebcalCategoryRoshChodesh',
+    modern: 'hebcalCategoryModern',
+    minor: 'hebcalCategoryMinor',
+    parashat: 'hebcalCategoryParashat',
+  };
+
+  const translationKey = categoryKeyMap[category.toLowerCase()];
+  if (translationKey) {
+    return t(translationKey);
+  }
+
+  return category;
 }
 
 export default function MyCalendar() {
@@ -137,6 +160,10 @@ export default function MyCalendar() {
   } = useMyCalendarData({ t });
 
   const [overflowDay, setOverflowDay] = useState<OverflowDay | null>(null);
+  const [selectedHebcalDetails, setSelectedHebcalDetails] = useState<{
+    title: string;
+    details: HebcalDisplayDetail[];
+  } | null>(null);
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
   const [createPrefillDate, setCreatePrefillDate] = useState<AddEventPrefillDate | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -212,6 +239,11 @@ export default function MyCalendar() {
         return;
       }
 
+      if (selectedHebcalDetails) {
+        setSelectedHebcalDetails(null);
+        return;
+      }
+
       if (isAddEventModalOpen) {
         handleCloseAddEventModal();
         return;
@@ -235,7 +267,7 @@ export default function MyCalendar() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAddEventModalOpen, isDesktopSearchOpen, isMobileSearchOpen, isSidebarOpen, selectedEvent, setSelectedEvent]);
+  }, [isAddEventModalOpen, isDesktopSearchOpen, isMobileSearchOpen, isSidebarOpen, selectedEvent, selectedHebcalDetails, setSelectedEvent]);
 
   useEffect(() => {
     if (!isAuthenticated || !hasWriteAccess) return;
@@ -316,6 +348,14 @@ export default function MyCalendar() {
   const handleOverflowEventClick = (event: GoogleCalendarEvent): void => {
     setOverflowDay(null);
     handleEventClick(event);
+  };
+
+  const handleHebcalDetailsClick = (
+    title: string,
+    details: HebcalDisplayDetail[],
+  ): void => {
+    if (details.length === 0) return;
+    setSelectedHebcalDetails({ title, details });
   };
 
   const requestCreatePermissions = (
@@ -435,7 +475,13 @@ export default function MyCalendar() {
       viewportWidth,
       viewportHeight,
     });
-  const scheduleDays = buildScheduleDays(days);
+  const scheduleDays = buildScheduleDays(days, {
+    showFasts,
+    showHolidayEvents,
+    showNationalHolidays,
+    showRoshChodesh,
+    showWeeklyParsha,
+  });
   const isScheduleLoading =
     !hasResolvedSession ||
     (isAuthenticated &&
@@ -745,6 +791,7 @@ export default function MyCalendar() {
                   maxVisibleMonthEvents={maxVisibleMonthEvents}
                   getEventColor={getEventColor}
                   handleEventClick={handleEventClick}
+                  handleHebcalDetailsClick={handleHebcalDetailsClick}
                   handleOverflowDayOpen={handleOverflowDayOpen}
                   handleCreateFromDay={handleCreateFromDay}
                   isCalendarLoading={isMonthLoading}
@@ -766,6 +813,7 @@ export default function MyCalendar() {
                   hMonthNameHebrew={hMonthNameHebrew}
                   getEventColor={getEventColor}
                   handleEventClick={handleEventClick}
+                  handleHebcalDetailsClick={handleHebcalDetailsClick}
                   isCalendarLoading={isScheduleLoading}
                   handleCreateFromDay={handleCreateFromDay}
                   emptyStateMessage={emptyStateMessage}
@@ -812,6 +860,61 @@ export default function MyCalendar() {
         setOverflowDay={setOverflowDay}
         handleOverflowEventClick={handleOverflowEventClick}
       />
+
+      {selectedHebcalDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={() => setSelectedHebcalDetails(null)}
+            aria-label={t('close')}
+          />
+          <div role="dialog" aria-modal="true" aria-labelledby="hebcal-details-title" className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
+              <h2 id="hebcal-details-title" className="text-xl font-bold text-slate-800 dark:text-white">{selectedHebcalDetails.title}</h2>
+              <button type="button" aria-label={t('close')} onClick={() => setSelectedHebcalDetails(null)} className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="space-y-4 p-6">
+              {selectedHebcalDetails.details.map((detail) => (
+                <div key={detail.key} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#0038A8] dark:text-blue-400">
+                        {detail.emoji ? `${detail.emoji} ` : ''}{detail.title}
+                      </h3>
+                      {detail.brief && detail.brief !== detail.title ? (
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{detail.brief}</p>
+                      ) : null}
+                    </div>
+                    {detail.url ? (
+                      <a
+                        href={detail.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-[#0038A8] transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                      >
+                        {t('viewDetails')}
+                      </a>
+                    ) : null}
+                  </div>
+                  {detail.categories.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {detail.categories.map((category) => (
+                        <span key={category} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-300">
+                          {formatHebcalCategory(category, t)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {detail.memo ? (
+                    <div className="mt-3 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{detail.memo}</div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isAddEventModalOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-sm md:items-center md:p-6" dir={isRtl ? 'rtl' : 'ltr'}>

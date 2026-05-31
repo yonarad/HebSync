@@ -2,10 +2,12 @@ import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Se
 import { HDate } from '@hebcal/core';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import {
+  getHolidayDetails,
   HEBREW_MONTHS,
   formatHebrewYear,
   gematriya,
   getHolidayLabels,
+  getShabbatParshaDetail,
   getShabbatParshaName,
 } from '../utils/hebcal';
 import { getEventOccurrenceHebrewYear } from '../utils/calendarView';
@@ -15,6 +17,7 @@ import type {
   CalendarViewMode,
   EventSearchParams,
   GoogleCalendarEvent,
+  HebcalDisplayDetail,
   OverflowDay,
 } from '../types/appTypes';
 
@@ -851,6 +854,7 @@ interface MonthCalendarViewProps {
   maxVisibleMonthEvents: number;
   getEventColor: (event: GoogleCalendarEvent) => string;
   handleEventClick: (event: GoogleCalendarEvent) => void;
+  handleHebcalDetailsClick: (title: string, details: HebcalDisplayDetail[]) => void;
   handleOverflowDayOpen: (
     dayObj: OverflowDay,
     event: React.MouseEvent<HTMLButtonElement>,
@@ -876,6 +880,7 @@ export function MonthCalendarView({
   maxVisibleMonthEvents,
   getEventColor,
   handleEventClick,
+  handleHebcalDetailsClick,
   handleOverflowDayOpen,
   handleCreateFromDay,
   isCalendarLoading,
@@ -952,14 +957,44 @@ export function MonthCalendarView({
                           )}
                         </div>
                         {parshaLabel ? (
-                          <div className="mt-0.5 truncate text-[9px] font-medium leading-tight text-amber-700 dark:text-amber-300 md:text-[10px]">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const detail = getShabbatParshaDetail(dayObj.gDate, {
+                                locale: getParshaLocale(isRtl),
+                              });
+                              if (detail) {
+                                handleHebcalDetailsClick(t('parshaDetails'), [detail]);
+                              }
+                            }}
+                            className={`mt-1 w-full rounded-md border border-amber-200/70 bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-amber-800 transition-opacity hover:opacity-80 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200 ${isRtl ? 'text-right' : 'text-left'}`}
+                            title={parshaLabel}
+                          >
                             {parshaLabel}
-                          </div>
+                          </button>
                         ) : null}
                         {holidayLabel ? (
-                          <div className="mt-0.5 truncate text-[9px] font-medium leading-tight text-rose-700 dark:text-rose-300 md:text-[10px]">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const details = getHolidayDetails(dayObj.gDate, {
+                                includeFasts: showFasts,
+                                includeHolidayEvents: showHolidayEvents,
+                                includeNationalHolidays: showNationalHolidays,
+                                includeRoshChodesh: showRoshChodesh,
+                                locale: getHolidayLocale(isRtl),
+                              });
+                              if (details.length > 0) {
+                                handleHebcalDetailsClick(t('holidayDetails'), details);
+                              }
+                            }}
+                            className={`mt-1 w-full rounded-md border border-rose-200/70 bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-rose-800 transition-opacity hover:opacity-80 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-200 ${isRtl ? 'text-right' : 'text-left'}`}
+                            title={holidayLabel}
+                          >
                             {holidayLabel}
-                          </div>
+                          </button>
                         ) : null}
                       </div>
                     </div>
@@ -1052,6 +1087,7 @@ interface ScheduleCalendarViewProps {
   hMonthNameHebrew: string;
   getEventColor: (event: GoogleCalendarEvent) => string;
   handleEventClick: (event: GoogleCalendarEvent) => void;
+  handleHebcalDetailsClick: (title: string, details: HebcalDisplayDetail[]) => void;
   isCalendarLoading: boolean;
   handleCreateFromDay: (dayObj: OverflowDay) => void;
   emptyStateMessage: string;
@@ -1072,6 +1108,7 @@ export function ScheduleCalendarView({
   hMonthNameHebrew: _hMonthNameHebrew,
   getEventColor,
   handleEventClick,
+  handleHebcalDetailsClick,
   isCalendarLoading,
   handleCreateFromDay,
   emptyStateMessage,
@@ -1111,9 +1148,11 @@ export function ScheduleCalendarView({
                 key={dayObj.gDate.toISOString()}
                 className="grid grid-cols-[44px_minmax(0,1fr)] gap-0.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[60px_minmax(0,1fr)] md:gap-1"
               >
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleCreateFromDay(dayObj)}
+                  onKeyDown={(event) => activateOnKeyboard(event, () => handleCreateFromDay(dayObj))}
                   className="flex flex-col items-center pt-1 text-center transition-colors hover:text-[#1a73e8]"
                   aria-label={t('createEventOnDay', {
                     hebrewDay: dayObj.hDayGematriya,
@@ -1126,16 +1165,6 @@ export function ScheduleCalendarView({
                   <div className="mt-1 text-center text-[10px] font-bold text-slate-800 dark:text-slate-100 md:text-[11px]">
                     {t(`days.${dayObj.weekday}`)}
                   </div>
-                  {parshaLabel ? (
-                    <div className="mt-1 text-center text-[9px] font-medium leading-tight text-amber-700 dark:text-amber-300 md:text-[10px]">
-                      {parshaLabel}
-                    </div>
-                  ) : null}
-                  {holidayLabel ? (
-                    <div className="mt-1 text-center text-[9px] font-medium leading-tight text-rose-700 dark:text-rose-300 md:text-[10px]">
-                      {holidayLabel}
-                    </div>
-                  ) : null}
                   <div
                     aria-hidden={!showGregorian}
                     className={`text-center text-[9px] font-medium md:text-[10px] ${
@@ -1146,9 +1175,49 @@ export function ScheduleCalendarView({
                   >
                     {dayObj.gMonthLabel} {dayObj.gDay}
                   </div>
-                </button>
+                </div>
 
                 <div className="space-y-1.5">
+                  {parshaLabel ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        const detail = getShabbatParshaDetail(dayObj.gDate, {
+                          locale: getParshaLocale(isRtl),
+                        });
+                        if (detail) {
+                          handleHebcalDetailsClick(t('parshaDetails'), [detail]);
+                        }
+                      }}
+                      className={`w-full rounded-xl border border-amber-200/70 bg-amber-50/80 px-2.5 py-2 text-[11px] font-medium leading-tight text-amber-800 transition-opacity hover:opacity-80 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200 md:text-xs ${isRtl ? 'text-right' : 'text-left'}`}
+                      title={parshaLabel}
+                    >
+                      {parshaLabel}
+                    </button>
+                  ) : null}
+                  {holidayLabel ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        const details = getHolidayDetails(dayObj.gDate, {
+                          includeFasts: showFasts,
+                          includeHolidayEvents: showHolidayEvents,
+                          includeNationalHolidays: showNationalHolidays,
+                          includeRoshChodesh: showRoshChodesh,
+                          locale: getHolidayLocale(isRtl),
+                        });
+                        if (details.length > 0) {
+                          handleHebcalDetailsClick(t('holidayDetails'), details);
+                        }
+                      }}
+                      className={`w-full rounded-xl border border-rose-200/70 bg-rose-50/80 px-2.5 py-2 text-[11px] font-medium leading-tight text-rose-800 transition-opacity hover:opacity-80 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-200 md:text-xs ${isRtl ? 'text-right' : 'text-left'}`}
+                      title={holidayLabel}
+                    >
+                      {holidayLabel}
+                    </button>
+                  ) : null}
                   {dayObj.events.map((event, idx) => {
                     const props = event.extendedProperties?.private || {};
                     const isHebCal = props.appIdentifier === 'MyHebrewCalendar';
