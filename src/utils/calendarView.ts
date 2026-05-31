@@ -320,12 +320,15 @@ export function getOverflowPopoverLayout({
   );
   const anchorTop = overflowAnchorRect?.top ?? 120;
   const anchorBottom = overflowAnchorRect?.bottom ?? 120;
+  const usesMaxPopoverHeight = overflowPopoverHeight >= overflowPopoverMaxHeight - 0.5;
   const fitsBelow = anchorTop + overflowPopoverHeight <= viewportHeight - overflowPopoverMargin;
-  const fitsAbove = anchorBottom - overflowPopoverHeight >= overflowPopoverMargin;
   const overflowTop = fitsBelow
     ? anchorTop
-    : fitsAbove
-      ? anchorBottom - overflowPopoverHeight
+    : usesMaxPopoverHeight
+      ? Math.max(
+          overflowPopoverMargin,
+          anchorBottom - overflowPopoverHeight,
+        )
       : Math.max(
           overflowPopoverMargin,
           Math.min(
