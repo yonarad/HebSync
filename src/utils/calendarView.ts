@@ -312,6 +312,19 @@ export function getOverflowPopoverLayout({
   overflowPopoverMargin?: number;
 }): OverflowPopoverLayout {
   const overflowAnchorRect = overflowDay?.anchorRect;
+  const maxAllowedWidth = Math.max(160, viewportWidth - overflowPopoverMargin * 2);
+  const anchorWidth = overflowAnchorRect
+    ? Math.max(0, overflowAnchorRect.right - overflowAnchorRect.left)
+    : 0;
+  const isMobileViewport = viewportWidth < 768;
+  const resolvedOverflowPopoverWidth = isMobileViewport
+    ? Math.min(
+        maxAllowedWidth,
+        Math.max(220, Math.min(280, anchorWidth > 0 ? anchorWidth * 2.2 : 260)),
+      )
+    : anchorWidth > 0
+      ? Math.min(anchorWidth, maxAllowedWidth)
+      : Math.min(overflowPopoverWidth, maxAllowedWidth);
   const overflowEventCount = overflowDay?.events?.length ?? 0;
   const overflowPopoverMaxHeight = Math.min(
     viewportHeight - overflowPopoverMargin * 2,
@@ -323,33 +336,25 @@ export function getOverflowPopoverLayout({
   );
   const anchorTop = overflowAnchorRect?.top ?? 120;
   const anchorBottom = overflowAnchorRect?.bottom ?? 120;
-  const usesMaxPopoverHeight = overflowPopoverHeight >= overflowPopoverMaxHeight - 0.5;
   const fitsBelow = anchorTop + overflowPopoverHeight <= viewportHeight - overflowPopoverMargin;
   const overflowTop = fitsBelow
     ? anchorTop
-    : usesMaxPopoverHeight
-      ? Math.max(
-          overflowPopoverMargin,
-          anchorBottom - overflowPopoverHeight,
-        )
-      : Math.max(
-          overflowPopoverMargin,
-          Math.min(
-            anchorTop,
-            viewportHeight - overflowPopoverHeight - overflowPopoverMargin,
-          ),
-        );
+    : Math.max(
+        overflowPopoverMargin,
+        anchorBottom - overflowPopoverHeight,
+      );
   const overflowLeft = Math.max(
     overflowPopoverMargin,
     Math.min(
-      (overflowAnchorRect?.right ?? overflowPopoverWidth + overflowPopoverMargin) -
-        overflowPopoverWidth,
-      viewportWidth - overflowPopoverWidth - overflowPopoverMargin,
+      isMobileViewport
+        ? overflowAnchorRect?.left ?? overflowPopoverMargin
+        : overflowAnchorRect?.left ?? overflowPopoverMargin,
+      viewportWidth - resolvedOverflowPopoverWidth - overflowPopoverMargin,
     ),
   );
 
   return {
-    overflowPopoverWidth,
+    overflowPopoverWidth: resolvedOverflowPopoverWidth,
     overflowPopoverMargin,
     overflowPopoverMaxHeight,
     overflowTop,

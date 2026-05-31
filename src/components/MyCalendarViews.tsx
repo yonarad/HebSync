@@ -1649,6 +1649,93 @@ export function DayEventsPopover({
   handleOverflowEventClick,
   handleHebcalDetailsClick,
 }: DayEventsPopoverProps) {
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const [measuredPosition, setMeasuredPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    if (
+      !overflowDay?.anchorRect ||
+      !popoverRef.current ||
+      typeof window === 'undefined'
+    ) {
+      setMeasuredPosition(null);
+      return;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const isMobileViewport = viewportWidth < 768;
+    const anchorRect = overflowDay.anchorRect;
+    const width = Math.min(
+      overflowPopoverWidth,
+      viewportWidth - overflowPopoverMargin * 2,
+    );
+    const popoverHeight = Math.min(
+      popoverRef.current.scrollHeight,
+      overflowPopoverMaxHeight,
+    );
+
+    let nextTop: number;
+    let nextLeft: number;
+
+    if (isMobileViewport) {
+      nextLeft = Math.max(
+        overflowPopoverMargin,
+        Math.min(
+          isRtl ? anchorRect.right - width : anchorRect.left,
+          viewportWidth - width - overflowPopoverMargin,
+        ),
+      );
+      if (anchorRect.top + popoverHeight <= viewportHeight - overflowPopoverMargin) {
+        nextTop = anchorRect.top;
+      } else {
+        nextTop = Math.max(
+          overflowPopoverMargin,
+          anchorRect.bottom - popoverHeight,
+        );
+      }
+    } else {
+      nextLeft = Math.max(
+        overflowPopoverMargin,
+        Math.min(
+          anchorRect.left,
+          viewportWidth - width - overflowPopoverMargin,
+        ),
+      );
+      if (anchorRect.top + popoverHeight <= viewportHeight - overflowPopoverMargin) {
+        nextTop = anchorRect.top;
+      } else {
+        nextTop = Math.max(
+          overflowPopoverMargin,
+          anchorRect.bottom - popoverHeight,
+        );
+      }
+    }
+
+    setMeasuredPosition((current) => {
+      if (
+        current &&
+        Math.abs(current.top - nextTop) < 0.5 &&
+        Math.abs(current.left - nextLeft) < 0.5
+      ) {
+        return current;
+      }
+
+      return {
+        top: nextTop,
+        left: nextLeft,
+      };
+    });
+  }, [
+    overflowDay,
+    overflowPopoverMargin,
+    overflowPopoverMaxHeight,
+    overflowPopoverWidth,
+  ]);
+
   if (!overflowDay) return null;
   const popoverParshaLabel =
     showWeeklyParsha && overflowDay.isShabbat
@@ -1677,6 +1764,7 @@ export function DayEventsPopover({
         className="absolute inset-0 cursor-default bg-transparent"
       />
       <div
+        ref={popoverRef}
         role="dialog"
         aria-modal="true"
         aria-label={dayEventsDialogLabel}
@@ -1685,8 +1773,8 @@ export function DayEventsPopover({
           width: `${overflowPopoverWidth}px`,
           maxWidth: `calc(100vw - ${overflowPopoverMargin * 2}px)`,
           maxHeight: `${overflowPopoverMaxHeight}px`,
-          top: `${overflowTop}px`,
-          left: `${overflowLeft}px`,
+          top: `${measuredPosition?.top ?? overflowTop}px`,
+          left: `${measuredPosition?.left ?? overflowLeft}px`,
         }}
       >
         <div className="flex min-h-0 w-full flex-1 flex-col">
@@ -1709,8 +1797,8 @@ export function DayEventsPopover({
             <div className="w-5" />
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-1.5 py-1.5">
-            <div className="space-y-1">
+          <div className="min-h-0 flex-1 overflow-y-auto px-0 pb-0.5 pt-0.5">
+            <div className="flex min-h-0 w-full flex-col gap-0.5">
               {popoverParshaLabel ? (
                 <button
                   type="button"
@@ -1722,7 +1810,7 @@ export function DayEventsPopover({
                       handleHebcalDetailsClick(parshaDetailsLabel, [detail]);
                     }
                   }}
-                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-1 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 transition-all hover:opacity-80 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
+                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 transition-all hover:opacity-80 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
                   title={popoverParshaLabel}
                 >
                   <div className="truncate">{popoverParshaLabel}</div>
@@ -1744,7 +1832,7 @@ export function DayEventsPopover({
                       handleHebcalDetailsClick(holidayDetailsLabel, details);
                     }
                   }}
-                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-1 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 transition-all hover:opacity-80 dark:bg-rose-950/25 dark:text-rose-200 dark:ring-rose-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
+                  className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 transition-all hover:opacity-80 dark:bg-rose-950/25 dark:text-rose-200 dark:ring-rose-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
                   title={popoverHolidayLabel}
                 >
                   <div className="truncate">{popoverHolidayLabel}</div>
@@ -1765,7 +1853,7 @@ export function DayEventsPopover({
                     className={`group relative w-full flex-none cursor-pointer overflow-hidden text-[10px] font-bold leading-tight transition-all ${isRtl ? 'text-right' : 'text-left'} ${
                       isTimedEvent
                         ? 'rounded-sm px-0.5 py-0.5 text-slate-700 hover:bg-slate-100/80 dark:text-slate-100 dark:hover:bg-slate-800/70'
-                        : 'rounded-md px-1.5 py-1 text-white hover:brightness-95'
+                        : 'rounded-md px-1.5 py-0.5 text-white hover:brightness-95'
                     }`}
                     style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
                     title={timeLabel ? `${chipLabel} ${timeLabel}` : chipLabel}
