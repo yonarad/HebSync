@@ -22,15 +22,64 @@ interface ScheduleDayDisplayOptions {
   showWeeklyParsha: boolean;
 }
 
-function getSortableEventDate(event: GoogleCalendarEvent): Date | null {
+function parseEventStart(event: GoogleCalendarEvent): Date | null {
   const startValue = event.start?.dateTime || event.start?.date;
   if (!startValue) return null;
 
   const parsedDate = event.start?.dateTime
     ? new Date(startValue)
-    : new Date(`${startValue}T12:00:00`);
+    : new Date(`${startValue}T00:00:00`);
 
   return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function parseEventEnd(event: GoogleCalendarEvent, startDate: Date): Date | null {
+  const endValue = event.end?.dateTime || event.end?.date;
+
+  if (!endValue) {
+    if (event.start?.date) {
+      const fallbackEnd = new Date(startDate);
+      fallbackEnd.setDate(fallbackEnd.getDate() + 1);
+      return fallbackEnd;
+    }
+
+    return new Date(startDate.getTime() + 1);
+  }
+
+  const parsedDate = event.end?.dateTime
+    ? new Date(endValue)
+    : new Date(`${endValue}T00:00:00`);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function eventOccursOnDay(event: GoogleCalendarEvent, dayDate: Date): boolean {
+  const eventStart = parseEventStart(event);
+  if (!eventStart) return false;
+
+  const dayStart = new Date(dayDate);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const eventEnd = parseEventEnd(event, eventStart);
+  if (!eventEnd) return false;
+
+  return eventStart < dayEnd && eventEnd > dayStart;
+}
+
+function getSortableEventDate(event: GoogleCalendarEvent): Date | null {
+  const eventStart = parseEventStart(event);
+  if (!eventStart) return null;
+
+  if (event.start?.dateTime) {
+    return eventStart;
+  }
+
+  const sortableDate = new Date(eventStart);
+  sortableDate.setHours(12, 0, 0, 0);
+  return sortableDate;
 }
 
 export function compareDayEvents(
@@ -99,16 +148,7 @@ export function buildMonthDays(
       gDate.getDate() === today.getDate();
 
     const dayEvents = calendarEvents
-      .filter((event) => {
-        const eventDate = getSortableEventDate(event);
-        if (!eventDate) return false;
-
-        return (
-          eventDate.getFullYear() === gDate.getFullYear() &&
-          eventDate.getMonth() === gDate.getMonth() &&
-          eventDate.getDate() === gDate.getDate()
-        );
-      })
+      .filter((event) => eventOccursOnDay(event, gDate))
       .sort(compareDayEvents);
 
     days.push({

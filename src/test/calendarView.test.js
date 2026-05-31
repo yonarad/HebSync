@@ -181,6 +181,56 @@ describe('day event sorting', () => {
     ]);
   });
 
+  it('shows multi-day all-day events on every day they span', () => {
+    const viewHDate = new HDate(new Date('2026-05-18T12:00:00'));
+    const calendarEvents = [
+      {
+        id: 'multi-day-all-day',
+        summary: 'Festival',
+        calendarId: 'calendar-a',
+        start: {
+          date: '2026-05-18',
+        },
+        end: {
+          date: '2026-05-21',
+        },
+      },
+    ];
+
+    const days = buildMonthDays(viewHDate, calendarEvents);
+    const visibleDays = days.filter(Boolean);
+    const matchingDays = visibleDays
+      .filter((day) => day.events.some((event) => event.id === 'multi-day-all-day'))
+      .map((day) => day.gDate.getDate());
+
+    expect(matchingDays).toEqual([18, 19, 20]);
+  });
+
+  it('shows timed events on every day they overlap when they cross midnight', () => {
+    const viewHDate = new HDate(new Date('2026-05-18T12:00:00'));
+    const calendarEvents = [
+      {
+        id: 'overnight',
+        summary: 'Overnight event',
+        calendarId: 'calendar-a',
+        start: {
+          dateTime: '2026-05-18T23:00:00+03:00',
+        },
+        end: {
+          dateTime: '2026-05-19T01:00:00+03:00',
+        },
+      },
+    ];
+
+    const days = buildMonthDays(viewHDate, calendarEvents);
+    const visibleDays = days.filter(Boolean);
+    const matchingDays = visibleDays
+      .filter((day) => day.events.some((event) => event.id === 'overnight'))
+      .map((day) => day.gDate.getDate());
+
+    expect(matchingDays).toEqual([18, 19]);
+  });
+
   it('includes days in schedule view when only Hebcal details are visible', () => {
     const viewHDate = new HDate(new Date('2026-09-12T12:00:00Z'));
     const days = buildMonthDays(viewHDate, []);
