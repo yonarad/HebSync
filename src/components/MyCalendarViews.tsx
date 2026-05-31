@@ -1,6 +1,6 @@
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, X } from 'lucide-react';
 import { HDate } from '@hebcal/core';
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import {
   getHolidayDetails,
   HEBREW_MONTHS,
@@ -109,6 +109,23 @@ function formatHebrewEventDateLabel(value: string, isDateTime: boolean): string 
 
 function formatMobileHebrewDayLabel(label: string): string {
   return label.replace(/['"׳״]/g, '');
+}
+
+function getMonthDayKey(dayObj: CalendarDay): string {
+  return `${dayObj.gDate.getFullYear()}-${String(dayObj.gDate.getMonth() + 1).padStart(2, '0')}-${String(dayObj.gDate.getDate()).padStart(2, '0')}`;
+}
+
+function areVisibleCountsEqual(
+  current: Record<string, number>,
+  next: Record<string, number>,
+): boolean {
+  const currentKeys = Object.keys(current);
+  const nextKeys = Object.keys(next);
+  if (currentKeys.length !== nextKeys.length) {
+    return false;
+  }
+
+  return nextKeys.every((key) => current[key] === next[key]);
 }
 
 function getEventAgeSuffix(
@@ -889,9 +906,142 @@ export function MonthCalendarView({
 }: MonthCalendarViewProps) {
   const timeLocale = isRtl ? 'he-IL' : 'en-US';
   const hasVisibleEvents = days.some((dayObj) => dayObj?.events?.length > 0);
+  const monthEventContentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const monthEventMeasureRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const moreButtonMeasureRef = useRef<HTMLDivElement | null>(null);
+  const [visibleEventCounts, setVisibleEventCounts] = useState<Record<string, number>>({});
+
+  useLayoutEffect(() => {
+    const measureVisibleEventCounts = (): void => {
+      const moreButtonHeight =
+        moreButtonMeasureRef.current?.offsetHeight ||
+        moreButtonMeasureRef.current?.getBoundingClientRect().height ||
+        16;
+      const nextCounts: Record<string, number> = {};
+
+      days.forEach((dayObj) => {
+        if (!dayObj) return;
+
+        const dayKey = getMonthDayKey(dayObj);
+        const container = monthEventContentRefs.current[dayKey];
+        const measureContainer = monthEventMeasureRefs.current[dayKey];
+        const measuredItems = measureContainer
+          ? Array.from(
+              measureContainer.querySelectorAll<HTMLElement>('[data-month-measure-item="true"]'),
+            )
+          : [];
+        const eventItems = measureContainer
+          ? Array.from(
+              measureContainer.querySelectorAll<HTMLElement>('[data-month-measure-event="true"]'),
+            )
+          : [];
+        const availableHeight = container?.clientHeight ?? 0;
+
+        if (!container || !measureContainer || availableHeight <= 0 || eventItems.length === 0) {
+          nextCounts[dayKey] = Math.min(dayObj.events.length, maxVisibleMonthEvents);
+          return;
+        }
+
+        const lastItemBottom = measuredItems.reduce(
+          (maxBottom, item) => Math.max(maxBottom, item.offsetTop + item.offsetHeight),
+          0,
+        );
+
+        if (lastItemBottom <= 0) {
+          nextCounts[dayKey] = Math.min(dayObj.events.length, maxVisibleMonthEvents);
+          return;
+        }
+
+        if (lastItemBottom <= availableHeight + 0.5) {
+          nextCounts[dayKey] = dayObj.events.length;
+          return;
+        }
+
+        const cutoff = Math.max(0, availableHeight - moreButtonHeight);
+        let nextVisibleEventCount = 0;
+
+        eventItems.forEach((item) => {
+          const itemBottom = item.offsetTop + item.offsetHeight;
+          if (itemBottom <= cutoff + 0.5) {
+            nextVisibleEventCount += 1;
+          }
+        });
+
+        nextCounts[dayKey] = Math.max(
+          0,
+          Math.min(nextVisibleEventCount, dayObj.events.length),
+        );
+      });
+
+      setVisibleEventCounts((current) =>
+        areVisibleCountsEqual(current, nextCounts) ? current : nextCounts,
+      );
+    };
+
+    const scheduleMeasure = (): void => {
+      if (typeof window !== 'undefined') {
+        window.requestAnimationFrame(measureVisibleEventCounts);
+      } else {
+        measureVisibleEventCounts();
+      }
+    };
+
+    const frameId =
+      typeof window !== 'undefined'
+        ? window.requestAnimationFrame(measureVisibleEventCounts)
+        : 0;
+    let resizeObserver: ResizeObserver | null = null;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        scheduleMeasure();
+      });
+
+      Object.values(monthEventContentRefs.current).forEach((node) => {
+        if (node) {
+          resizeObserver?.observe(node);
+        }
+      });
+      Object.values(monthEventMeasureRefs.current).forEach((node) => {
+        if (node) {
+          resizeObserver?.observe(node);
+        }
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', scheduleMeasure);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.cancelAnimationFrame(frameId);
+        window.removeEventListener('resize', scheduleMeasure);
+      }
+      resizeObserver?.disconnect();
+    };
+  }, [
+    days,
+    maxVisibleMonthEvents,
+    showEventAges,
+    showFasts,
+    showHolidayEvents,
+    showNationalHolidays,
+    showRoshChodesh,
+    showWeeklyParsha,
+    isMobileViewport,
+    isRtl,
+  ]);
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col md:h-full">
+      <div
+        ref={moreButtonMeasureRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-[9999px] top-0 w-full overflow-hidden truncate rounded-sm px-0.5 py-0.5 text-right text-[10px] font-bold leading-tight whitespace-nowrap text-[#1a73e8] translate-y-px"
+      >
+        {t('moreEvents', { count: 99 })}
+      </div>
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/70">
         {[0, 1, 2, 3, 4, 5, 6].map((idx) => {
           const weekdayLabel = t(`days.${idx}`);
@@ -906,7 +1056,7 @@ export function MonthCalendarView({
       <div className="relative min-h-0 flex-1 overflow-y-auto pb-14 md:pb-12">
         <div className="grid min-h-full grid-cols-7 auto-rows-[minmax(112px,1fr)] bg-white dark:bg-slate-900 md:auto-rows-[minmax(128px,1fr)]">
           {days.map((dayObj, i) => (
-            <div key={i} className={`min-h-[112px] border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-[128px] ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
+            <div key={i} className={`min-h-0 overflow-hidden border-b border-l border-slate-200 transition-colors dark:border-slate-700/60 md:min-h-0 ${!dayObj ? 'bg-slate-50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900'}`}>
               {dayObj && (
                 <div
                   role="button"
@@ -961,7 +1111,107 @@ export function MonthCalendarView({
                     </div>
                     );
                   })()}
-                  <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0 pb-0.5">
+                  <div
+                    ref={(node) => {
+                      monthEventContentRefs.current[getMonthDayKey(dayObj)] = node;
+                    }}
+                    className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden px-0 pb-0.5"
+                  >
+                    <div
+                      ref={(node) => {
+                        monthEventMeasureRefs.current[getMonthDayKey(dayObj)] = node;
+                      }}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 overflow-hidden opacity-0"
+                    >
+                      <div className="flex min-h-0 w-full flex-col gap-0.5">
+                        {(() => {
+                          const monthParshaLabel =
+                            showWeeklyParsha && dayObj.isShabbat
+                              ? getShabbatParshaName(dayObj.gDate, {
+                                  locale: getParshaLocale(isRtl),
+                                })
+                              : null;
+
+                          if (!monthParshaLabel) {
+                            return null;
+                          }
+
+                          return (
+                            <div
+                              data-month-measure-item="true"
+                              className={`w-full flex-none overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 ${isRtl ? 'text-right' : 'text-left'}`}
+                            >
+                              <div className="truncate">{monthParshaLabel}</div>
+                            </div>
+                          );
+                        })()}
+                        {(() => {
+                          const monthHolidayLabel =
+                            showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+                              ? getHolidayLabels(dayObj.gDate, {
+                                  includeFasts: showFasts,
+                                  includeHolidayEvents: showHolidayEvents,
+                                  includeNationalHolidays: showNationalHolidays,
+                                  includeRoshChodesh: showRoshChodesh,
+                                  locale: getHolidayLocale(isRtl),
+                                }).join(' ײ²ֲ· ')
+                              : '';
+
+                          if (!monthHolidayLabel) {
+                            return null;
+                          }
+
+                          return (
+                            <div
+                              data-month-measure-item="true"
+                              className={`w-full flex-none overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 ${isRtl ? 'text-right' : 'text-left'}`}
+                            >
+                              <div className="truncate">{monthHolidayLabel}</div>
+                            </div>
+                          );
+                        })()}
+                        {dayObj.events.map((event, idx) => {
+                          const ageSuffix = getEventAgeSuffix(event, dayObj.hYear, showEventAges);
+                          const eventColor = getEventColor(event);
+                          const timeLabel = formatEventTimeLabel(event, timeLocale);
+                          const chipLabel = `${event.summary}${ageSuffix}`;
+                          const isTimedEvent = Boolean(timeLabel);
+
+                          return (
+                            <div
+                              key={`measure-${idx}`}
+                              data-month-measure-item="true"
+                              data-month-measure-event="true"
+                              className={`w-full flex-none overflow-hidden text-[10px] font-bold leading-tight ${isRtl ? 'text-right' : 'text-left'} ${
+                                isTimedEvent
+                                  ? 'rounded-sm px-0.5 py-0.5 text-slate-700 dark:text-slate-100'
+                                  : 'rounded-md px-1.5 py-0.5 text-white'
+                              }`}
+                              style={isTimedEvent ? undefined : { backgroundColor: eventColor }}
+                            >
+                              {isTimedEvent ? (
+                                <div className="flex w-full">
+                                  <div className={`inline-flex min-w-0 items-center gap-1 ${isRtl ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
+                                    <span
+                                      className="h-2 w-2 shrink-0 rounded-full"
+                                      style={{ backgroundColor: eventColor }}
+                                    />
+                                    <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+                                      {timeLabel}
+                                    </span>
+                                    <span className="min-w-0 truncate">{chipLabel}</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="truncate">{chipLabel}</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex min-h-0 w-full flex-col gap-0.5 overflow-hidden">
                     {(() => {
                       const monthParshaLabel =
                         showWeeklyParsha && dayObj.isShabbat
@@ -1032,7 +1282,7 @@ export function MonthCalendarView({
                         </button>
                       );
                     })()}
-                    {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
+                    {dayObj.events.slice(0, visibleEventCounts[getMonthDayKey(dayObj)] ?? maxVisibleMonthEvents).map((event, idx) => {
                       const ageSuffix = getEventAgeSuffix(event, dayObj.hYear, showEventAges);
                       const eventColor = getEventColor(event);
                       const timeLabel = formatEventTimeLabel(event, timeLocale);
@@ -1074,17 +1324,28 @@ export function MonthCalendarView({
                         </button>
                       );
                     })}
-                    {dayObj.events.length > maxVisibleMonthEvents && (
+                    </div>
+                    {dayObj.events.length > (visibleEventCounts[getMonthDayKey(dayObj)] ?? maxVisibleMonthEvents) && (
                       <button
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
                           handleOverflowDayOpen(dayObj, event);
                         }}
-                        className="px-1 text-right text-[10px] font-bold text-[#1a73e8] hover:underline dark:text-blue-300"
-                        aria-label={t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                        className="block w-full overflow-hidden truncate rounded-sm px-0.5 py-0.5 text-right text-[10px] font-bold leading-tight whitespace-nowrap text-[#1a73e8] translate-y-px hover:underline dark:text-blue-300"
+                        aria-label={t('moreEvents', {
+                          count:
+                            dayObj.events.length -
+                            (visibleEventCounts[getMonthDayKey(dayObj)] ?? maxVisibleMonthEvents),
+                        })}
                       >
-                        {isMobileViewport ? '...' : t('moreEvents', { count: dayObj.events.length - maxVisibleMonthEvents })}
+                        {isMobileViewport
+                          ? '...'
+                          : t('moreEvents', {
+                              count:
+                                dayObj.events.length -
+                                (visibleEventCounts[getMonthDayKey(dayObj)] ?? maxVisibleMonthEvents),
+                            })}
                       </button>
                     )}
                   </div>
