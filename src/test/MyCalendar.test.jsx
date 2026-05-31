@@ -859,7 +859,7 @@ describe('My Calendar Component', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-05-18T12:00:00Z'));
     try {
-      vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
         {
           id: 'cal1',
           summary: 'HebSync',
@@ -867,7 +867,7 @@ describe('My Calendar Component', () => {
           description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
         },
       ]);
-      vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
         {
           id: 'evt1',
           summary: 'Month Event 1',
@@ -917,7 +917,7 @@ describe('My Calendar Component', () => {
         }),
       );
 
-      vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
         {
           id: 'cal1',
           summary: 'HebSync',
@@ -925,7 +925,7 @@ describe('My Calendar Component', () => {
           description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
         },
       ]);
-      vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([]);
+      vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([]);
 
       renderDashboard();
 
