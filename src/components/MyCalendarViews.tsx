@@ -938,9 +938,9 @@ export function MonthCalendarView({
                         : null;
 
                     return (
-                  <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-start text-right' : 'justify-start text-left'}`}>
-                      <div className="flex w-full min-w-0 flex-col">
-                        <div className="flex w-full min-w-0 flex-nowrap items-baseline gap-0.5 justify-start">
+                      <div className={`flex w-full items-start px-0.5 pb-1 md:px-1 ${isRtl ? 'justify-start text-right' : 'justify-start text-left'}`}>
+                        <div className="flex w-full min-w-0 flex-col">
+                          <div className="flex w-full min-w-0 flex-nowrap items-baseline gap-0.5 justify-start">
                           <span className={`inline-flex h-6 items-center px-0 text-[11px] font-bold leading-none md:h-7 md:min-w-7 md:justify-center md:rounded-full md:px-1.5 md:text-sm ${
                             dayObj.isToday
                               ? 'min-w-6 justify-center rounded-full bg-[#1a73e8] px-1 text-white shadow-sm md:min-w-7'
@@ -956,51 +956,81 @@ export function MonthCalendarView({
                             </span>
                           )}
                         </div>
-                        {parshaLabel ? (
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const detail = getShabbatParshaDetail(dayObj.gDate, {
-                                locale: getParshaLocale(isRtl),
-                              });
-                              if (detail) {
-                                handleHebcalDetailsClick(t('parshaDetails'), [detail]);
-                              }
-                            }}
-                            className={`mt-1 w-full truncate whitespace-nowrap rounded-md border border-amber-200/70 bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-amber-800 transition-opacity hover:opacity-80 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200 ${isRtl ? 'text-right' : 'text-left'}`}
-                            title={parshaLabel}
-                          >
-                            {parshaLabel}
-                          </button>
-                        ) : null}
-                        {holidayLabel ? (
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const details = getHolidayDetails(dayObj.gDate, {
-                                includeFasts: showFasts,
-                                includeHolidayEvents: showHolidayEvents,
-                                includeNationalHolidays: showNationalHolidays,
-                                includeRoshChodesh: showRoshChodesh,
-                                locale: getHolidayLocale(isRtl),
-                              });
-                              if (details.length > 0) {
-                                handleHebcalDetailsClick(t('holidayDetails'), details);
-                              }
-                            }}
-                            className={`mt-1 w-full truncate whitespace-nowrap rounded-md border border-rose-200/70 bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-rose-800 transition-opacity hover:opacity-80 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-200 ${isRtl ? 'text-right' : 'text-left'}`}
-                            title={holidayLabel}
-                          >
-                            {holidayLabel}
-                          </button>
-                        ) : null}
                       </div>
                     </div>
                     );
                   })()}
                   <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden px-0 pb-0.5">
+                    {(() => {
+                      const monthParshaLabel =
+                        showWeeklyParsha && dayObj.isShabbat
+                          ? getShabbatParshaName(dayObj.gDate, {
+                              locale: getParshaLocale(isRtl),
+                            })
+                          : null;
+
+                      if (!monthParshaLabel) {
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const detail = getShabbatParshaDetail(dayObj.gDate, {
+                              locale: getParshaLocale(isRtl),
+                            });
+                            if (detail) {
+                              handleHebcalDetailsClick(t('parshaDetails'), [detail]);
+                            }
+                          }}
+                          className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/70 transition-all hover:opacity-80 dark:bg-amber-950/25 dark:text-amber-200 dark:ring-amber-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
+                          title={monthParshaLabel}
+                        >
+                          <div className="truncate">{monthParshaLabel}</div>
+                        </button>
+                      );
+                    })()}
+                    {(() => {
+                      const monthHolidayLabel =
+                        showHolidayEvents || showNationalHolidays || showRoshChodesh || showFasts
+                          ? getHolidayLabels(dayObj.gDate, {
+                              includeFasts: showFasts,
+                              includeHolidayEvents: showHolidayEvents,
+                              includeNationalHolidays: showNationalHolidays,
+                              includeRoshChodesh: showRoshChodesh,
+                              locale: getHolidayLocale(isRtl),
+                            }).join(' ֲ· ')
+                          : '';
+
+                      if (!monthHolidayLabel) {
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const details = getHolidayDetails(dayObj.gDate, {
+                              includeFasts: showFasts,
+                              includeHolidayEvents: showHolidayEvents,
+                              includeNationalHolidays: showNationalHolidays,
+                              includeRoshChodesh: showRoshChodesh,
+                              locale: getHolidayLocale(isRtl),
+                            });
+                            if (details.length > 0) {
+                              handleHebcalDetailsClick(t('holidayDetails'), details);
+                            }
+                          }}
+                          className={`group relative w-full flex-none cursor-pointer overflow-hidden rounded-md bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-bold leading-tight text-rose-800 ring-1 ring-inset ring-rose-200/70 transition-all hover:opacity-80 dark:bg-rose-950/25 dark:text-rose-200 dark:ring-rose-900/60 ${isRtl ? 'text-right' : 'text-left'}`}
+                          title={monthHolidayLabel}
+                        >
+                          <div className="truncate">{monthHolidayLabel}</div>
+                        </button>
+                      );
+                    })()}
                     {dayObj.events.slice(0, maxVisibleMonthEvents).map((event, idx) => {
                       const ageSuffix = getEventAgeSuffix(event, dayObj.hYear, showEventAges);
                       const eventColor = getEventColor(event);
@@ -1190,7 +1220,7 @@ export function ScheduleCalendarView({
                           handleHebcalDetailsClick(t('parshaDetails'), [detail]);
                         }
                       }}
-                      className={`w-full rounded-xl border border-amber-200/70 bg-amber-50/80 px-2.5 py-2 text-[11px] font-medium leading-tight text-amber-800 transition-opacity hover:opacity-80 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200 md:text-xs ${isRtl ? 'text-right' : 'text-left'}`}
+                      className={`flex w-full items-start rounded-2xl border border-amber-200/70 bg-amber-50/80 px-2.5 py-2 text-right text-sm font-bold leading-tight text-amber-800 transition-opacity hover:opacity-80 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200 ${isRtl ? 'text-right' : 'text-left'}`}
                       title={parshaLabel}
                     >
                       {parshaLabel}
@@ -1212,7 +1242,7 @@ export function ScheduleCalendarView({
                           handleHebcalDetailsClick(t('holidayDetails'), details);
                         }
                       }}
-                      className={`w-full rounded-xl border border-rose-200/70 bg-rose-50/80 px-2.5 py-2 text-[11px] font-medium leading-tight text-rose-800 transition-opacity hover:opacity-80 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-200 md:text-xs ${isRtl ? 'text-right' : 'text-left'}`}
+                      className={`flex w-full items-start rounded-2xl border border-rose-200/70 bg-rose-50/80 px-2.5 py-2 text-right text-sm font-bold leading-tight text-rose-800 transition-opacity hover:opacity-80 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-200 ${isRtl ? 'text-right' : 'text-left'}`}
                       title={holidayLabel}
                     >
                       {holidayLabel}
