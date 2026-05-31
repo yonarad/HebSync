@@ -968,7 +968,7 @@ export function MonthCalendarView({
                                 handleHebcalDetailsClick(t('parshaDetails'), [detail]);
                               }
                             }}
-                            className={`mt-1 w-full rounded-md border border-amber-200/70 bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-amber-800 transition-opacity hover:opacity-80 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200 ${isRtl ? 'text-right' : 'text-left'}`}
+                            className={`mt-1 w-full truncate whitespace-nowrap rounded-md border border-amber-200/70 bg-amber-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-amber-800 transition-opacity hover:opacity-80 dark:border-amber-900/60 dark:bg-amber-950/25 dark:text-amber-200 ${isRtl ? 'text-right' : 'text-left'}`}
                             title={parshaLabel}
                           >
                             {parshaLabel}
@@ -990,7 +990,7 @@ export function MonthCalendarView({
                                 handleHebcalDetailsClick(t('holidayDetails'), details);
                               }
                             }}
-                            className={`mt-1 w-full rounded-md border border-rose-200/70 bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-rose-800 transition-opacity hover:opacity-80 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-200 ${isRtl ? 'text-right' : 'text-left'}`}
+                            className={`mt-1 w-full truncate whitespace-nowrap rounded-md border border-rose-200/70 bg-rose-50/85 px-1.5 py-0.5 text-[10px] font-medium leading-tight text-rose-800 transition-opacity hover:opacity-80 dark:border-rose-900/60 dark:bg-rose-950/25 dark:text-rose-200 ${isRtl ? 'text-right' : 'text-left'}`}
                             title={holidayLabel}
                           >
                             {holidayLabel}
