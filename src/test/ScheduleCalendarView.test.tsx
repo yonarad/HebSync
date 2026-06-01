@@ -12,7 +12,7 @@ describe('ScheduleCalendarView', () => {
           }
 
           if (key.startsWith('days.')) {
-            return 'יום';
+            return '\u05d9\u05d5\u05dd';
           }
 
           return key;
@@ -29,15 +29,15 @@ describe('ScheduleCalendarView', () => {
         scheduleDays={[
           {
             hDay: 18,
-            hDayGematriya: 'י"ח',
+            hDayGematriya: '\u05d9"\u05d7',
             hMonthName: 'Sivan',
             gDay: 25,
-            gMonthLabel: 'מאי',
+            gMonthLabel: '\u05de\u05d0\u05d9',
             gDate: new Date('2026-05-25T12:00:00'),
             events: [
               {
                 id: 'evt-1',
-                summary: 'אירוע בדיקה',
+                summary: '\u05d0\u05d9\u05e8\u05d5\u05e2 \u05d1\u05d3\u05d9\u05e7\u05d4',
                 start: {
                   date: '2026-05-25',
                 },
@@ -52,7 +52,7 @@ describe('ScheduleCalendarView', () => {
             weekday: 1,
           },
         ]}
-        hMonthNameHebrew="סיון"
+        hMonthNameHebrew="\u05e1\u05d9\u05d5\u05df"
         getEventColor={() => '#1a73e8'}
         handleEventClick={vi.fn()}
         handleHebcalDetailsClick={vi.fn()}
@@ -63,10 +63,10 @@ describe('ScheduleCalendarView', () => {
     );
 
     const dayButton = screen.getByRole('button', {
-      name: 'Create event on י"ח (25)',
+      name: 'Create event on \u05d9"\u05d7 (25)',
     });
 
-    expect(within(dayButton).getByText('י"ח')).toBeInTheDocument();
+    expect(within(dayButton).getByText('\u05d9"\u05d7')).toBeInTheDocument();
     expect(within(dayButton).queryByText('25')).not.toBeInTheDocument();
   });
 

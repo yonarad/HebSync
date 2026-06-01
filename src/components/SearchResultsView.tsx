@@ -1,8 +1,12 @@
 import type { Calendar, GoogleCalendarEvent } from '../types/appTypes';
 import { getEventOccurrenceHebrewYear } from '../utils/calendarView';
-import { CalendarEmptyState, CalendarLoadingOverlay, getEventAgeSuffix } from './calendarViewUtils';
 import { HDate } from '@hebcal/core';
 import { HEBREW_MONTHS, formatHebrewYear, gematriya } from '../utils/hebcal';
+import {
+  CalendarEmptyState,
+  CalendarLoadingOverlay,
+  getEventAgeSuffix,
+} from './calendarViewUtils';
 
 export interface SearchResultsViewProps {
   t: (key: string, options?: Record<string, unknown>) => string;
@@ -57,7 +61,7 @@ function formatHebrewEventDateLabel(value: string, isDateTime: boolean): string 
     HEBREW_MONTHS.find((month) => month.id === hDate.getMonthName())?.label ||
     hDate.getMonthName();
 
-  return `${gematriya(hDate.getDate())} ׳‘${monthName} ${formatHebrewYear(hDate.getFullYear())}`;
+  return `${gematriya(hDate.getDate())} \u05d1${monthName} ${formatHebrewYear(hDate.getFullYear())}`;
 }
 
 export function SearchResultsView({
@@ -72,7 +76,9 @@ export function SearchResultsView({
   calendars,
   onClearSearch,
 }: SearchResultsViewProps) {
-  const calendarNameById = new Map(calendars.map((calendar) => [calendar.id, calendar.summary]));
+  const calendarNameById = new Map(
+    calendars.map((calendar) => [calendar.id, calendar.summary]),
+  );
 
   return (
     <div
@@ -108,7 +114,11 @@ export function SearchResultsView({
               const endValue = event.end?.dateTime || event.end?.date || '';
               const isTimed = Boolean(event.start?.dateTime);
               const occurrenceHebrewYear = getEventOccurrenceHebrewYear(event);
-              const ageSuffix = getEventAgeSuffix(event, occurrenceHebrewYear, showEventAges);
+              const ageSuffix = getEventAgeSuffix(
+                event,
+                occurrenceHebrewYear,
+                showEventAges,
+              );
               const locale = isRtl ? 'he-IL' : 'en-US';
               const dateLabel = startValue
                 ? formatEventDateLabel(startValue, locale, isTimed)
@@ -139,7 +149,8 @@ export function SearchResultsView({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-bold text-slate-900 dark:text-slate-50">
-                      {(event.summary || t('untitledEvent'))}{ageSuffix}
+                      {(event.summary || t('untitledEvent'))}
+                      {ageSuffix}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                       {hebrewDateLabel ? <span>{hebrewDateLabel}</span> : null}

@@ -25,7 +25,7 @@ describe('useAddEventPreviewSubmit', () => {
   const previewRows: PreviewOccurrence[] = [
     {
       hebrewYear: 5786,
-      hebrewDate: 'ל׳ בחשוון',
+      hebrewDate: '\u05dc\u05f3 \u05d1\u05d7\u05e9\u05d5\u05d5\u05df',
       gregorianDate: '2026-11-10',
       note: '',
     },

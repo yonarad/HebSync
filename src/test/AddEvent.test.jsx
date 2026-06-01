@@ -72,10 +72,11 @@ const renderAddEvent = (props = {}) => {
   );
 };
 
-const BULK_IMPORT_HEADERS = ['שם האירוע', 'קטגוריה', 'הערות', 'שנת מקור', 'חודש', 'יום', 'מופעים'];
+const BULK_IMPORT_HEADERS = ['\u05e9\u05dd \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2', '\u05e7\u05d8\u05d2\u05d5\u05e8\u05d9\u05d4', '\u05d4\u05e2\u05e8\u05d5\u05ea (\u05dc\u05d0 \u05d7\u05d5\u05d1\u05d4)', '\u05e9\u05e0\u05ea \u05de\u05e7\u05d5\u05e8', '\u05d7\u05d5\u05d3\u05e9', '\u05d9\u05d5\u05dd', '\u05de\u05d5\u05e4\u05e2\u05d9\u05dd'];
+const BULK_IMPORT_EXTENDED_HEADERS = [...BULK_IMPORT_HEADERS, '\u05e1\u05d5\u05d2 \u05ea\u05d0\u05e8\u05d9\u05da', '\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d5\u05e2\u05d6\u05d9', '\u05dc\u05e4\u05e0\u05d9/\u05d0\u05d7\u05e8\u05d9 \u05d4\u05e9\u05e7\u05d9\u05e2\u05d4'];
 
-const setMockWorkbookRows = (rows) => {
-  mockSheetRows = [BULK_IMPORT_HEADERS, ...rows];
+const setMockWorkbookRows = (rows, headers = BULK_IMPORT_HEADERS) => {
+  mockSheetRows = [headers, ...rows];
 };
 
 const makeMockWorkbookFile = () => ({
@@ -316,7 +317,7 @@ describe('AddEvent Component', () => {
 
   it('should keep import disabled for special dates until a fallback is selected', async () => {
     setMockWorkbookRows([
-      ['יום הולדת א', 'יום הולדת', '', '5784', 'חשוון', 'ל', '2'],
+      ['\u05d9\u05d5\u05dd \u05d4\u05d5\u05dc\u05d3\u05ea \u05d0', '\u05d9\u05d5\u05dd \u05d4\u05d5\u05dc\u05d3\u05ea', '', '5784', '\u05d7\u05e9\u05d5\u05d5\u05df', '\u05dc', '2'],
     ]);
 
     const { container } = renderAddEvent();
@@ -344,7 +345,7 @@ describe('AddEvent Component', () => {
 
   it('should allow removing invalid import rows', async () => {
     setMockWorkbookRows([
-      ['אירוע שגוי', 'יום הולדת', '', '5784', 'ניסן', '40', '1'],
+      ['\u05d0\u05d9\u05e8\u05d5\u05e2 \u05e9\u05d2\u05d5\u05d9', '\u05d9\u05d5\u05dd \u05d4\u05d5\u05dc\u05d3\u05ea', '', '5784', '\u05e0\u05d9\u05e1\u05df', '40', '1'],
     ]);
 
     const { container } = renderAddEvent();
@@ -354,13 +355,32 @@ describe('AddEvent Component', () => {
     fireEvent.change(fileInput, { target: { files: [makeMockWorkbookFile()] } });
 
     fireEvent.click(await screen.findByText('bulkImportPreviewButton'));
-    expect(await screen.findByText('התאריך לא קיים בשנת המקור')).toBeInTheDocument();
+    expect(await screen.findByText('\u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd \u05d1\u05e9\u05e0\u05ea \u05d4\u05de\u05e7\u05d5\u05e8')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'bulkImportRemoveRow' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('אירוע שגוי')).not.toBeInTheDocument();
+      expect(screen.queryByText('\u05d0\u05d9\u05e8\u05d5\u05e2 \u05e9\u05d2\u05d5\u05d9')).not.toBeInTheDocument();
       expect(screen.queryByText('bulkImportPreviewResults')).not.toBeInTheDocument();
     });
+  });
+
+  it('should preview Gregorian import rows with the Gregorian date and converted Hebrew date', async () => {
+    setMockWorkbookRows([
+      ['\u05d9\u05d5\u05dd \u05d4\u05d5\u05dc\u05d3\u05ea \u05d0', '\u05d9\u05d5\u05dd \u05d4\u05d5\u05dc\u05d3\u05ea', '', '', '', '', '2', '\u05dc\u05d5\u05e2\u05d6\u05d9', '2026-05-07', '\u05d0\u05d7\u05e8\u05d9 \u05d4\u05e9\u05e7\u05d9\u05e2\u05d4'],
+    ], BULK_IMPORT_EXTENDED_HEADERS);
+
+    const { container } = renderAddEvent();
+    fireEvent.click(screen.getByText('uploadWorkbook'));
+
+    const fileInput = container.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, { target: { files: [makeMockWorkbookFile()] } });
+
+    fireEvent.click(await screen.findByText('bulkImportPreviewButton'));
+
+    expect(await screen.findByText('2026-05-07')).toBeInTheDocument();
+    expect(await screen.findByText('\u05d0\u05d7\u05e8\u05d9 \u05d4\u05e9\u05e7\u05d9\u05e2\u05d4')).toBeInTheDocument();
+    expect(await screen.findByText(/כ״א|כ"א/)).toBeInTheDocument();
+    expect(await screen.findByText(/Iyyar|אייר/)).toBeInTheDocument();
   });
 });

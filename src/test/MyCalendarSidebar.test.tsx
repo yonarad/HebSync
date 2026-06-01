@@ -90,7 +90,7 @@ describe('MyCalendarSidebar', () => {
     fireEvent.click(screen.getByText('+ new'));
     fireEvent.click(
       screen.getByRole('button', {
-        name: /אודות HebSync/i,
+        name: /\u05d0\u05d5\u05d3\u05d5\u05ea HebSync/i,
       }),
     );
     fireEvent.click(screen.getAllByText('selectAll')[0]);

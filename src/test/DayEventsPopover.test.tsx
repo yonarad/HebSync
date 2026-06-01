@@ -10,7 +10,7 @@ describe('DayEventsPopover', () => {
       <DayEventsPopover
         overflowDay={{
           hDay: 1,
-          hDayGematriya: 'א',
+          hDayGematriya: '\u05d0',
           hMonthName: 'Tishrei',
           gDay: 12,
           gMonthLabel: 'Sep',

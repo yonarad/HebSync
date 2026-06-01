@@ -155,10 +155,10 @@ export default function useAddEventPreviewSubmit({
       setFeedbackMessage(
         sourceDateValidation.reason === 'missing_flexible_30th'
           ? isRtl
-            ? 'התאריך שנבחר לא קיים בשנת המקור. ל׳ בחשוון, ל׳ בכסלו ול׳ באדר א׳ קיימים רק בחלק מהשנים.'
+            ? '\u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05e9\u05e0\u05d1\u05d7\u05e8 \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd \u05d1\u05e9\u05e0\u05ea \u05d4\u05de\u05e7\u05d5\u05e8. \u05dc\u05f3 \u05d1\u05d7\u05e9\u05d5\u05d5\u05df, \u05dc\u05f3 \u05d1\u05db\u05e1\u05dc\u05d5 \u05d5\u05dc\u05f3 \u05d1\u05d0\u05d3\u05e8 \u05d0\u05f3 \u05e7\u05d9\u05d9\u05de\u05d9\u05dd \u05e8\u05e7 \u05d1\u05d7\u05dc\u05e7 \u05de\u05d4\u05e9\u05e0\u05d9\u05dd.'
             : 'The selected date does not exist in the source year. 30 Cheshvan, 30 Kislev, and 30 Adar I exist only in some years.'
           : isRtl
-            ? 'התאריך שנבחר לא קיים בשנת המקור שנבחרה.'
+            ? '\u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05e9\u05e0\u05d1\u05d7\u05e8 \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd \u05d1\u05e9\u05e0\u05ea \u05d4\u05de\u05e7\u05d5\u05e8 \u05e9\u05e0\u05d1\u05d7\u05e8\u05d4.'
             : 'The selected date does not exist in the selected source year.',
       );
       return;
@@ -196,7 +196,7 @@ export default function useAddEventPreviewSubmit({
     if (!isGregorianEntry && !sourceDateValidation.isValid) {
       throw new Error(
         isRtl
-          ? 'התאריך שנבחר אינו קיים בשנת המקור.'
+          ? '\u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05e9\u05e0\u05d1\u05d7\u05e8 \u05d0\u05d9\u05e0\u05d5 \u05e7\u05d9\u05d9\u05dd \u05d1\u05e9\u05e0\u05ea \u05d4\u05de\u05e7\u05d5\u05e8.'
           : 'The selected date does not exist in the source year.',
       );
     }
@@ -208,7 +208,7 @@ export default function useAddEventPreviewSubmit({
     try {
       const targetParts = resolveTargetDateParts();
       if (!targetParts) {
-        throw new Error(isRtl ? 'תאריך לועזי לא חוקי' : 'Invalid Gregorian date');
+        throw new Error(isRtl ? '\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d5\u05e2\u05d6\u05d9 \u05dc\u05d0 \u05d7\u05d5\u05e7\u05d9' : 'Invalid Gregorian date');
       }
 
       const rdateString = generateRdates(
@@ -222,7 +222,7 @@ export default function useAddEventPreviewSubmit({
       if (!rdateString) {
         throw new Error(
           isRtl
-            ? 'לא ניתן היה לחשב תאריכים עבור האירוע'
+            ? '\u05dc\u05d0 \u05e0\u05d9\u05ea\u05df \u05d4\u05d9\u05d4 \u05dc\u05d7\u05e9\u05d1 \u05ea\u05d0\u05e8\u05d9\u05db\u05d9\u05dd \u05e2\u05d1\u05d5\u05e8 \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2'
             : 'Could not calculate dates for the event',
         );
       }
@@ -230,7 +230,7 @@ export default function useAddEventPreviewSubmit({
       if (selectedCalendarIds.length === 0) {
         throw new Error(
           isRtl
-            ? 'אנא בחר לפחות יומן אחד לסנכרון'
+            ? '\u05d0\u05e0\u05d0 \u05d1\u05d7\u05e8 \u05dc\u05e4\u05d7\u05d5\u05ea \u05d9\u05d5\u05de\u05df \u05d0\u05d7\u05d3 \u05dc\u05e1\u05e0\u05db\u05e8\u05d5\u05df'
             : 'Please select at least one calendar to sync',
         );
       }
@@ -263,7 +263,7 @@ export default function useAddEventPreviewSubmit({
       setFeedbackTone('success');
       setFeedbackMessage(
         isRtl
-          ? `האירוע נוצר בהצלחה וסונכרן ל-${selectedCalendarIds.length} יומנים!`
+          ? `\u05d4\u05d0\u05d9\u05e8\u05d5\u05e2 \u05e0\u05d5\u05e6\u05e8 \u05d1\u05d4\u05e6\u05dc\u05d7\u05d4 \u05d5\u05e1\u05d5\u05e0\u05db\u05e8\u05df \u05dc-${selectedCalendarIds.length} \u05d9\u05d5\u05de\u05e0\u05d9\u05dd!`
           : `Event created successfully and synced to ${selectedCalendarIds.length} calendars!`,
       );
 
@@ -283,7 +283,7 @@ export default function useAddEventPreviewSubmit({
         if (
           window.confirm(
             isRtl
-              ? 'פג תוקף ההתחברות לגוגל. האם ברצונך להתחבר מחדש כדי לשמור את האירוע?'
+              ? '\u05e4\u05d2 \u05ea\u05d5\u05e7\u05e3 \u05d4\u05d4\u05ea\u05d7\u05d1\u05e8\u05d5\u05ea \u05dc\u05d2\u05d5\u05d2\u05dc. \u05d4\u05d0\u05dd \u05d1\u05e8\u05e6\u05d5\u05e0\u05da \u05dc\u05d4\u05ea\u05d7\u05d1\u05e8 \u05de\u05d7\u05d3\u05e9 \u05db\u05d3\u05d9 \u05dc\u05e9\u05de\u05d5\u05e8 \u05d0\u05ea \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2?'
               : 'Your Google session expired. Do you want to reconnect to save the event?',
           )
         ) {
@@ -292,7 +292,7 @@ export default function useAddEventPreviewSubmit({
       } else {
         setFeedbackTone('error');
         setFeedbackMessage(
-          `${isRtl ? 'שגיאה בשמירת האירוע: ' : 'Error saving event: '}${errorMessage}`,
+          `${isRtl ? '\u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05e9\u05de\u05d9\u05e8\u05ea \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2: ' : 'Error saving event: '}${errorMessage}`,
         );
       }
     } finally {

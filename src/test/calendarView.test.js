@@ -262,7 +262,7 @@ describe('overflow popover layout', () => {
     const layout = getOverflowPopoverLayout({
       overflowDay: {
         hDay: 1,
-        hDayGematriya: 'א',
+        hDayGematriya: '\u05d0',
         hMonthName: 'Sivan',
         gDay: 25,
         gMonthLabel: 'May',
@@ -302,7 +302,7 @@ describe('overflow popover layout', () => {
     const layout = getOverflowPopoverLayout({
       overflowDay: {
         hDay: 1,
-        hDayGematriya: 'א',
+        hDayGematriya: '\u05d0',
         hMonthName: 'Sivan',
         gDay: 25,
         gMonthLabel: 'May',
@@ -342,7 +342,7 @@ describe('overflow popover layout', () => {
     const layout = getOverflowPopoverLayout({
       overflowDay: {
         hDay: 1,
-        hDayGematriya: 'א',
+        hDayGematriya: '\u05d0',
         hMonthName: 'Sivan',
         gDay: 25,
         gMonthLabel: 'May',

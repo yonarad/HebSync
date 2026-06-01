@@ -1,6 +1,7 @@
 import { LoaderCircle, Search, X, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Calendar, EventSearchParams } from '../types/appTypes';
+import { focusFirstElement, trapFocusWithin } from './focusUtils';
 
 export interface SharedSearchProps {
   isRtl: boolean;
@@ -36,11 +37,68 @@ export function DesktopCalendarSearch({
   isSearchLoading,
 }: SharedSearchProps) {
   const simpleQuery = searchFilters.query || '';
+  const advancedSearchPanelId = useId();
+  const searchRootRef = useRef<HTMLDivElement | null>(null);
+  const searchToggleRef = useRef<HTMLButtonElement | null>(null);
+  const advancedSearchPanelRef = useRef<HTMLDivElement | null>(null);
+  const wasSearchOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!isSearchOpen) {
+      if (wasSearchOpenRef.current) {
+        searchToggleRef.current?.focus();
+      }
+      wasSearchOpenRef.current = false;
+      return undefined;
+    }
+
+    wasSearchOpenRef.current = true;
+
+    const handlePointerDown = (event: MouseEvent): void => {
+      if (!searchRootRef.current?.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+        setIsSearchPanelOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setIsSearchOpen(false);
+        setIsSearchPanelOpen(false);
+        return;
+      }
+
+      if (isSearchPanelOpen) {
+        trapFocusWithin(searchRootRef.current, event);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSearchOpen, isSearchPanelOpen, setIsSearchOpen, setIsSearchPanelOpen]);
+
+  useEffect(() => {
+    if (!isSearchOpen || !isSearchPanelOpen) return undefined;
+
+    focusFirstElement(advancedSearchPanelRef.current);
+    return undefined;
+  }, [isSearchOpen, isSearchPanelOpen]);
 
   return (
-    <div data-testid="desktop-calendar-search" className="relative hidden md:flex md:items-center">
+    <div
+      ref={searchRootRef}
+      data-testid="desktop-calendar-search"
+      className="relative hidden md:flex md:items-center"
+    >
       {!isSearchOpen ? (
         <button
+          ref={searchToggleRef}
           data-testid="desktop-search-toggle"
           type="button"
           onClick={() => setIsSearchOpen(true)}
@@ -52,11 +110,13 @@ export function DesktopCalendarSearch({
       ) : (
         <div className="flex h-11 w-[min(28rem,32vw)] items-center gap-1 rounded-full border border-slate-200/80 bg-white px-2 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.42)] dark:border-slate-700/70 dark:bg-slate-900">
           <button
+            data-testid="desktop-search-advanced-toggle"
             type="button"
             onClick={() => setIsSearchPanelOpen((prev) => !prev)}
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             aria-label={t('toggleAdvancedSearch')}
             aria-expanded={isSearchPanelOpen}
+            aria-controls={advancedSearchPanelId}
           >
             <ChevronDown className={`h-4 w-4 transition-transform ${isSearchPanelOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -110,7 +170,14 @@ export function DesktopCalendarSearch({
       )}
 
       {isSearchOpen && isSearchPanelOpen ? (
-        <div className="absolute right-0 top-full z-40 mt-3 w-[min(46rem,72vw)] overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700/70 dark:bg-slate-900">
+        <div
+          ref={advancedSearchPanelRef}
+          id={advancedSearchPanelId}
+          data-testid="desktop-search-panel"
+          role="region"
+          aria-label={t('toggleAdvancedSearch')}
+          className="absolute right-0 top-full z-40 mt-3 w-[min(46rem,72vw)] overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700/70 dark:bg-slate-900"
+        >
           <div className="grid gap-3 px-4 pb-4 pt-4 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)]">
             <label className="space-y-1.5">
               <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
@@ -210,11 +277,51 @@ export function MobileTextSearchDialog({
     'isRtl' | 't' | 'searchFilters' | 'setSearchFilters' | 'onSearchSubmit' | 'onSearchClear' | 'isSearchLoading'
   >) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const dialogTitleId = useId();
+
+  useEffect(() => {
+    if (!isOpen) {
+      restoreFocusRef.current?.focus();
+      restoreFocusRef.current = null;
+      return undefined;
+    }
+
+    if (typeof document !== 'undefined') {
+      restoreFocusRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      trapFocusWithin(dialogRef.current, event);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] bg-white dark:bg-slate-950 md:hidden" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      ref={dialogRef}
+      data-testid="mobile-search-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={dialogTitleId}
+      className="fixed inset-0 z-[70] bg-white dark:bg-slate-950 md:hidden"
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
       <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-3 dark:border-slate-800">
         <button
           type="button"
@@ -224,7 +331,11 @@ export function MobileTextSearchDialog({
         >
           <X className="h-5 w-5" />
         </button>
+        <span id={dialogTitleId} className="sr-only">
+          {t('searchEvents')}
+        </span>
         <input
+          data-testid="mobile-search-input"
           autoFocus
           type="text"
           value={searchFilters.query || ''}
@@ -248,6 +359,7 @@ export function MobileTextSearchDialog({
           aria-label={t('searchEvents')}
         />
         <button
+          data-testid="mobile-search-submit"
           type="button"
           onClick={() => {
             setIsSubmitting(true);

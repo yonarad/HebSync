@@ -29,6 +29,7 @@ export interface SessionUser {
 export type FallbackChoice = '29th' | '1st' | 'skip';
 
 export type ImportRowStatus = 'valid' | 'invalid' | 'needs_decision';
+export type ImportDateType = 'hebrew' | 'gregorian';
 
 export interface SourceDateValidation {
   isValid: boolean;
@@ -51,12 +52,16 @@ export interface ImportPreviewRow {
   title: string;
   categoryLabel: string;
   notes: string;
+  dateType: ImportDateType;
   sourceYearLabel: string;
   sourceYearValue: number | null;
   monthLabel: string;
   monthId?: string;
   dayLabel: string;
   dayValue: number | null;
+  gregorianDateLabel?: string;
+  afterSunset?: boolean;
+  sunsetModeLabel?: string;
   occurrences: number | string;
   issues: string[];
   validation: SourceDateValidation | null;

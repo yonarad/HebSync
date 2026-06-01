@@ -1,9 +1,8 @@
-import { useState, useEffect, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useState, useEffect, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search } from 'lucide-react';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
-import AddEvent from './AddEvent';
 import {
   isRecurringEvent,
   revokeAccess,
@@ -47,6 +46,7 @@ import type {
 } from '../types/appTypes';
 
 const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
+const AddEvent = lazy(() => import('./AddEvent'));
 
 function activateOnKeyboard(
   event: KeyboardEvent<HTMLElement>,
@@ -188,6 +188,7 @@ export default function MyCalendar() {
   const [hasAutoPromptedLogin, setHasAutoPromptedLogin] = useState(false);
   const [recurringActionMode, setRecurringActionMode] = useState<'delete' | 'update' | null>(null);
   const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
+
   const {
     editDesc,
     editTitle,
@@ -208,6 +209,12 @@ export default function MyCalendar() {
     t,
     loadCalendarData,
     loadEvents,
+    onDeleteSuccess: () => {
+      void refreshActiveSearch();
+    },
+    onUpdateSuccess: () => {
+      void refreshActiveSearch();
+    },
   });
 
   useEffect(() => {
@@ -516,7 +523,7 @@ export default function MyCalendar() {
     </button>
   ) : undefined;
 
-  const performSearch = async (): Promise<void> => {
+  async function performSearch(): Promise<void> {
     const query = searchFilters.query?.trim() || '';
     const effectiveCalendarIds =
       searchCalendarMode === 'selected'
@@ -554,7 +561,12 @@ export default function MyCalendar() {
     } finally {
       setIsSearchLoading(false);
     }
-  };
+  }
+
+  async function refreshActiveSearch(): Promise<void> {
+    if (!isSearchActive) return;
+    await performSearch();
+  }
 
   const clearSearch = (): void => {
     setSearchFilters({
@@ -624,7 +636,7 @@ export default function MyCalendar() {
     <div className={`h-full min-h-0 overflow-hidden bg-slate-50 dark:bg-slate-900 font-sans flex flex-col ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       <header className="h-14 bg-white border-b border-slate-200 px-4 md:px-6 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between shrink-0 z-30">
         <div className="min-w-0 flex items-center gap-3 md:gap-6">
-          <button type="button" aria-label={menuLabel} onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
+          <button data-testid="sidebar-menu-button" type="button" aria-label={menuLabel} onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -mr-2 text-slate-600 hover:bg-slate-50 rounded-lg dark:text-slate-400 dark:hover:bg-slate-800">
             <Menu className="w-6 h-6" />
           </button>
           <div
@@ -661,6 +673,7 @@ export default function MyCalendar() {
           />
           <div className="flex items-center gap-0.5 md:hidden">
             <button
+              data-testid="mobile-search-toggle"
               type="button"
               onClick={() => setIsMobileSearchOpen(true)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
@@ -957,6 +970,7 @@ export default function MyCalendar() {
           />
           <div className="pointer-events-none relative z-10 flex h-full max-h-full w-full justify-center md:h-auto">
             <button
+              data-testid="add-event-close-button"
               type="button"
               onClick={handleRequestCloseAddEventModal}
               className={`pointer-events-auto absolute top-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/85 text-slate-700 shadow-lg backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 ${isRtl ? 'left-4 md:left-5' : 'right-4 md:right-5'}`}
@@ -965,17 +979,29 @@ export default function MyCalendar() {
               <X className="h-5 w-5" />
             </button>
             <div
+              data-testid="add-event-dialog"
               role="dialog"
               aria-modal="true"
               aria-label={t('addEvent')}
-              className="pointer-events-auto flex h-full w-full justify-center md:h-auto md:w-auto"
+              className="pointer-events-auto flex h-full w-full justify-center md:h-auto md:max-w-4xl"
             >
-              <AddEvent
-                onClose={handleRequestCloseAddEventModal}
-                onComplete={handleAddEventComplete}
-                onCalendarsChanged={handleCalendarsChanged}
-                prefillDate={createPrefillDate}
-              />
+              <Suspense
+                fallback={
+                  <div className="flex min-h-[320px] w-full items-center justify-center rounded-[2rem] bg-white/92 px-6 py-10 text-slate-600 shadow-2xl dark:bg-slate-900/92 dark:text-slate-300 md:min-h-[520px] md:min-w-[720px]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/92 px-4 py-2 text-sm font-medium shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      <span>{t('loadingGoogleData')}</span>
+                    </div>
+                  </div>
+                }
+              >
+                <AddEvent
+                  onClose={handleRequestCloseAddEventModal}
+                  onComplete={handleAddEventComplete}
+                  onCalendarsChanged={handleCalendarsChanged}
+                  prefillDate={createPrefillDate}
+                />
+              </Suspense>
             </div>
           </div>
         </div>
@@ -983,6 +1009,7 @@ export default function MyCalendar() {
 
       {isAuthenticated && (
         <button
+          data-testid="open-add-event-button"
           type="button"
           onClick={handleCreateEvent}
           className={`fixed bottom-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-[0_18px_40px_-18px_rgba(0,56,168,0.9)] transition-all hover:bg-[#002d86] hover:shadow-[0_20px_45px_-18px_rgba(0,56,168,0.95)] md:bottom-7 md:px-5 md:py-3.5 ${isRtl ? 'left-5 md:left-7' : 'right-5 md:right-7'}`}
@@ -995,7 +1022,7 @@ export default function MyCalendar() {
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
-          <div role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
+          <div data-testid="event-details-dialog" role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
               <h2 id="event-details-title" className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
               <button type="button" aria-label={t('close')} onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
@@ -1036,6 +1063,7 @@ export default function MyCalendar() {
             </div>
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
               <button
+                data-testid="event-details-delete-button"
                 onClick={handleDeleteClick}
                 disabled={isDeleting}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 font-bold transition-colors ${
@@ -1068,6 +1096,7 @@ export default function MyCalendar() {
             aria-label={t('close')}
           />
           <div
+            data-testid="recurring-action-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="recurring-action-title"

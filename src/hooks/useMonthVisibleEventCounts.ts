@@ -1,4 +1,10 @@
-import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import type { CalendarDay } from '../types/appTypes';
 
 function getMonthDayKey(dayObj: CalendarDay): string {
@@ -39,7 +45,34 @@ export function useMonthVisibleEventCounts({
   const monthEventContentRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const monthEventMeasureRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const moreButtonMeasureRef = useRef<HTMLDivElement | null>(null);
+  const scheduledFrameRef = useRef<number | null>(null);
   const [visibleEventCounts, setVisibleEventCounts] = useState<Record<string, number>>({});
+  const dayMeasurementSignature = useMemo(
+    () =>
+      days
+        .map((dayObj) => {
+          if (!dayObj) {
+            return 'empty';
+          }
+
+          return [
+            getMonthDayKey(dayObj),
+            dayObj.isShabbat ? 'shabbat' : 'weekday',
+            dayObj.events
+              .map((event) =>
+                [
+                  event.id || '',
+                  event.summary || '',
+                  event.start?.date || '',
+                  event.start?.dateTime || '',
+                ].join('~'),
+              )
+              .join(','),
+          ].join(':');
+        })
+        .join('|'),
+    [days],
+  );
 
   useLayoutEffect(() => {
     const measureVisibleEventCounts = (): void => {
@@ -107,17 +140,39 @@ export function useMonthVisibleEventCounts({
 
     const scheduleMeasure = (): void => {
       if (typeof window !== 'undefined') {
-        window.requestAnimationFrame(measureVisibleEventCounts);
+        if (scheduledFrameRef.current !== null) {
+          window.cancelAnimationFrame(scheduledFrameRef.current);
+        }
+        scheduledFrameRef.current = window.requestAnimationFrame(() => {
+          scheduledFrameRef.current = null;
+          measureVisibleEventCounts();
+        });
       } else {
         measureVisibleEventCounts();
       }
     };
 
-    const frameId =
-      typeof window !== 'undefined'
-        ? window.requestAnimationFrame(measureVisibleEventCounts)
-        : 0;
     let resizeObserver: ResizeObserver | null = null;
+    const activeDayKeys = new Set<string>();
+
+    days.forEach((dayObj) => {
+      if (!dayObj) {
+        return;
+      }
+
+      activeDayKeys.add(getMonthDayKey(dayObj));
+    });
+
+    Object.keys(monthEventContentRefs.current).forEach((dayKey) => {
+      if (!activeDayKeys.has(dayKey)) {
+        delete monthEventContentRefs.current[dayKey];
+      }
+    });
+    Object.keys(monthEventMeasureRefs.current).forEach((dayKey) => {
+      if (!activeDayKeys.has(dayKey)) {
+        delete monthEventMeasureRefs.current[dayKey];
+      }
+    });
 
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
@@ -129,25 +184,25 @@ export function useMonthVisibleEventCounts({
           resizeObserver?.observe(node);
         }
       });
-      Object.values(monthEventMeasureRefs.current).forEach((node) => {
-        if (node) {
-          resizeObserver?.observe(node);
-        }
-      });
     }
 
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', scheduleMeasure);
     }
 
+    scheduleMeasure();
+
     return () => {
       if (typeof window !== 'undefined') {
-        window.cancelAnimationFrame(frameId);
         window.removeEventListener('resize', scheduleMeasure);
+        if (scheduledFrameRef.current !== null) {
+          window.cancelAnimationFrame(scheduledFrameRef.current);
+          scheduledFrameRef.current = null;
+        }
       }
       resizeObserver?.disconnect();
     };
-  }, [days, maxVisibleMonthEvents, measurementKey]);
+  }, [dayMeasurementSignature, days, maxVisibleMonthEvents, measurementKey]);
 
   return {
     monthEventContentRefs,

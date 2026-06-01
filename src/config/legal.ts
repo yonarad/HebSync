@@ -1,5 +1,5 @@
 export const LEGAL_DETAILS = {
-  operatorName: import.meta.env.VITE_LEGAL_ENTITY_NAME || 'Yehonatan Arad / יהונתן ארד',
+  operatorName: import.meta.env.VITE_LEGAL_ENTITY_NAME || 'Yehonatan Arad / \u05d9\u05d4\u05d5\u05e0\u05ea\u05df \u05d0\u05e8\u05d3',
   supportEmail: import.meta.env.VITE_SUPPORT_EMAIL || 'support@hebsync.org',
   privacyEmail: import.meta.env.VITE_PRIVACY_EMAIL || 'privacy@hebsync.org',
   effectiveDate: import.meta.env.VITE_LEGAL_EFFECTIVE_DATE || '2026-05-08',

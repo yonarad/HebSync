@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import {
   getHolidayDetails,
   getHolidayLabels,
@@ -17,6 +17,7 @@ import {
   getHolidayLocale,
   getParshaLocale,
 } from './calendarViewUtils';
+import { trapFocusWithin } from './focusUtils';
 import {
   MOBILE_VIEWPORT_BREAKPOINT,
   MONTH_EVENT_STACK_CLASS,
@@ -76,6 +77,9 @@ export function DayEventsPopover({
   handleHebcalDetailsClick,
 }: DayEventsPopoverProps) {
   const popoverRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const headingId = useId();
   const [measuredPosition, setMeasuredPosition] = useState<{ top: number; left: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -116,6 +120,37 @@ export function DayEventsPopover({
     });
   }, [overflowDay, overflowPopoverMargin, overflowPopoverMaxHeight, overflowPopoverWidth, isRtl]);
 
+  useEffect(() => {
+    if (!overflowDay) {
+      restoreFocusRef.current?.focus();
+      restoreFocusRef.current = null;
+      return undefined;
+    }
+
+    if (typeof document !== 'undefined') {
+      restoreFocusRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    }
+
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOverflowDay(null);
+        return;
+      }
+
+      trapFocusWithin(popoverRef.current, event);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [overflowDay, setOverflowDay]);
+
   if (!overflowDay) return null;
 
   const popoverParshaLabel =
@@ -133,7 +168,7 @@ export function DayEventsPopover({
           includeRoshChodesh: showRoshChodesh,
           includeSpecialShabbat: showSpecialShabbat,
           locale: getHolidayLocale(isRtl),
-        }).join(' ֲ· ')
+        }).join(' \u05b2· ')
       : '';
 
   return (
@@ -142,13 +177,14 @@ export function DayEventsPopover({
         type="button"
         aria-label={closeDayEventsLabel}
         onClick={() => setOverflowDay(null)}
+        tabIndex={-1}
         className="absolute inset-0 cursor-default bg-transparent"
       />
       <div
         ref={popoverRef}
         role="dialog"
         aria-modal="true"
-        aria-label={dayEventsDialogLabel}
+        aria-labelledby={headingId}
         data-testid="day-events-popover"
         className="absolute z-10 flex overflow-hidden rounded-[0.9rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
         style={{
@@ -162,14 +198,16 @@ export function DayEventsPopover({
         <div className="flex min-h-0 w-full flex-1 flex-col">
           <div className="flex items-start justify-between border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={() => setOverflowDay(null)}
+              aria-label={closeDayEventsLabel}
               className="rounded-full p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             >
               <X className="h-3.5 w-3.5" />
             </button>
-            <div className="text-center">
-              <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+            <div id={headingId} className="text-center">
+              <div className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
                 {showGregorian ? `${overflowDay.gDay}` : ''}
               </div>
               <div className="mt-0.5 text-lg font-black text-slate-900 dark:text-slate-50">

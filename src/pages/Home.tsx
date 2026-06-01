@@ -180,24 +180,24 @@ export default function Home() {
                 style={{ fontFamily: isRtl ? "'Heebo', 'Rubik', sans-serif" : 'inherit' }}
               >
                 {t('landingHeroTitle', {
-                  defaultValue: 'תאריכים עבריים חוזרים ביומן גוגל, בלי לחשב כל שנה מחדש',
+                  defaultValue: '\u05ea\u05d0\u05e8\u05d9\u05db\u05d9\u05dd \u05e2\u05d1\u05e8\u05d9\u05d9\u05dd \u05d7\u05d5\u05d6\u05e8\u05d9\u05dd \u05d1\u05d9\u05d5\u05de\u05df \u05d2\u05d5\u05d2\u05dc, \u05d1\u05dc\u05d9 \u05dc\u05d7\u05e9\u05d1 \u05db\u05dc \u05e9\u05e0\u05d4 \u05de\u05d7\u05d3\u05e9',
                 })}
               </h2>
               <ul className="mt-5 max-w-3xl space-y-3 text-base leading-7 text-slate-600 dark:text-slate-300 md:text-lg">
                 {[
                   t('landingHeroPointOne', {
                     defaultValue:
-                      'HebSync עוזר לך להוסיף ולנהל ימי הולדת, ימי נישואין, ימי זיכרון ואירועים לפי תאריך עברי.',
+                      'HebSync \u05e2\u05d5\u05d6\u05e8 \u05dc\u05da \u05dc\u05d4\u05d5\u05e1\u05d9\u05e3 \u05d5\u05dc\u05e0\u05d4\u05dc \u05d9\u05de\u05d9 \u05d4\u05d5\u05dc\u05d3\u05ea, \u05d9\u05de\u05d9 \u05e0\u05d9\u05e9\u05d5\u05d0\u05d9\u05df, \u05d9\u05de\u05d9 \u05d6\u05d9\u05db\u05e8\u05d5\u05df \u05d5\u05d0\u05d9\u05e8\u05d5\u05e2\u05d9\u05dd \u05dc\u05e4\u05d9 \u05ea\u05d0\u05e8\u05d9\u05da \u05e2\u05d1\u05e8\u05d9.',
                   }),
                   t('landingHeroPointTwo', {
-                    defaultValue: 'אפשר להוסיף אירועים ידנית או לייבא אותם במרוכז מקובץ אקסל.',
+                    defaultValue: '\u05d0\u05e4\u05e9\u05e8 \u05dc\u05d4\u05d5\u05e1\u05d9\u05e3 \u05d0\u05d9\u05e8\u05d5\u05e2\u05d9\u05dd \u05d9\u05d3\u05e0\u05d9\u05ea \u05d0\u05d5 \u05dc\u05d9\u05d9\u05d1\u05d0 \u05d0\u05d5\u05ea\u05dd \u05d1\u05de\u05e8\u05d5\u05db\u05d6 \u05de\u05e7\u05d5\u05d1\u05e5 \u05d0\u05e7\u05e1\u05dc.',
                   }),
                   t('landingHeroPointThree', {
-                    defaultValue: 'בנוסף לתאריך עצמו, אפשר לראות בתצוגה גם את גיל האירוע.',
+                    defaultValue: '\u05d1\u05e0\u05d5\u05e1\u05e3 \u05dc\u05ea\u05d0\u05e8\u05d9\u05da \u05e2\u05e6\u05de\u05d5, \u05d0\u05e4\u05e9\u05e8 \u05dc\u05e8\u05d0\u05d5\u05ea \u05d1\u05ea\u05e6\u05d5\u05d2\u05d4 \u05d2\u05dd \u05d0\u05ea \u05d2\u05d9\u05dc \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2.',
                   }),
                   t('landingHeroPointFour', {
                     defaultValue:
-                      'אפשר לעבוד עם יומנים ייעודיים של HebSync בלבד, או לחבר גם את היומנים הקיימים שלך.',
+                      '\u05d0\u05e4\u05e9\u05e8 \u05dc\u05e2\u05d1\u05d5\u05d3 \u05e2\u05dd \u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05d9\u05d9\u05e2\u05d5\u05d3\u05d9\u05d9\u05dd \u05e9\u05dc HebSync \u05d1\u05dc\u05d1\u05d3, \u05d0\u05d5 \u05dc\u05d7\u05d1\u05e8 \u05d2\u05dd \u05d0\u05ea \u05d4\u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05d4\u05e7\u05d9\u05d9\u05de\u05d9\u05dd \u05e9\u05dc\u05da.',
                   }),
                 ].map((point) => (
                   <li key={point} className="flex items-start gap-3">
@@ -259,7 +259,7 @@ export default function Home() {
                 <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   {t('landingConnectBody', {
                     defaultValue:
-                      'אפשר להתחיל רק עם יומני HebSync, או לחבר גם יומנים קיימים. הגישה לעריכה תתבקש רק כשבאמת צריך לבצע שינוי.',
+                      '\u05d0\u05e4\u05e9\u05e8 \u05dc\u05d4\u05ea\u05d7\u05d9\u05dc \u05e8\u05e7 \u05e2\u05dd \u05d9\u05d5\u05de\u05e0\u05d9 HebSync, \u05d0\u05d5 \u05dc\u05d7\u05d1\u05e8 \u05d2\u05dd \u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05e7\u05d9\u05d9\u05de\u05d9\u05dd. \u05d4\u05d2\u05d9\u05e9\u05d4 \u05dc\u05e2\u05e8\u05d9\u05db\u05d4 \u05ea\u05ea\u05d1\u05e7\u05e9 \u05e8\u05e7 \u05db\u05e9\u05d1\u05d0\u05de\u05ea \u05e6\u05e8\u05d9\u05da \u05dc\u05d1\u05e6\u05e2 \u05e9\u05d9\u05e0\u05d5\u05d9.',
                   })}
                 </p>
               )}
@@ -300,13 +300,13 @@ export default function Home() {
                             {isAuthenticated && activeOptionId === option.id && (
                               <span className="rounded-full bg-[#0038A8]/10 px-2.5 py-1 text-[11px] font-black text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300">
                                 {t('activeConnectionMethod', {
-                                  defaultValue: 'שיטת החיבור הפעילה',
+                                  defaultValue: '\u05e9\u05d9\u05d8\u05ea \u05d4\u05d7\u05d9\u05d1\u05d5\u05e8 \u05d4\u05e4\u05e2\u05d9\u05dc\u05d4',
                                 })}
                               </span>
                             )}
                             {!isSelected && (
                               <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold text-slate-400 ring-1 ring-slate-200 dark:bg-slate-900/70 dark:text-slate-500 dark:ring-slate-700">
-                                {t('tapToSelect', { defaultValue: 'הקש לבחירה' })}
+                                {t('tapToSelect', { defaultValue: '\u05d4\u05e7\u05e9 \u05dc\u05d1\u05d7\u05d9\u05e8\u05d4' })}
                               </span>
                             )}
                             {option.badgeKey && (
@@ -350,7 +350,7 @@ export default function Home() {
                             ? t('enterCalendar')
                             : isAuthenticated
                               ? t('connectUsingThisMethod', {
-                                  defaultValue: 'התחבר באמצעות השיטה הזו',
+                                  defaultValue: '\u05d4\u05ea\u05d7\u05d1\u05e8 \u05d1\u05d0\u05de\u05e6\u05e2\u05d5\u05ea \u05d4\u05e9\u05d9\u05d8\u05d4 \u05d4\u05d6\u05d5',
                                 })
                               : t('continue')}
                           <ArrowLeft className={`h-4 w-4 ${isRtl ? '' : 'rotate-180'}`} />

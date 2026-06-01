@@ -19,6 +19,8 @@ describe('useCalendarEventActions', () => {
   const promptForEditingUpgrade = vi.fn();
   const loadCalendarData = vi.fn(async () => {});
   const loadEvents = vi.fn(async () => {});
+  const onDeleteSuccess = vi.fn();
+  const onUpdateSuccess = vi.fn();
   const t = (key: string) => key;
 
   beforeEach(() => {
@@ -33,6 +35,8 @@ describe('useCalendarEventActions', () => {
         t,
         loadCalendarData,
         loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
       }),
     );
 
@@ -55,6 +59,8 @@ describe('useCalendarEventActions', () => {
         t,
         loadCalendarData,
         loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
       }),
     );
 
@@ -72,6 +78,9 @@ describe('useCalendarEventActions', () => {
     });
 
     expect(deleteEvent).toHaveBeenCalledWith('cal1', 'evt1');
+    expect(onDeleteSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'evt1', calendarId: 'cal1' }),
+    );
     expect(loadCalendarData).toHaveBeenCalledTimes(1);
     expect(loadEvents).toHaveBeenCalledTimes(1);
     expect(result.current.selectedEvent).toBeNull();
@@ -79,7 +88,12 @@ describe('useCalendarEventActions', () => {
   });
 
   it('updates the selected event with edited values', async () => {
-    vi.mocked(updateEvent).mockResolvedValueOnce(undefined);
+    vi.mocked(updateEvent).mockResolvedValueOnce({
+      id: 'evt1',
+      calendarId: 'cal1',
+      summary: 'Updated title',
+      description: 'Updated description',
+    } as never);
 
     const { result } = renderHook(() =>
       useCalendarEventActions({
@@ -88,6 +102,8 @@ describe('useCalendarEventActions', () => {
         t,
         loadCalendarData,
         loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
       }),
     );
 
@@ -111,6 +127,14 @@ describe('useCalendarEventActions', () => {
       summary: 'Updated title',
       description: 'Updated description',
     });
+    expect(onUpdateSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'evt1',
+        calendarId: 'cal1',
+        summary: 'Updated title',
+        description: 'Updated description',
+      }),
+    );
     expect(loadCalendarData).toHaveBeenCalledTimes(1);
     expect(result.current.selectedEvent).toBeNull();
     expect(result.current.isEditing).toBe(false);
@@ -126,6 +150,8 @@ describe('useCalendarEventActions', () => {
         t,
         loadCalendarData,
         loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
       }),
     );
 
@@ -164,6 +190,8 @@ describe('useCalendarEventActions', () => {
         t,
         loadCalendarData,
         loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
       }),
     );
 
@@ -208,6 +236,8 @@ describe('useCalendarEventActions', () => {
         t,
         loadCalendarData,
         loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
       }),
     );
 

@@ -23,7 +23,7 @@ export default function LanguageSwitcher() {
       title={isHebrew ? 'Switch to English' : 'Switch to Hebrew'}
     >
       <Languages className="h-4 w-4" />
-      <span className="hidden sm:inline">{isHebrew ? 'EN' : 'עב'}</span>
+      <span className="hidden sm:inline">{isHebrew ? 'EN' : '\u05e2\u05d1'}</span>
     </button>
   );
 }

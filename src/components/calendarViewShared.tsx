@@ -53,7 +53,7 @@ export function renderCompactHebcalChip({
         e.stopPropagation();
         onClick?.(e);
       }}
-      className={`group relative ${MONTH_HEBCAL_CHIP_CLASS} cursor-pointer ${toneClass} transition-all hover:opacity-80 ${alignmentClass}`}
+      className={`group relative pointer-events-auto ${MONTH_HEBCAL_CHIP_CLASS} cursor-pointer ${toneClass} transition-all hover:opacity-80 ${alignmentClass}`}
       title={title ?? label}
     >
       <div className="truncate">{label}</div>
@@ -87,7 +87,7 @@ export function renderCompactEventChip({
           className="h-2 w-2 shrink-0 rounded-full"
           style={{ backgroundColor: eventColor }}
         />
-        <span className="shrink-0 text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+        <span className="shrink-0 text-[9px] font-semibold text-slate-600 dark:text-slate-300">
           {timeLabel}
         </span>
         <span className="min-w-0 truncate">{chipLabel}</span>
@@ -122,7 +122,7 @@ export function renderCompactEventChip({
         e.stopPropagation();
         onClick?.(e);
       }}
-      className={`group relative w-full flex-none cursor-pointer overflow-hidden ${MONTH_EVENT_TEXT_CLASS} transition-all ${alignmentClass} ${
+      className={`group relative pointer-events-auto w-full flex-none cursor-pointer overflow-hidden ${MONTH_EVENT_TEXT_CLASS} transition-all ${alignmentClass} ${
         isTimedEvent
           ? `${MONTH_TIMED_EVENT_CLASS} hover:bg-slate-100/80 dark:hover:bg-slate-800/70`
           : `${MONTH_ALL_DAY_EVENT_CLASS} hover:brightness-95`

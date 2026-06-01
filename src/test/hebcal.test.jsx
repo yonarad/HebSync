@@ -20,19 +20,19 @@ describe('Hebcal Utils', () => {
   // ─── gematriya ────────────────────────────────────────────────────────────
   describe('gematriya', () => {
     it('converts single-digit numbers', () => {
-      expect(gematriya(1)).toBe('א׳');
-      expect(gematriya(9)).toBe('ט׳');
+      expect(gematriya(1)).toBe('\u05d0\u05f3');
+      expect(gematriya(9)).toBe('\u05d8\u05f3');
     });
 
     it('handles special cases (15, 16)', () => {
-      expect(gematriya(15)).toBe('ט״ו');
-      expect(gematriya(16)).toBe('ט״ז');
+      expect(gematriya(15)).toBe('\u05d8\u05f4\u05d5');
+      expect(gematriya(16)).toBe('\u05d8\u05f4\u05d6');
     });
 
     it('converts larger numbers', () => {
-      expect(gematriya(18)).toBe('י״ח');
-      expect(gematriya(30)).toBe('ל׳');
-      expect(gematriya(100)).toBe('ק׳');
+      expect(gematriya(18)).toBe('\u05d9\u05f4\u05d7');
+      expect(gematriya(30)).toBe('\u05dc\u05f3');
+      expect(gematriya(100)).toBe('\u05e7\u05f3');
     });
   });
 
@@ -119,7 +119,7 @@ describe('Hebcal Utils', () => {
 
   describe('getShabbatParshaName', () => {
     it('returns the weekly parsha in Hebrew for a regular Shabbat in Israel', () => {
-      expect(getShabbatParshaName(new Date('2026-06-06T12:00:00Z'))).toBe('פרשת שלח־לך');
+      expect(getShabbatParshaName(new Date('2026-06-06T12:00:00Z'))).toBe('\u05e4\u05e8\u05e9\u05ea \u05e9\u05dc\u05d7\u05be\u05dc\u05da');
     });
 
     it('returns the weekly parsha in English when requested', () => {
@@ -137,7 +137,7 @@ describe('Hebcal Utils', () => {
     it('returns parsha detail metadata for a regular Shabbat', () => {
       const detail = getShabbatParshaDetail(new Date('2026-06-06T12:00:00Z'));
 
-      expect(detail?.title).toBe('פרשת שלח־לך');
+      expect(detail?.title).toBe('\u05e4\u05e8\u05e9\u05ea \u05e9\u05dc\u05d7\u05be\u05dc\u05da');
       expect(detail?.categories.length).toBeGreaterThan(0);
     });
   });
@@ -151,7 +151,7 @@ describe('Hebcal Utils', () => {
         includeRoshChodesh: false,
       });
 
-      expect(labels.some((label) => label.includes('ראש השנה') && !label.includes('5787'))).toBe(true);
+      expect(labels.some((label) => label.includes('\u05e8\u05d0\u05e9 \u05d4\u05e9\u05e0\u05d4') && !label.includes('5787'))).toBe(true);
     });
 
     it('returns holiday labels in English when requested', () => {
@@ -208,7 +208,7 @@ describe('Hebcal Utils', () => {
           includeNationalHolidays: false,
           includeRoshChodesh: true,
         }),
-      ).toContain('ראש חודש תמוז');
+      ).toContain('\u05e8\u05d0\u05e9 \u05d7\u05d5\u05d3\u05e9 \u05ea\u05de\u05d5\u05d6');
     });
 
     it('returns fast labels only when requested and excludes Yom Kippur Katan', () => {
@@ -219,7 +219,7 @@ describe('Hebcal Utils', () => {
           includeNationalHolidays: false,
           includeRoshChodesh: false,
         }),
-      ).toContain('צום י״ז בתמוז');
+      ).toContain('\u05e6\u05d5\u05dd \u05d9\u05f4\u05d6 \u05d1\u05ea\u05de\u05d5\u05d6');
 
       expect(
         getHolidayLabels(new Date('2026-07-13T21:00:00Z'), {
@@ -228,7 +228,7 @@ describe('Hebcal Utils', () => {
           includeNationalHolidays: false,
           includeRoshChodesh: false,
         }),
-      ).not.toContain('יום כיפור קטן');
+      ).not.toContain('\u05d9\u05d5\u05dd \u05db\u05d9\u05e4\u05d5\u05e8 \u05e7\u05d8\u05df');
     });
 
     it('returns only selected national observances when requested', () => {
@@ -239,7 +239,7 @@ describe('Hebcal Utils', () => {
           includeNationalHolidays: true,
           includeRoshChodesh: false,
         }),
-      ).toContain('יום הזכרון');
+      ).toContain('\u05d9\u05d5\u05dd \u05d4\u05d6\u05db\u05e8\u05d5\u05df');
 
       expect(
         getHolidayLabels(new Date('2026-04-22T12:00:00Z'), {
@@ -258,7 +258,7 @@ describe('Hebcal Utils', () => {
           includeNationalHolidays: true,
           includeRoshChodesh: false,
         }),
-      ).not.toContain('יום השפה העברית');
+      ).not.toContain('\u05d9\u05d5\u05dd \u05d4\u05e9\u05e4\u05d4 \u05d4\u05e2\u05d1\u05e8\u05d9\u05ea');
     });
     it('returns special Shabbat labels only when requested', () => {
       expect(
@@ -294,7 +294,7 @@ describe('Hebcal Utils', () => {
         includeRoshChodesh: false,
       });
 
-      expect(details[0]?.title).toContain('ראש השנה');
+      expect(details[0]?.title).toContain('\u05e8\u05d0\u05e9 \u05d4\u05e9\u05e0\u05d4');
       expect(details[0]?.categories.length).toBeGreaterThan(0);
     });
   });
@@ -429,25 +429,25 @@ describe('Hebcal Utils', () => {
     it('adds note when Adar falls in leap year', () => {
       // 5784 is a leap year — Adar should be moved to Adar II
       const results = getPreviewDates(5784, 'Adar', 1, 1);
-      expect(results[0].note).toContain('אדר ב');
+      expect(results[0].note).toContain('\u05d0\u05d3\u05e8 \u05d1');
     });
 
     it('adds note when Adar I falls in non-leap year', () => {
       // 5783 is a non-leap year
       const results = getPreviewDates(5783, 'Adar I', 1, 1);
-      expect(results[0].note).toContain('אדר');
+      expect(results[0].note).toContain('\u05d0\u05d3\u05e8');
     });
 
     it('handles 30th fallback (29th) in preview', () => {
       const results = getPreviewDates(5784, 'Cheshvan', 30, 1, '29th');
       expect(results.length).toBe(1);
-      expect(results[0].note).toContain('כ״ט');
+      expect(results[0].note).toContain('\u05db\u05f4\u05d8');
     });
 
     it('handles 30th fallback (1st) in preview', () => {
       const results = getPreviewDates(5784, 'Cheshvan', 30, 1, '1st');
       expect(results.length).toBe(1);
-      expect(results[0].note).toContain('א׳');
+      expect(results[0].note).toContain('\u05d0\u05f3');
     });
 
     it('returns fewer results when fallback is skip (short month years skipped)', () => {
@@ -462,7 +462,7 @@ describe('Hebcal Utils', () => {
     it('hebrewDate string contains gematriya', () => {
       const results = getPreviewDates(5784, 'Nisan', 1, 1);
       // Should contain Hebrew letters from gematriya
-      expect(results[0].hebrewDate).toMatch(/[א-ת]/);
+      expect(results[0].hebrewDate).toMatch(/[\u05d0-\u05ea]/);
     });
   });
 

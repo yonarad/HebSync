@@ -25,7 +25,7 @@ export function formatEventTimeLabel(
 }
 
 export function formatMobileHebrewDayLabel(label: string): string {
-  return label.replace(/['"׳³׳´]/g, '');
+  return label.replace(/['"\u05f3\u05f4]/g, '');
 }
 
 export function getMonthDayKey(dayObj: CalendarDay): string {

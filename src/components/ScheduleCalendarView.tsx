@@ -85,7 +85,7 @@ export function ScheduleCalendarView({
                       includeRoshChodesh: showRoshChodesh,
                       includeSpecialShabbat: showSpecialShabbat,
                       locale: getHolidayLocale(isRtl),
-                    }).join(' ֲ· ')
+                    }).join(' \u05b2· ')
                   : '';
               const parshaLabel =
                 showWeeklyParsha && dayObj.isShabbat
@@ -179,11 +179,13 @@ export function ScheduleCalendarView({
                         ? `${new Date(start || '').toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}${end ? ` - ${new Date(end).toLocaleTimeString(isRtl ? 'he-IL' : 'en-US', { hour: '2-digit', minute: '2-digit' })}` : ''}`
                         : '';
                       const isTimedEvent = Boolean(timeLabel);
+                      const isRecurring = Boolean(event.recurringEventId || event.recurrence?.length);
                       const eventLabel = `${event.summary}${ageSuffix}`;
 
                       return (
                         <button
                           key={`${event.id || event.summary}-${idx}`}
+                          data-testid={isRecurring ? 'schedule-recurring-event-chip' : 'schedule-event-chip'}
                           type="button"
                           onClick={() => handleEventClick(event)}
                           className={`flex w-full items-start rounded-2xl px-2.5 py-2 transition-all ${isRtl ? 'text-right' : 'text-left'} ${

@@ -71,7 +71,7 @@ function CalendarGroup({
             <div className="text-xs font-bold text-slate-800 dark:text-slate-100">
               {title}
             </div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500">
+            <div className="text-[10px] text-slate-600 dark:text-slate-300">
               {selectedCount} / {groupCalendars.length} {selectedCountSuffix}
             </div>
           </div>
@@ -201,8 +201,7 @@ export default function MyCalendarSidebar({
   return (
     <>
       <aside
-        role="dialog"
-        aria-modal="true"
+        data-testid="calendar-sidebar"
         aria-label={menuLabel}
         className={`fixed inset-y-0 ${isRtl ? 'right-0 border-l' : 'left-0 border-r'} z-40 flex h-full min-h-0 w-72 flex-col border-slate-200 bg-white transition-transform duration-300 dark:border-slate-800 dark:bg-slate-900 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}`}
       >
@@ -219,7 +218,7 @@ export default function MyCalendarSidebar({
         </div>
         <div className="flex flex-1 flex-col space-y-6 overflow-hidden p-4">
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
               <span>{t('calendarAccess')}</span>
               <button
                 type="button"
@@ -316,7 +315,7 @@ export default function MyCalendarSidebar({
 
             {calendars.length > 0 && (
               <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-bold dark:bg-slate-800/70">
-                <span className="text-slate-400 dark:text-slate-500">
+                <span className="text-slate-600 dark:text-slate-300">
                   {allCalendarsGroupLabel}
                 </span>
                 <div className="flex items-center gap-2">
@@ -399,13 +398,13 @@ export default function MyCalendarSidebar({
                 </div>
               </button>
             </div>
-            <div className="text-[9px] font-medium leading-tight text-slate-400">
+            <div className="text-[9px] font-medium leading-tight text-slate-600 dark:text-slate-300">
               {t('thanksTo')}{' '}
               <a
                 href="https://github.com/hebcal/hebcal-es6"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#0038A8] hover:underline dark:text-blue-400"
+                className="font-bold underline decoration-current underline-offset-2 text-[#0038A8] hover:opacity-80 dark:text-blue-300"
               >
                 Hebcal
               </a>

@@ -1,9 +1,16 @@
 import { useState } from 'react';
+import {
+  formatHebrewYear,
+  gematriya,
+  gregorianToHebrew,
+  HEBREW_MONTHS,
+} from '../utils/hebcal';
 
 import type {
   CreateHebcalEventOptions,
   FallbackChoice,
   GoogleCalendarEvent,
+  ImportDateType,
   ImportPreviewRow,
   ImportRowStatus,
   SourceDateValidation,
@@ -36,6 +43,13 @@ interface XlsxWorkbook {
 
 interface XlsxLike {
   read: (buffer: ArrayBuffer, options?: unknown) => XlsxWorkbook;
+  SSF?: {
+    parse_date_code?: (value: number) => {
+      y?: number;
+      m?: number;
+      d?: number;
+    } | null;
+  };
   utils: {
     sheet_to_json: (
       sheet: XlsxSheet,
@@ -50,6 +64,7 @@ interface XlsxLike {
 
 interface UseAddEventImportParams {
   bulkImportColumns: string[];
+  bulkImportOptionalColumns?: string[];
   createHebcalEvent: CreateHebcalEventFn;
   generateRdates: (
     year: number,
@@ -81,15 +96,47 @@ interface UseAddEventImportParams {
     month: string,
     day: number,
   ) => SourceDateValidation;
-  xlsx: XlsxLike;
+  loadXlsx: () => Promise<XlsxLike>;
 }
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error ?? '');
 }
 
+function buildIsoDateString(
+  year: number,
+  month: number,
+  day: number,
+): string | null {
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return `${year.toString().padStart(4, '0')}-${month
+    .toString()
+    .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+}
+
 export default function useAddEventImport({
   bulkImportColumns,
+  bulkImportOptionalColumns = [],
   createHebcalEvent,
   generateRdates,
   hasWriteAccess,
@@ -108,7 +155,7 @@ export default function useAddEventImport({
   setIsLoading,
   t,
   validateHebrewDateForYear,
-  xlsx,
+  loadXlsx,
 }: UseAddEventImportParams) {
   const [selectedImportFile, setSelectedImportFile] = useState<File | null>(null);
   const [isImportParsing, setIsImportParsing] = useState(false);
@@ -182,7 +229,7 @@ export default function useAddEventImport({
     if (!selectedImportFile) {
       setImportPreviewError(
         isRtl
-          ? 'יש לבחור קובץ Excel לפני התצוגה המקדימה.'
+          ? '\u05d9\u05e9 \u05dc\u05d1\u05d7\u05d5\u05e8 \u05e7\u05d5\u05d1\u05e5 Excel \u05dc\u05e4\u05e0\u05d9 \u05d4\u05ea\u05e6\u05d5\u05d2\u05d4 \u05d4\u05de\u05e7\u05d3\u05d9\u05de\u05d4.'
           : 'Select an Excel file first.',
       );
       return;
@@ -193,6 +240,7 @@ export default function useAddEventImport({
 
     try {
       const buffer = await selectedImportFile.arrayBuffer();
+      const xlsx = await loadXlsx();
       const workbook = xlsx.read(buffer, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const firstSheet = workbook.Sheets[firstSheetName];
@@ -200,7 +248,7 @@ export default function useAddEventImport({
       if (!firstSheet) {
         throw new Error(
           isRtl
-            ? 'לא נמצא גיליון ראשון בקובץ.'
+            ? '\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0 \u05d2\u05d9\u05dc\u05d9\u05d5\u05df \u05e8\u05d0\u05e9\u05d5\u05df \u05d1\u05e7\u05d5\u05d1\u05e5.'
             : 'No first sheet was found in the workbook.',
         );
       }
@@ -211,7 +259,23 @@ export default function useAddEventImport({
         blankrows: false,
       });
 
-      const [headerRow = []] = rows;
+      const candidateHeaderRows = rows.slice(0, Math.min(rows.length, 6));
+      const headerRowIndex = candidateHeaderRows.findIndex((candidateRow) => {
+        const normalizedCandidateHeaders = candidateRow.map(normalizeHebrewToken);
+        return bulkImportColumns.every((column) =>
+          normalizedCandidateHeaders.includes(column),
+        );
+      });
+
+      if (headerRowIndex < 0) {
+        throw new Error(
+          isRtl
+            ? `\u05d7\u05e1\u05e8\u05d5\u05ea \u05e2\u05de\u05d5\u05d3\u05d5\u05ea \u05d7\u05d5\u05d1\u05d4 \u05d1\u05d2\u05d9\u05dc\u05d9\u05d5\u05df Events: ${bulkImportColumns.join(', ')}`
+            : `Missing required columns in Events sheet: ${bulkImportColumns.join(', ')}`,
+        );
+      }
+
+      const headerRow = rows[headerRowIndex] ?? [];
       const normalizedHeaders = headerRow.map(normalizeHebrewToken);
       const missingColumns = bulkImportColumns.filter(
         (column) => !normalizedHeaders.includes(column),
@@ -220,13 +284,16 @@ export default function useAddEventImport({
       if (missingColumns.length > 0) {
         throw new Error(
           isRtl
-            ? `חסרות עמודות חובה בגיליון Events: ${missingColumns.join(', ')}`
+            ? `\u05d7\u05e1\u05e8\u05d5\u05ea \u05e2\u05de\u05d5\u05d3\u05d5\u05ea \u05d7\u05d5\u05d1\u05d4 \u05d1\u05d2\u05d9\u05dc\u05d9\u05d5\u05df Events: ${missingColumns.join(', ')}`
             : `Missing required columns in Events sheet: ${missingColumns.join(', ')}`,
         );
       }
 
       const headerIndexMap = Object.fromEntries(
-        bulkImportColumns.map((column) => [column, normalizedHeaders.indexOf(column)]),
+        [...bulkImportColumns, ...bulkImportOptionalColumns].map((column) => [
+          column,
+          normalizedHeaders.indexOf(column),
+        ]),
       ) as Record<string, number>;
       const [
         titleColumn,
@@ -237,9 +304,97 @@ export default function useAddEventImport({
         dayColumn,
         occurrencesColumn,
       ] = bulkImportColumns;
+      const [dateTypeColumn, gregorianDateColumn, sunsetModeColumn] =
+        bulkImportOptionalColumns;
+
+      const parseGregorianDateValue = (
+        value: SheetCell,
+        xlsxModule: XlsxLike,
+      ): string | null => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          const parsedDate = xlsxModule.SSF?.parse_date_code?.(value);
+          if (!parsedDate?.y || !parsedDate?.m || !parsedDate?.d) {
+            return null;
+          }
+
+          return buildIsoDateString(parsedDate.y, parsedDate.m, parsedDate.d);
+        }
+
+        const normalized = normalizeHebrewToken(value);
+        if (!normalized) return null;
+
+        const slashMatch = normalized.match(/^(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})$/);
+        if (slashMatch) {
+          const [, first, second, third] = slashMatch;
+          const firstNumber = Number(first);
+          const secondNumber = Number(second);
+          const thirdNumber = Number(third);
+
+          if (first.length === 4) {
+            return buildIsoDateString(firstNumber, secondNumber, thirdNumber);
+          }
+
+          if (third.length === 4) {
+            return buildIsoDateString(thirdNumber, secondNumber, firstNumber);
+          }
+        }
+
+        const isoMatch = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!isoMatch) {
+          return null;
+        }
+
+        return buildIsoDateString(
+          Number(isoMatch[1]),
+          Number(isoMatch[2]),
+          Number(isoMatch[3]),
+        );
+      };
+
+      const parseDateType = (value: SheetCell): ImportDateType => {
+        const normalized = normalizeHebrewToken(value).toLowerCase();
+        if (
+          normalized === 'לועזי' ||
+          normalized === 'gregorian' ||
+          normalized === 'gregorian date'
+        ) {
+          return 'gregorian';
+        }
+
+        return 'hebrew';
+      };
+
+      const parseAfterSunset = (
+        value: SheetCell,
+      ): {
+        afterSunset: boolean;
+        label: string;
+        isValid: boolean;
+      } => {
+        const normalized = normalizeHebrewToken(value).toLowerCase();
+        if (!normalized) {
+          return { afterSunset: false, label: '', isValid: true };
+        }
+
+        if (
+          normalized === 'אחרי השקיעה' ||
+          normalized === 'after sunset'
+        ) {
+          return { afterSunset: true, label: normalizeHebrewToken(value), isValid: true };
+        }
+
+        if (
+          normalized === 'לפני השקיעה' ||
+          normalized === 'before sunset'
+        ) {
+          return { afterSunset: false, label: normalizeHebrewToken(value), isValid: true };
+        }
+
+        return { afterSunset: false, label: normalizeHebrewToken(value), isValid: false };
+      };
 
       const parsedRows = rows
-        .slice(1)
+        .slice(headerRowIndex + 1)
         .map((row, rowIndex): ImportPreviewRow | null => {
           const titleValue = normalizeHebrewToken(row[headerIndexMap[titleColumn]]);
           const categoryLabel = normalizeHebrewToken(
@@ -252,6 +407,19 @@ export default function useAddEventImport({
           const monthLabel = normalizeHebrewToken(row[headerIndexMap[monthColumn]]);
           const dayLabel = normalizeHebrewToken(row[headerIndexMap[dayColumn]]);
           const occurrencesValue = row[headerIndexMap[occurrencesColumn]];
+          const dateType = parseDateType(
+            dateTypeColumn ? row[headerIndexMap[dateTypeColumn]] : '',
+          );
+          const gregorianDateLabel = gregorianDateColumn
+            ? normalizeHebrewToken(row[headerIndexMap[gregorianDateColumn]])
+            : '';
+          const gregorianDateValue = gregorianDateColumn
+            ? parseGregorianDateValue(row[headerIndexMap[gregorianDateColumn]], xlsx)
+            : null;
+          const sunsetModeValue = sunsetModeColumn
+            ? row[headerIndexMap[sunsetModeColumn]]
+            : '';
+          const sunsetMode = parseAfterSunset(sunsetModeValue);
 
           if (
             ![
@@ -262,45 +430,92 @@ export default function useAddEventImport({
               monthLabel,
               dayLabel,
               occurrencesValue,
+              gregorianDateLabel,
+              dateTypeColumn ? row[headerIndexMap[dateTypeColumn]] : '',
+              sunsetMode.label,
             ].some((value) => String(value ?? '').trim() !== '')
           ) {
             return null;
           }
 
-          const sourceYearValue = parseSourceYearValue(sourceYearLabel);
-          const dayValue = parseDayValue(dayLabel);
-          const monthId = importMonthMap[monthLabel];
-          const categoryId = importCategoryMap[categoryLabel];
+          const sourceYearValue =
+            dateType === 'hebrew' ? parseSourceYearValue(sourceYearLabel) : null;
+          const dayValue = dateType === 'hebrew' ? parseDayValue(dayLabel) : null;
+          const monthId = dateType === 'hebrew' ? importMonthMap[monthLabel] : undefined;
+          const categoryId =
+            importCategoryMap[categoryLabel] ??
+            importCategoryMap[categoryLabel.toLowerCase()];
           const occurrencesNumber = Number(occurrencesValue);
 
           const issues: string[] = [];
-          if (!titleValue) issues.push(isRtl ? 'חסר שם אירוע' : 'Missing event title');
-          if (!categoryId) issues.push(isRtl ? 'קטגוריה לא מזוהה' : 'Unknown category');
-          if (!sourceYearValue) issues.push(isRtl ? 'שנת מקור לא תקינה' : 'Invalid source year');
-          if (!monthId) issues.push(isRtl ? 'חודש לא מזוהה' : 'Unknown month');
-          if (!dayValue) issues.push(isRtl ? 'יום לא תקין' : 'Invalid day');
+          if (!titleValue) issues.push(isRtl ? '\u05d7\u05e1\u05e8 \u05e9\u05dd \u05d0\u05d9\u05e8\u05d5\u05e2' : 'Missing event title');
+          if (!categoryId) issues.push(isRtl ? '\u05e7\u05d8\u05d2\u05d5\u05e8\u05d9\u05d4 \u05dc\u05d0 \u05de\u05d6\u05d5\u05d4\u05d4' : 'Unknown category');
           if (!Number.isFinite(occurrencesNumber) || occurrencesNumber < 1) {
             issues.push(
-              isRtl ? 'מספר מופעים לא תקין' : 'Invalid occurrences count',
+              isRtl ? '\u05de\u05e1\u05e4\u05e8 \u05de\u05d5\u05e4\u05e2\u05d9\u05dd \u05dc\u05d0 \u05ea\u05e7\u05d9\u05df' : 'Invalid occurrences count',
             );
           }
 
-          const validation: SourceDateValidation | null =
-            sourceYearValue && monthId && dayValue
-              ? validateHebrewDateForYear(sourceYearValue, monthId, dayValue)
+          if (dateType === 'hebrew') {
+            if (!sourceYearValue) issues.push(isRtl ? '\u05e9\u05e0\u05ea \u05de\u05e7\u05d5\u05e8 \u05dc\u05d0 \u05ea\u05e7\u05d9\u05e0\u05d4' : 'Invalid source year');
+            if (!monthId) issues.push(isRtl ? '\u05d7\u05d5\u05d3\u05e9 \u05dc\u05d0 \u05de\u05d6\u05d5\u05d4\u05d4' : 'Unknown month');
+            if (!dayValue) issues.push(isRtl ? '\u05d9\u05d5\u05dd \u05dc\u05d0 \u05ea\u05e7\u05d9\u05df' : 'Invalid day');
+          } else {
+            if (!gregorianDateValue) {
+              issues.push(
+                isRtl
+                  ? '\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d5\u05e2\u05d6\u05d9 \u05dc\u05d0 \u05ea\u05e7\u05d9\u05df'
+                  : 'Invalid Gregorian date',
+              );
+            }
+            if (sunsetMode.label && !sunsetMode.isValid) {
+              issues.push(
+                isRtl
+                  ? '\u05e2\u05e8\u05da \u05dc\u05e4\u05e0\u05d9/\u05d0\u05d7\u05e8\u05d9 \u05d4\u05e9\u05e7\u05d9\u05e2\u05d4 \u05dc\u05d0 \u05ea\u05e7\u05d9\u05df'
+                  : 'Invalid before/after sunset value',
+              );
+            }
+          }
+
+          const convertedHDate =
+            dateType === 'gregorian' && gregorianDateValue
+              ? gregorianToHebrew(new Date(gregorianDateValue), sunsetMode.afterSunset)
               : null;
+          const derivedSourceYearValue = convertedHDate?.getFullYear() ?? null;
+          const derivedMonthId = convertedHDate?.getMonthName();
+          const derivedDayValue = convertedHDate?.getDate() ?? null;
+          const derivedMonthLabel = convertedHDate
+            ? HEBREW_MONTHS.find((monthOption) => monthOption.id === derivedMonthId)?.label ?? derivedMonthId ?? ''
+            : '';
+          const derivedDayLabel = convertedHDate
+            ? gematriya(derivedDayValue ?? '')
+            : '';
+          const validation: SourceDateValidation | null =
+            dateType === 'hebrew'
+              ? sourceYearValue && monthId && dayValue
+                ? validateHebrewDateForYear(sourceYearValue, monthId, dayValue)
+                : null
+              : derivedSourceYearValue && derivedMonthId && derivedDayValue
+                ? validateHebrewDateForYear(
+                    derivedSourceYearValue,
+                    derivedMonthId,
+                    derivedDayValue,
+                  )
+                : null;
           const canResolveWithFallback =
             validation &&
             (validation.reason === 'ok' ||
               validation.reason === 'missing_flexible_30th');
           const needsFallbackDecision =
-            requires30thFallbackDecision(monthId, dayValue) && canResolveWithFallback;
+            dateType === 'hebrew' &&
+            requires30thFallbackDecision(monthId, dayValue) &&
+            canResolveWithFallback;
 
           if (validation && !validation.isValid) {
             if (validation.reason !== 'missing_flexible_30th') {
               issues.push(
                 isRtl
-                  ? 'התאריך לא קיים בשנת המקור'
+                  ? '\u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd \u05d1\u05e9\u05e0\u05ea \u05d4\u05de\u05e7\u05d5\u05e8'
                   : 'Date does not exist in source year',
               );
             }
@@ -308,16 +523,26 @@ export default function useAddEventImport({
 
           return {
             displayIndex: rowIndex + 1,
-            rowNumber: rowIndex + 2,
+            rowNumber: headerRowIndex + rowIndex + 2,
             title: titleValue,
             categoryLabel,
             notes: notesValue || notesDefault,
-            sourceYearLabel,
-            sourceYearValue,
-            monthLabel,
-            monthId,
-            dayLabel,
-            dayValue,
+            dateType,
+            sourceYearLabel:
+              dateType === 'hebrew'
+                ? sourceYearLabel
+                : derivedSourceYearValue
+                  ? formatHebrewYear(derivedSourceYearValue)
+                  : '',
+            sourceYearValue:
+              dateType === 'hebrew' ? sourceYearValue : derivedSourceYearValue,
+            monthLabel: dateType === 'hebrew' ? monthLabel : derivedMonthLabel,
+            monthId: dateType === 'hebrew' ? monthId : derivedMonthId,
+            dayLabel: dateType === 'hebrew' ? dayLabel : derivedDayLabel,
+            dayValue: dateType === 'hebrew' ? dayValue : derivedDayValue,
+            gregorianDateLabel: dateType === 'gregorian' ? gregorianDateValue ?? gregorianDateLabel : '',
+            afterSunset: dateType === 'gregorian' ? sunsetMode.afterSunset : false,
+            sunsetModeLabel: dateType === 'gregorian' ? sunsetMode.label : '',
             occurrences: Number.isFinite(occurrencesNumber)
               ? occurrencesNumber
               : String(occurrencesValue ?? ''),
@@ -334,7 +559,7 @@ export default function useAddEventImport({
       if (parsedRows.length === 0) {
         setImportPreviewError(
           isRtl
-            ? 'לא נמצאו שורות אירועים בגיליון Events.'
+            ? '\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0\u05d5 \u05e9\u05d5\u05e8\u05d5\u05ea \u05d0\u05d9\u05e8\u05d5\u05e2\u05d9\u05dd \u05d1\u05d2\u05d9\u05dc\u05d9\u05d5\u05df Events.'
             : 'No event rows were found in the Events sheet.',
         );
       }
@@ -342,7 +567,7 @@ export default function useAddEventImport({
       const errorMessage = getErrorMessage(error);
       setImportPreviewRows([]);
       setImportPreviewError(
-        errorMessage || (isRtl ? 'קריאת הקובץ נכשלה.' : 'Failed to read workbook.'),
+        errorMessage || (isRtl ? '\u05e7\u05e8\u05d9\u05d0\u05ea \u05d4\u05e7\u05d5\u05d1\u05e5 \u05e0\u05db\u05e9\u05dc\u05d4.' : 'Failed to read workbook.'),
       );
     } finally {
       setIsImportParsing(false);
@@ -365,7 +590,7 @@ export default function useAddEventImport({
     if (importExecutableRows.length === 0) {
       window.alert(
         isRtl
-          ? 'אין שורות מוכנות לייבוא.'
+          ? '\u05d0\u05d9\u05df \u05e9\u05d5\u05e8\u05d5\u05ea \u05de\u05d5\u05db\u05e0\u05d5\u05ea \u05dc\u05d9\u05d9\u05d1\u05d5\u05d0.'
           : 'There are no rows ready to import.',
       );
       return;
@@ -400,7 +625,9 @@ export default function useAddEventImport({
             selectedCalendarIds.map((calendarId) =>
               createHebcalEvent(
                 row.title,
-                importCategoryMap[row.categoryLabel] ?? 'other',
+                importCategoryMap[row.categoryLabel] ??
+                  importCategoryMap[row.categoryLabel.toLowerCase()] ??
+                  'other',
                 row.sourceYearValue as number,
                 rdateString,
                 calendarId,
@@ -435,14 +662,14 @@ export default function useAddEventImport({
       }
 
       const summaryParts = [
-        isRtl ? `נוצרו: ${createdCount}` : `Created: ${createdCount}`,
-        isRtl ? `דולגו: ${skippedCount}` : `Skipped: ${skippedCount}`,
+        isRtl ? `\u05e0\u05d5\u05e6\u05e8\u05d5: ${createdCount}` : `Created: ${createdCount}`,
+        isRtl ? `\u05d3\u05d5\u05dc\u05d2\u05d5: ${skippedCount}` : `Skipped: ${skippedCount}`,
       ];
 
       if (failedRows.length > 0) {
         summaryParts.push(
           isRtl
-            ? `נכשלו בשורות: ${failedRows.join(', ')}`
+            ? `\u05e0\u05db\u05e9\u05dc\u05d5 \u05d1\u05e9\u05d5\u05e8\u05d5\u05ea: ${failedRows.join(', ')}`
             : `Failed rows: ${failedRows.join(', ')}`,
         );
       }
@@ -464,7 +691,7 @@ export default function useAddEventImport({
         openLoginModal('reauthorize');
       } else {
         window.alert(
-          (isRtl ? 'שגיאה בייבוא: ' : 'Import error: ') + errorMessage,
+          (isRtl ? '\u05e9\u05d2\u05d9\u05d0\u05d4 \u05d1\u05d9\u05d9\u05d1\u05d5\u05d0: ' : 'Import error: ') + errorMessage,
         );
       }
     } finally {

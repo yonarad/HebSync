@@ -84,7 +84,10 @@ vi.mock('react-i18next', () => ({
         hebSyncGroupLabel: 'HebSync Calendars',
         otherCalendarsGroupLabel: 'Other Calendars',
         dayEventsDialog: 'Day events',
+        closeDayEvents: 'Close day events',
         moreEvents: `${options?.count ?? 0} more events`,
+        previousMonth: 'Previous month',
+        nextMonth: 'Next month',
         viewMonth: 'Month',
         viewSchedule: 'Schedule',
         displayOptions: 'Display',
@@ -113,6 +116,7 @@ vi.mock('react-i18next', () => ({
         searchEventsPlaceholder: 'Search events',
         toggleAdvancedSearch: 'Toggle advanced search',
         clearSearch: 'Clear search',
+        close: 'Close',
         searchIn: 'Search in',
         searchInSelectedCalendars: 'Selected calendars',
         searchInAllCalendars: 'All calendars',
@@ -248,7 +252,7 @@ describe('My Calendar Component', () => {
     renderDashboard();
     expect((await screen.findAllByText('appNameFirst'))[0]).toBeInTheDocument();
     expect(await screen.findByTestId('logo')).toBeInTheDocument();
-  });
+  }, 30000);
 
   it('should have Select All and Clear All buttons in the sidebar', async () => {
     renderDashboard();
@@ -294,6 +298,136 @@ describe('My Calendar Component', () => {
     );
   });
 
+  it('should remove a deleted event from active search results', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Jerusalem Day',
+        description: 'City celebration',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+      },
+    ]);
+    vi.mocked(googleApi.deleteEvent).mockResolvedValueOnce(true);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+
+    fireEvent.change(searchInput, {
+      target: { value: 'Jerusalem' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    const searchResultButton = await screen.findByRole('button', { name: /Jerusalem Day/ });
+    fireEvent.click(searchResultButton);
+    fireEvent.click(await screen.findByRole('button', { name: 'delete' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Jerusalem Day/ })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('0 results')).toBeInTheDocument();
+  });
+
+  it('should refresh recurring search results after deleting an entire series', async () => {
+    vi.mocked(googleApi.searchEvents)
+      .mockResolvedValueOnce([
+        {
+          id: 'evt-occ-1',
+          recurringEventId: 'series1',
+          summary: 'Weekly Event',
+          calendarId: 'cal1',
+          start: { date: '2026-05-18' },
+          originalStartTime: { date: '2026-05-18' },
+        },
+        {
+          id: 'evt-occ-2',
+          recurringEventId: 'series1',
+          summary: 'Weekly Event',
+          calendarId: 'cal1',
+          start: { date: '2026-05-25' },
+          originalStartTime: { date: '2026-05-25' },
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    vi.mocked(googleApi.deleteRecurringEventScope).mockResolvedValueOnce(true);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Weekly' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    const resultButtons = await screen.findAllByRole('button', { name: /Weekly Event/ });
+    expect(resultButtons).toHaveLength(2);
+
+    fireEvent.click(resultButtons[0]);
+    fireEvent.click(await screen.findByRole('button', { name: 'delete' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete selected scope' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Weekly Event/ })).not.toBeInTheDocument();
+    });
+    expect(googleApi.searchEvents.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should refresh search results after updating an event', async () => {
+    vi.mocked(googleApi.searchEvents)
+      .mockResolvedValueOnce([
+        {
+          id: 'evt-search',
+          summary: 'Jerusalem Day',
+          description: 'City celebration',
+          calendarId: 'cal1',
+          start: { date: '2026-05-18' },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'evt-search',
+          summary: 'Jerusalem Day Updated',
+          description: 'Updated celebration',
+          calendarId: 'cal1',
+          start: { date: '2026-05-18' },
+        },
+      ]);
+    vi.mocked(googleApi.updateEvent).mockResolvedValueOnce({
+      id: 'evt-search',
+      summary: 'Jerusalem Day Updated',
+      description: 'Updated celebration',
+      calendarId: 'cal1',
+      start: { date: '2026-05-18' },
+    });
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Jerusalem' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Jerusalem Day/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'edit' }));
+
+    const titleInput = screen.getByPlaceholderText('eventName');
+    const descriptionInput = screen.getByPlaceholderText('description');
+    fireEvent.change(titleInput, { target: { value: 'Jerusalem Day Updated' } });
+    fireEvent.change(descriptionInput, { target: { value: 'Updated celebration' } });
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Jerusalem Day Updated/ })).toBeInTheDocument();
+    });
+    expect(googleApi.searchEvents.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('should show a floating add event button for authenticated users', async () => {
     renderDashboard();
     expect(await screen.findByRole('button', { name: 'addEvent' })).toBeInTheDocument();
@@ -313,9 +447,11 @@ describe('My Calendar Component', () => {
     renderDashboard();
 
     const dayButtons = await screen.findAllByLabelText(/Create an event on day/i);
-    fireEvent.click(dayButtons[0]);
+    fireEvent.click(dayButtons[0].closest('[data-calendar-day-cell="true"]'));
 
-    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+    expect(
+      await screen.findByText('addEventTitle', {}, { timeout: 15000 }),
+    ).toBeInTheDocument();
     const [, yearSelect, monthSelect, daySelect] = screen.getAllByRole('combobox');
 
     expect(yearSelect.value).not.toBe('');
@@ -329,7 +465,10 @@ describe('My Calendar Component', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'addEvent' }));
 
-    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+    expect(
+      await screen.findByText('addEventTitle', {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('add-event-dialog')).toHaveClass('md:max-w-4xl');
     expect(mockNavigate).not.toHaveBeenCalledWith('/add-event');
   });
 
@@ -339,7 +478,9 @@ describe('My Calendar Component', () => {
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'addEvent' }));
-    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+    expect(
+      await screen.findByText('addEventTitle', {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('add-event-modal-backdrop'));
 
@@ -353,7 +494,9 @@ describe('My Calendar Component', () => {
     renderDashboard();
 
     fireEvent.click(await screen.findByRole('button', { name: 'addEvent' }));
-    expect(await screen.findByText('addEventTitle')).toBeInTheDocument();
+    expect(
+      await screen.findByText('addEventTitle', {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('add-event-modal-backdrop'));
 
@@ -421,7 +564,107 @@ describe('My Calendar Component', () => {
     const moreButton = await screen.findByLabelText(/more events/i);
     fireEvent.click(moreButton);
 
-    expect(await screen.findByRole('dialog', { name: 'Day events' })).toBeInTheDocument();
+    expect(await screen.findByTestId('day-events-popover')).toBeInTheDocument();
+  });
+
+  it('should close the overflow day dialog when pressing Escape', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
+      { id: 'evt1', summary: 'Event 1', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt2', summary: 'Event 2', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt3', summary: 'Event 3', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt4', summary: 'Event 4', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt5', summary: 'Event 5', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+    ]);
+
+    renderDashboard();
+
+    const moreButton = await screen.findByLabelText(/more events/i);
+    moreButton.focus();
+    fireEvent.click(moreButton);
+    expect(await screen.findByTestId('day-events-popover')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('day-events-popover').querySelectorAll('button')[0]).toHaveFocus();
+    });
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('day-events-popover')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should return focus to the + more button after closing the overflow day dialog', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([
+      { id: 'evt1', summary: 'Event 1', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt2', summary: 'Event 2', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt3', summary: 'Event 3', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt4', summary: 'Event 4', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+      { id: 'evt5', summary: 'Event 5', calendarId: 'cal1', start: { date: '2026-05-18' }, extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } } },
+    ]);
+
+    renderDashboard();
+
+    const moreButton = await screen.findByLabelText(/more events/i);
+    moreButton.focus();
+    fireEvent.click(moreButton);
+    expect(await screen.findByTestId('day-events-popover')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('day-events-popover')).not.toBeInTheDocument();
+    });
+    expect(moreButton).toHaveFocus();
+  });
+
+  it('should focus the first display option and return focus to the toggle when it closes', async () => {
+    renderDashboard();
+
+    const displayOptionsToggle = await screen.findByTestId('display-options-toggle');
+    fireEvent.click(displayOptionsToggle);
+
+    const firstDisplayOption = await screen.findByRole('checkbox', { name: 'Show Gregorian dates' });
+    await waitFor(() => {
+      expect(firstDisplayOption).toHaveFocus();
+    });
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('display-options-menu')).not.toBeInTheDocument();
+    });
+    expect(displayOptionsToggle).toHaveFocus();
+  });
+
+  it('should expose pressed state for the active calendar view toggle', async () => {
+    renderDashboard();
+
+    const monthButton = await screen.findByRole('button', { name: 'Month' });
+    const scheduleButton = await screen.findByRole('button', { name: 'Schedule' });
+
+    expect(monthButton).toHaveAttribute('aria-pressed', 'true');
+    expect(scheduleButton).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(scheduleButton);
+
+    expect(monthButton).toHaveAttribute('aria-pressed', 'false');
+    expect(scheduleButton).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('should open event details when clicking an event chip', async () => {

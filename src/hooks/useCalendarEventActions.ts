@@ -14,6 +14,8 @@ interface UseCalendarEventActionsParams {
   t: (key: string) => string;
   loadCalendarData: () => Promise<void> | void;
   loadEvents: () => Promise<void> | void;
+  onDeleteSuccess?: (deletedEvent: GoogleCalendarEvent) => void;
+  onUpdateSuccess?: (updatedEvent: GoogleCalendarEvent) => void;
 }
 
 export default function useCalendarEventActions({
@@ -22,6 +24,8 @@ export default function useCalendarEventActions({
   t,
   loadCalendarData,
   loadEvents,
+  onDeleteSuccess,
+  onUpdateSuccess,
 }: UseCalendarEventActionsParams) {
   const [selectedEvent, setSelectedEvent] = useState<GoogleCalendarEvent | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -49,12 +53,14 @@ export default function useCalendarEventActions({
     if (!options.skipConfirm && !window.confirm(t('deleteEventConfirm'))) return;
     setIsDeleting(true);
     try {
+      const deletedEvent = selectedEvent;
       if (scope === 'single') {
         await deleteEvent(selectedEvent.calendarId, selectedEvent.id);
       } else {
         await deleteRecurringEventScope(selectedEvent, scope);
       }
       setSelectedEvent(null);
+      onDeleteSuccess?.(deletedEvent);
       await loadCalendarData();
       await loadEvents();
     } catch {
@@ -77,17 +83,26 @@ export default function useCalendarEventActions({
 
     setIsUpdating(true);
     try {
+      const eventBeforeUpdate = selectedEvent;
       const updates = {
         summary: editTitle,
         description: editDesc,
       };
+      let updatedEvent: GoogleCalendarEvent;
       if (scope === 'single') {
-        await updateEvent(selectedEvent.calendarId, selectedEvent.id, updates);
+        updatedEvent = await updateEvent(selectedEvent.calendarId, selectedEvent.id, updates);
       } else {
-        await updateRecurringEventScope(selectedEvent, updates, scope);
+        updatedEvent = await updateRecurringEventScope(selectedEvent, updates, scope);
       }
       setIsEditing(false);
       setSelectedEvent(null);
+      onUpdateSuccess?.({
+        ...eventBeforeUpdate,
+        ...updatedEvent,
+        summary: updatedEvent.summary ?? updates.summary ?? eventBeforeUpdate.summary,
+        description:
+          updatedEvent.description ?? updates.description ?? eventBeforeUpdate.description,
+      });
       await loadCalendarData();
     } catch {
       alert(t('updateEventError'));

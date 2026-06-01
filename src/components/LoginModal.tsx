@@ -111,7 +111,7 @@ export default function LoginModal({
               </div>
             )}
             <div className="space-y-1">
-              <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-600 dark:text-slate-300">
                 {t('calendarSetup')}
               </p>
               <h2 id="login-modal-title" className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -156,7 +156,7 @@ export default function LoginModal({
           <div className="overflow-y-auto px-6 py-6 md:px-8 md:py-8">
             <div className="grid gap-6 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
               <section className="rounded-[1.75rem] bg-slate-50 p-6 dark:bg-slate-800/60">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-600 dark:text-slate-300">
                   {t('howAccessWorks')}
                 </p>
                 <h3 className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-white">

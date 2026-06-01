@@ -50,7 +50,7 @@ export default function LegalLinks({
         replace={isModal}
         className={linkClassName}
       >
-        {isHebrew ? 'נגישות' : 'Accessibility'}
+        {isHebrew ? '\u05e0\u05d2\u05d9\u05e9\u05d5\u05ea' : 'Accessibility'}
       </Link>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, GripHorizontal } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
@@ -22,6 +21,7 @@ interface AddEventProps {
 }
 
 type LoginModalMode = 'connect' | 'upgrade' | 'reauthorize';
+type XlsxModule = Awaited<typeof import('xlsx')>;
 
 export default function AddEvent({
   onClose = () => {},
@@ -29,38 +29,47 @@ export default function AddEvent({
   onCalendarsChanged = null,
   prefillDate = null,
 }: AddEventProps) {
-  const BULK_IMPORT_COLUMNS = ['שם האירוע', 'קטגוריה', 'הערות', 'שנת מקור', 'חודש', 'יום', 'מופעים'];
+  const BULK_IMPORT_COLUMNS = ['\u05e9\u05dd \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2', '\u05e7\u05d8\u05d2\u05d5\u05e8\u05d9\u05d4', '\u05d4\u05e2\u05e8\u05d5\u05ea (\u05dc\u05d0 \u05d7\u05d5\u05d1\u05d4)', '\u05e9\u05e0\u05ea \u05de\u05e7\u05d5\u05e8', '\u05d7\u05d5\u05d3\u05e9', '\u05d9\u05d5\u05dd', '\u05de\u05d5\u05e4\u05e2\u05d9\u05dd'];
+  const BULK_IMPORT_OPTIONAL_COLUMNS = ['\u05e1\u05d5\u05d2 \u05ea\u05d0\u05e8\u05d9\u05da', '\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d5\u05e2\u05d6\u05d9', '\u05dc\u05e4\u05e0\u05d9/\u05d0\u05d7\u05e8\u05d9 \u05d4\u05e9\u05e7\u05d9\u05e2\u05d4'];
   const HEBREW_NUMBER_MAP: Record<string, number> = {
-    א: 1, ב: 2, ג: 3, ד: 4, ה: 5, ו: 6, ז: 7, ח: 8, ט: 9,
-    י: 10, כ: 20, ך: 20, ל: 30, מ: 40, ם: 40, נ: 50, ן: 50, ס: 60, ע: 70, פ: 80, ף: 80, צ: 90, ץ: 90,
-    ק: 100, ר: 200, ש: 300, ת: 400,
+    \u05d0: 1, \u05d1: 2, \u05d2: 3, \u05d3: 4, \u05d4: 5, \u05d5: 6, \u05d6: 7, \u05d7: 8, \u05d8: 9,
+    \u05d9: 10, \u05db: 20, \u05da: 20, \u05dc: 30, \u05de: 40, \u05dd: 40, \u05e0: 50, \u05df: 50, \u05e1: 60, \u05e2: 70, \u05e4: 80, \u05e3: 80, \u05e6: 90, \u05e5: 90,
+    \u05e7: 100, \u05e8: 200, \u05e9: 300, \u05ea: 400,
   };
   const IMPORT_MONTH_MAP = {
-    תשרי: 'Tishrei',
-    חשון: 'Cheshvan',
-    חשוון: 'Cheshvan',
-    כסלו: 'Kislev',
-    טבת: 'Tevet',
-    שבט: 'Sh\'vat',
-    אדר: 'Adar',
-    'אדר א׳': 'Adar I',
-    'אדר א\'': 'Adar I',
-    'אדר א': 'Adar I',
-    'אדר ב׳': 'Adar II',
-    'אדר ב\'': 'Adar II',
-    'אדר ב': 'Adar II',
-    ניסן: 'Nisan',
-    אייר: 'Iyyar',
-    סיון: 'Sivan',
-    תמוז: 'Tamuz',
-    אב: 'Av',
-    אלול: 'Elul',
+    \u05ea\u05e9\u05e8\u05d9: 'Tishrei',
+    \u05d7\u05e9\u05d5\u05df: 'Cheshvan',
+    \u05d7\u05e9\u05d5\u05d5\u05df: 'Cheshvan',
+    \u05db\u05e1\u05dc\u05d5: 'Kislev',
+    \u05d8\u05d1\u05ea: 'Tevet',
+    \u05e9\u05d1\u05d8: 'Sh\'vat',
+    \u05d0\u05d3\u05e8: 'Adar',
+    '\u05d0\u05d3\u05e8 \u05d0\u05f3': 'Adar I',
+    '\u05d0\u05d3\u05e8 \u05d0\'': 'Adar I',
+    '\u05d0\u05d3\u05e8 \u05d0': 'Adar I',
+    '\u05d0\u05d3\u05e8 \u05d1\u05f3': 'Adar II',
+    '\u05d0\u05d3\u05e8 \u05d1\'': 'Adar II',
+    '\u05d0\u05d3\u05e8 \u05d1': 'Adar II',
+    \u05e0\u05d9\u05e1\u05df: 'Nisan',
+    \u05d0\u05d9\u05d9\u05e8: 'Iyyar',
+    \u05e1\u05d9\u05d5\u05df: 'Sivan',
+    \u05ea\u05de\u05d5\u05d6: 'Tamuz',
+    \u05d0\u05d1: 'Av',
+    \u05d0\u05dc\u05d5\u05dc: 'Elul',
   };
   const IMPORT_CATEGORY_MAP = {
-    'יום הולדת': 'birthday',
-    'יום נישואין': 'anniversary',
-    'יום זיכרון': 'memorial',
-    אחר: 'other',
+    '\u05d9\u05d5\u05dd \u05d4\u05d5\u05dc\u05d3\u05ea': 'birthday',
+    '\u05d9\u05d5\u05dd \u05e0\u05d9\u05e9\u05d5\u05d0\u05d9\u05df': 'anniversary',
+    '\u05d9\u05d5\u05dd \u05d6\u05d9\u05db\u05e8\u05d5\u05df': 'memorial',
+    \u05d0\u05d7\u05e8: 'other',
+    birthday: 'birthday',
+    Birthday: 'birthday',
+    anniversary: 'anniversary',
+    Anniversary: 'anniversary',
+    memorial: 'memorial',
+    Memorial: 'memorial',
+    other: 'other',
+    Other: 'other',
   };
   const importTemplatePath = '/templates/hebsync-events-import-template.xlsx';
   const navigate = useNavigate();
@@ -70,6 +79,7 @@ export default function AddEvent({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const notesRef = useRef<HTMLTextAreaElement | null>(null);
   const importFileInputRef = useRef<HTMLInputElement | null>(null);
+  const xlsxModuleRef = useRef<XlsxModule | null>(null);
   const topFeedbackRef = useRef<HTMLDivElement | null>(null);
   const inlineManualFeedbackRef = useRef<HTMLDivElement | null>(null);
   const calendarSelectionRef = useRef<HTMLDivElement | null>(null);
@@ -113,7 +123,7 @@ export default function AddEvent({
   const normalizeHebrewToken = (value: unknown) => String(value ?? '').replace(/\u00A0/g, ' ').trim();
 
   const parseHebrewNumeral = (value: unknown) => {
-    const normalized = normalizeHebrewToken(value).replace(/["׳״']/g, '');
+    const normalized = normalizeHebrewToken(value).replace(/["\u05f3\u05f4']/g, '');
     return [...normalized].reduce((sum, char) => sum + (HEBREW_NUMBER_MAP[char] ?? 0), 0);
   };
 
@@ -127,7 +137,7 @@ export default function AddEvent({
     if (/^\d+$/.test(normalized)) return Number(normalized);
 
     const cleaned = normalized.replace(/\s/g, '');
-    const firstMarkerIndex = cleaned.search(/[׳']/);
+    const firstMarkerIndex = cleaned.search(/[\u05f3']/);
     if (firstMarkerIndex === 1) {
       const thousandsPart = parseHebrewNumeral(cleaned.slice(0, 1));
       const remainderPart = parseHebrewNumeral(cleaned.slice(2));
@@ -147,6 +157,14 @@ export default function AddEvent({
     if (!normalized) return null;
     if (/^\d+$/.test(normalized)) return Number(normalized);
     return parseHebrewNumeral(normalized);
+  };
+
+  const loadXlsx = async () => {
+    if (!xlsxModuleRef.current) {
+      xlsxModuleRef.current = await import('xlsx');
+    }
+
+    return xlsxModuleRef.current;
   };
 
   const [tab, setTab] = useState('manual');
@@ -204,6 +222,7 @@ export default function AddEvent({
     updateImportFallbackSelection,
   } = useAddEventImport({
     bulkImportColumns: BULK_IMPORT_COLUMNS,
+    bulkImportOptionalColumns: BULK_IMPORT_OPTIONAL_COLUMNS,
     createHebcalEvent,
     generateRdates,
     hasWriteAccess,
@@ -224,7 +243,7 @@ export default function AddEvent({
     setIsLoading,
     t,
     validateHebrewDateForYear,
-    xlsx: XLSX,
+    loadXlsx,
   });
   const openLoginModal = (mode: 'connect' | 'upgrade' | 'reauthorize') => {
     setLoginModalMode(mode);
@@ -393,7 +412,7 @@ export default function AddEvent({
   };
 
   const handleRevoke = async () => {
-    if (!window.confirm(isRtl ? "פעולה זו תנתק את האפליקציה מחשבון הגוגל שלך ותבטל את כל ההרשאות שנתת לה. האם להמשיך?" : "This will disconnect the app from your Google account and revoke all permissions. Continue?")) return;
+    if (!window.confirm(isRtl ? "\u05e4\u05e2\u05d5\u05dc\u05d4 \u05d6\u05d5 \u05ea\u05e0\u05ea\u05e7 \u05d0\u05ea \u05d4\u05d0\u05e4\u05dc\u05d9\u05e7\u05e6\u05d9\u05d4 \u05de\u05d7\u05e9\u05d1\u05d5\u05df \u05d4\u05d2\u05d5\u05d2\u05dc \u05e9\u05dc\u05da \u05d5\u05ea\u05d1\u05d8\u05dc \u05d0\u05ea \u05db\u05dc \u05d4\u05d4\u05e8\u05e9\u05d0\u05d5\u05ea \u05e9\u05e0\u05ea\u05ea \u05dc\u05d4. \u05d4\u05d0\u05dd \u05dc\u05d4\u05de\u05e9\u05d9\u05da?" : "This will disconnect the app from your Google account and revoke all permissions. Continue?")) return;
     setIsLoading(true);
     await revokeAccess();
     clearCalendarSession();
@@ -482,7 +501,7 @@ export default function AddEvent({
           </span>
           {readOnly ? (
             <span className="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-              {t('readOnlyCalendarBadge', { defaultValue: isRtl ? 'לצפייה בלבד' : 'View only' })}
+              {t('readOnlyCalendarBadge', { defaultValue: isRtl ? '\u05dc\u05e6\u05e4\u05d9\u05d9\u05d4 \u05d1\u05dc\u05d1\u05d3' : 'View only' })}
             </span>
           ) : null}
         </div>
@@ -514,7 +533,7 @@ export default function AddEvent({
         </div>
         {writableCalendars.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
-            {t('noWritableCalendars', { defaultValue: isRtl ? 'אין יומנים עם הרשאת כתיבה כרגע. אפשר להציג גם יומנים לצפייה בלבד.' : 'There are no writable calendars right now. You can also show view-only calendars.' })}
+            {t('noWritableCalendars', { defaultValue: isRtl ? '\u05d0\u05d9\u05df \u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05e2\u05dd \u05d4\u05e8\u05e9\u05d0\u05ea \u05db\u05ea\u05d9\u05d1\u05d4 \u05db\u05e8\u05d2\u05e2. \u05d0\u05e4\u05e9\u05e8 \u05dc\u05d4\u05e6\u05d9\u05d2 \u05d2\u05dd \u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05dc\u05e6\u05e4\u05d9\u05d9\u05d4 \u05d1\u05dc\u05d1\u05d3.' : 'There are no writable calendars right now. You can also show view-only calendars.' })}
           </div>
         ) : null}
         {writableCalendars.length > 0 ? (
@@ -531,12 +550,12 @@ export default function AddEvent({
                 onChange={(event) => setShowReadOnlyCalendars(event.target.checked)}
                 className="h-4 w-4 rounded text-[#0038A8]"
               />
-              <span>{t('showReadOnlyCalendars', { defaultValue: isRtl ? 'הצג גם יומנים לצפייה בלבד' : 'Show view-only calendars too' })}</span>
+              <span>{t('showReadOnlyCalendars', { defaultValue: isRtl ? '\u05d4\u05e6\u05d2 \u05d2\u05dd \u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05dc\u05e6\u05e4\u05d9\u05d9\u05d4 \u05d1\u05dc\u05d1\u05d3' : 'Show view-only calendars too' })}</span>
             </label>
             {showReadOnlyCalendars ? (
               <>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {t('readOnlyCalendarHint', { defaultValue: isRtl ? 'אין לך הרשאה ליצור אירועים ביומנים האלו.' : 'You do not have permission to create events in these calendars.' })}
+                  {t('readOnlyCalendarHint', { defaultValue: isRtl ? '\u05d0\u05d9\u05df \u05dc\u05da \u05d4\u05e8\u05e9\u05d0\u05d4 \u05dc\u05d9\u05e6\u05d5\u05e8 \u05d0\u05d9\u05e8\u05d5\u05e2\u05d9\u05dd \u05d1\u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05d4\u05d0\u05dc\u05d5.' : 'You do not have permission to create events in these calendars.' })}
                 </p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {readOnlyCalendars.map((cal) => renderCalendarOption(cal, { disabled: true, readOnly: true }))}
@@ -563,8 +582,8 @@ export default function AddEvent({
               : 'bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200'
           }`}>
             {getImportFallbackSelection(row.rowNumber)
-              ? t('bulkImportRowDecisionSelected', { defaultValue: 'נבחר טיפול לתאריך המיוחד' })
-              : t('bulkImportRowNeedsDecision', { defaultValue: 'נדרש לבחור טיפול לתאריך מיוחד' })}
+              ? t('bulkImportRowDecisionSelected', { defaultValue: '\u05e0\u05d1\u05d7\u05e8 \u05d8\u05d9\u05e4\u05d5\u05dc \u05dc\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05de\u05d9\u05d5\u05d7\u05d3' })
+              : t('bulkImportRowNeedsDecision', { defaultValue: '\u05e0\u05d3\u05e8\u05e9 \u05dc\u05d1\u05d7\u05d5\u05e8 \u05d8\u05d9\u05e4\u05d5\u05dc \u05dc\u05ea\u05d0\u05e8\u05d9\u05da \u05de\u05d9\u05d5\u05d7\u05d3' })}
           </div>
           <select
             value={getImportFallbackSelection(row.rowNumber)}
@@ -576,10 +595,10 @@ export default function AddEvent({
             }
             className="w-full rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#0038A8] dark:border-amber-900/30 dark:bg-slate-900 dark:text-slate-200"
           >
-            <option value="">{t('bulkImportFallbackSelect', { defaultValue: 'בחר טיפול' })}</option>
-            <option value="29th">{t('bulkImportFallback29', { defaultValue: 'להעביר ל-כ״ט באותו חודש' })}</option>
-            <option value="1st">{t('bulkImportFallback1st', { defaultValue: 'לדחות ל-א׳ בחודש הבא' })}</option>
-            <option value="skip">{t('bulkImportFallbackSkip', { defaultValue: 'לדלג על אותה שנה' })}</option>
+            <option value="">{t('bulkImportFallbackSelect', { defaultValue: '\u05d1\u05d7\u05e8 \u05d8\u05d9\u05e4\u05d5\u05dc' })}</option>
+            <option value="29th">{t('bulkImportFallback29', { defaultValue: '\u05dc\u05d4\u05e2\u05d1\u05d9\u05e8 \u05dc-\u05db\u05f4\u05d8 \u05d1\u05d0\u05d5\u05ea\u05d5 \u05d7\u05d5\u05d3\u05e9' })}</option>
+            <option value="1st">{t('bulkImportFallback1st', { defaultValue: '\u05dc\u05d3\u05d7\u05d5\u05ea \u05dc-\u05d0\u05f3 \u05d1\u05d7\u05d5\u05d3\u05e9 \u05d4\u05d1\u05d0' })}</option>
+            <option value="skip">{t('bulkImportFallbackSkip', { defaultValue: '\u05dc\u05d3\u05dc\u05d2 \u05e2\u05dc \u05d0\u05d5\u05ea\u05d4 \u05e9\u05e0\u05d4' })}</option>
           </select>
         </div>
       );
@@ -588,7 +607,7 @@ export default function AddEvent({
     if (getImportRowStatus(row) === 'valid') {
       return (
         <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-          {t('bulkImportRowValid', { defaultValue: 'תקין לתצוגה' })}
+          {t('bulkImportRowValid', { defaultValue: '\u05ea\u05e7\u05d9\u05df \u05dc\u05ea\u05e6\u05d5\u05d2\u05d4' })}
         </span>
       );
     }
@@ -604,12 +623,38 @@ export default function AddEvent({
     );
   };
 
+  const renderImportDateCell = (row: ImportPreviewRow) => {
+    if (row.dateType === 'gregorian') {
+      return (
+        <>
+          <div className="break-words font-medium">{row.gregorianDateLabel || '-'}</div>
+          {row.sunsetModeLabel ? (
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {row.sunsetModeLabel}
+            </div>
+          ) : null}
+          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {row.dayLabel} {row.monthLabel}
+            {row.sourceYearLabel ? ` • ${row.sourceYearLabel}` : ''}
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <div className="break-words">{row.dayLabel} {row.monthLabel}</div>
+        <div className="text-xs text-slate-500 dark:text-slate-400">{row.sourceYearLabel}</div>
+      </>
+    );
+  };
+
   return (
     <div
-      className={`flex h-[100dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[1.75rem] bg-slate-50 shadow-2xl dark:bg-slate-900 md:h-[min(92vh,960px)] md:rounded-[2rem] font-sans ${isRtl ? 'text-right' : 'text-left'}`}
+      className={`flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-[1.75rem] bg-slate-50 shadow-2xl dark:bg-slate-900 md:h-[min(92vh,960px)] md:rounded-[2rem] font-sans ${isRtl ? 'text-right' : 'text-left'}`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
-      <main className="flex-1 overflow-auto px-4 py-4 md:px-6 md:py-5">
+      <div className="flex-1 overflow-auto px-4 py-4 md:px-6 md:py-5">
         <div className="mx-auto w-full max-w-4xl space-y-6">
           <div className="flex flex-col gap-1 mb-2">
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
@@ -641,6 +686,7 @@ export default function AddEvent({
             <>
               <div className="flex border-b border-slate-100 dark:border-slate-700" role="tablist" aria-label={t('addEventTitle')}>
                 <button
+                  data-testid="add-event-manual-tab"
                   type="button"
                   role="tab"
                   aria-selected={tab === 'manual'}
@@ -652,6 +698,7 @@ export default function AddEvent({
                   {t('manualEntry')}
                 </button>
                 <button
+                  data-testid="add-event-import-tab"
                   type="button"
                   role="tab"
                   aria-selected={tab === 'csv'}
@@ -660,18 +707,20 @@ export default function AddEvent({
                   className={`flex-1 py-4 text-center font-medium transition-colors ${tab === 'csv' ? 'text-[#0038A8] border-b-2 border-[#0038A8] bg-blue-50/50 dark:bg-[#0038A8]/20 dark:text-blue-300' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/50'}`}
                   onClick={() => setTab('csv')}
                 >
-                  {t('uploadWorkbook', { defaultValue: 'ייבוא מקובץ Excel' })}
+                  {t('uploadWorkbook', { defaultValue: '\u05d9\u05d9\u05d1\u05d5\u05d0 \u05de\u05e7\u05d5\u05d1\u05e5 Excel' })}
                 </button>
               </div>
 
               <div className="px-4 pb-6 pt-4 md:p-8">
                 {tab === 'manual' ? (
-                  <form id="add-event-manual-panel" role="tabpanel" aria-labelledby="add-event-manual-tab" className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePreview(); }}>
+                  <div id="add-event-manual-panel" role="tabpanel" aria-labelledby="add-event-manual-tab">
+                  <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); handlePreview(); }}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label htmlFor="event-title" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('eventName')}</label>
                         <input 
                           ref={titleInputRef}
+                          data-testid="add-event-title-input"
                           id="event-title"
                           type="text" 
                           value={title}
@@ -679,7 +728,7 @@ export default function AddEvent({
                             clearManualValidationFeedback();
                             setTitle(e.target.value);
                           }}
-                          placeholder={isRtl ? "לדוגמה: יום הולדת של דוד" : "e.g. David's Birthday"} 
+                          placeholder={isRtl ? "\u05dc\u05d3\u05d5\u05d2\u05de\u05d4: \u05d9\u05d5\u05dd \u05d4\u05d5\u05dc\u05d3\u05ea \u05e9\u05dc \u05d3\u05d5\u05d3" : "e.g. David's Birthday"} 
                           aria-invalid={titleHasError}
                           aria-describedby={titleHasError ? 'event-title-error' : undefined}
                           className={`w-full rounded-xl border p-3 text-slate-900 transition-all outline-none placeholder:text-slate-400 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 ${
@@ -697,6 +746,7 @@ export default function AddEvent({
                       <div className="space-y-2">
                         <label htmlFor="event-category" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('category')}</label>
                         <select 
+                          data-testid="add-event-category-select"
                           id="event-category"
                           value={category}
                           onChange={(e) => {
@@ -716,6 +766,7 @@ export default function AddEvent({
                       <label htmlFor="event-notes" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('description')}</label>
                       <div className="relative">
                         <textarea
+                          data-testid="add-event-notes-input"
                           id="event-notes"
                           ref={notesRef}
                           value={notes}
@@ -756,6 +807,7 @@ export default function AddEvent({
                           <div className="space-y-1 md:space-y-2">
                             <label htmlFor="source-year" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('sourceYear')}</label>
                             <select 
+                              data-testid="add-event-source-year"
                               id="source-year"
                               value={year}
                               onChange={(e) => {
@@ -772,6 +824,7 @@ export default function AddEvent({
                           <div className="space-y-1 md:space-y-2">
                             <label htmlFor="source-month" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('month')}</label>
                             <select 
+                              data-testid="add-event-source-month"
                               id="source-month"
                               value={month}
                               onChange={(e) => {
@@ -788,6 +841,7 @@ export default function AddEvent({
                           <div className="space-y-1 md:space-y-2">
                             <label htmlFor="source-day" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('day')}</label>
                             <select 
+                              data-testid="add-event-source-day"
                               id="source-day"
                               value={day}
                               onChange={(e) => {
@@ -810,6 +864,7 @@ export default function AddEvent({
                             <div className="space-y-1.5 md:space-y-2">
                               <label htmlFor="gregorian-date" className="text-[11px] font-bold text-slate-500 md:text-xs dark:text-slate-400">{t('gregorianDate')}</label>
                               <input 
+                                data-testid="add-event-gregorian-date"
                                 id="gregorian-date"
                                 type="date" 
                                 value={gregDate}
@@ -864,7 +919,7 @@ export default function AddEvent({
                           {convertedHDate && (
                             <div className="mt-4 p-4 bg-cyan-50 text-cyan-900 rounded-lg border border-cyan-100 flex items-center justify-between dark:bg-cyan-900/20 dark:text-cyan-100 dark:border-cyan-800">
                               <div>
-                                <span className="block text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 mb-1">{isRtl ? 'התאריך העברי המחושב' : 'Calculated Hebrew Date'}</span>
+                                <span className="block text-xs font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400 mb-1">{isRtl ? '\u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05e2\u05d1\u05e8\u05d9 \u05d4\u05de\u05d7\u05d5\u05e9\u05d1' : 'Calculated Hebrew Date'}</span>
                                 <span className="text-xl font-bold">{isRtl ? convertedHDate.renderGematriya() : convertedHDate.toString()}</span>
                               </div>
                             </div>
@@ -876,10 +931,10 @@ export default function AddEvent({
                         <div className="mt-4 p-5 bg-amber-50 rounded-2xl border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800 shadow-sm">
                           <h4 className="font-bold text-amber-800 mb-2 flex items-center gap-2 dark:text-amber-400">
                             <Info className="w-4 h-4" />
-                            {isRtl ? 'שים לב: בחרת ביום ה-30 בחודש (ל׳)' : 'Note: You selected the 30th day of the month'}
+                            {isRtl ? '\u05e9\u05d9\u05dd \u05dc\u05d1: \u05d1\u05d7\u05e8\u05ea \u05d1\u05d9\u05d5\u05dd \u05d4-30 \u05d1\u05d7\u05d5\u05d3\u05e9 (\u05dc\u05f3)' : 'Note: You selected the 30th day of the month'}
                           </h4>
                           <p className="text-sm text-amber-700 mb-4 leading-relaxed dark:text-amber-300/80">
-                            {isRtl ? 'בחלק מהשנים העבריות חודש זה הוא "חסר" (בן 29 ימים בלבד), ולכן התאריך ל׳ לא קיים בהן. בחר כיצד תרצה לנהוג בשנים אלו:' : 'In some Hebrew years, this month is "short" (only 29 days), so the 30th doesn\'t exist. Choose how to handle these years:'}
+                            {isRtl ? '\u05d1\u05d7\u05dc\u05e7 \u05de\u05d4\u05e9\u05e0\u05d9\u05dd \u05d4\u05e2\u05d1\u05e8\u05d9\u05d5\u05ea \u05d7\u05d5\u05d3\u05e9 \u05d6\u05d4 \u05d4\u05d5\u05d0 "\u05d7\u05e1\u05e8" (\u05d1\u05df 29 \u05d9\u05de\u05d9\u05dd \u05d1\u05dc\u05d1\u05d3), \u05d5\u05dc\u05db\u05df \u05d4\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05f3 \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd \u05d1\u05d4\u05df. \u05d1\u05d7\u05e8 \u05db\u05d9\u05e6\u05d3 \u05ea\u05e8\u05e6\u05d4 \u05dc\u05e0\u05d4\u05d5\u05d2 \u05d1\u05e9\u05e0\u05d9\u05dd \u05d0\u05dc\u05d5:' : 'In some Hebrew years, this month is "short" (only 29 days), so the 30th doesn\'t exist. Choose how to handle these years:'}
                           </p>
                           <div className="grid grid-cols-1 gap-3">
                             <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
@@ -887,21 +942,21 @@ export default function AddEvent({
                                 clearManualValidationFeedback();
                                 setFallback30th('29th');
                               }} className="w-4 h-4 text-[#0038A8]" />
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'הקדמה ל-כ״ט באותו חודש' : 'Move to 29th of the same month'}</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? '\u05d4\u05e7\u05d3\u05de\u05d4 \u05dc-\u05db\u05f4\u05d8 \u05d1\u05d0\u05d5\u05ea\u05d5 \u05d7\u05d5\u05d3\u05e9' : 'Move to 29th of the same month'}</span>
                             </label>
                             <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
                               <input type="radio" name="fallback" checked={fallback30th === '1st'} onChange={() => {
                                 clearManualValidationFeedback();
                                 setFallback30th('1st');
                               }} className="w-4 h-4 text-[#0038A8]" />
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דחייה ל-א׳ בחודש הבא' : 'Move to 1st of the next month'}</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? '\u05d3\u05d7\u05d9\u05d9\u05d4 \u05dc-\u05d0\u05f3 \u05d1\u05d7\u05d5\u05d3\u05e9 \u05d4\u05d1\u05d0' : 'Move to 1st of the next month'}</span>
                             </label>
                             <label className="flex items-center gap-3 rounded-xl border border-amber-100 bg-white/50 p-3 transition-colors hover:bg-white dark:border-amber-900/30 dark:bg-slate-800/40 dark:hover:bg-slate-800/70">
                               <input type="radio" name="fallback" checked={fallback30th === 'skip'} onChange={() => {
                                 clearManualValidationFeedback();
                                 setFallback30th('skip');
                               }} className="w-4 h-4 text-[#0038A8]" />
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? 'דילוג על השנה (לא ליצור אירוע)' : 'Skip the year (don\'t create event)'}</span>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{isRtl ? '\u05d3\u05d9\u05dc\u05d5\u05d2 \u05e2\u05dc \u05d4\u05e9\u05e0\u05d4 (\u05dc\u05d0 \u05dc\u05d9\u05e6\u05d5\u05e8 \u05d0\u05d9\u05e8\u05d5\u05e2)' : 'Skip the year (don\'t create event)'}</span>
                             </label>
                           </div>
                         </div>
@@ -910,7 +965,8 @@ export default function AddEvent({
                       <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                           <label htmlFor="sync-span" className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('howManyOccurrences')}</label>
                           <div className="flex items-center gap-3">
-                            <input 
+                            <input
+                              data-testid="add-event-sync-span"
                               id="sync-span"
                               type="text"
                               inputMode="numeric"
@@ -947,21 +1003,24 @@ export default function AddEvent({
                     ) : null}
 
                     <div className="pt-2 flex justify-end">
-                      <button 
-                        type="submit" 
+                      <button
+                        data-testid="add-event-show-preview"
+                        type="submit"
                         className="px-8 py-4 bg-[#0038A8] hover:bg-blue-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 text-lg w-full md:w-auto flex items-center justify-center gap-2"
                       >
                         <Eye className="w-5 h-5" />
                         {t('showPreview')}
-                      </button>
-                    </div>
+                        </button>
+                      </div>
                   </form>
+                  </div>
                 ) : (
                   <div id="add-event-import-panel" role="tabpanel" aria-labelledby="add-event-import-tab">
                   <>
                     <div className="space-y-6">
                       <input
                         id="import-workbook-input"
+                        data-testid="import-workbook-input"
                         ref={importFileInputRef}
                         type="file"
                         accept=".xlsx,.xls"
@@ -973,9 +1032,9 @@ export default function AddEvent({
                         <div className="flex flex-col gap-5">
                           <div className="space-y-3">
                             <div>
-                              <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('bulkImportTitle', { defaultValue: 'ייבוא אירועים מרוכז' })}</h3>
+                              <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('bulkImportTitle', { defaultValue: '\u05d9\u05d9\u05d1\u05d5\u05d0 \u05d0\u05d9\u05e8\u05d5\u05e2\u05d9\u05dd \u05de\u05e8\u05d5\u05db\u05d6' })}</h3>
                               <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400">
-                                {t('bulkImportBody', { defaultValue: 'הורד את תבנית ה-Excel, מלא את הגיליון Events בלבד, ואז העלה כאן את הקובץ לתצוגה מקדימה.' })}
+                                {t('bulkImportBody', { defaultValue: '\u05d4\u05d5\u05e8\u05d3 \u05d0\u05ea \u05ea\u05d1\u05e0\u05d9\u05ea \u05d4-Excel, \u05de\u05dc\u05d0 \u05d0\u05ea \u05d4\u05d2\u05d9\u05dc\u05d9\u05d5\u05df Events \u05d1\u05dc\u05d1\u05d3, \u05d5\u05d0\u05d6 \u05d4\u05e2\u05dc\u05d4 \u05db\u05d0\u05df \u05d0\u05ea \u05d4\u05e7\u05d5\u05d1\u05e5 \u05dc\u05ea\u05e6\u05d5\u05d2\u05d4 \u05de\u05e7\u05d3\u05d9\u05de\u05d4.' })}
                               </p>
                             </div>
                           </div>
@@ -986,7 +1045,7 @@ export default function AddEvent({
                               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800"
                             >
                               <Download className="h-4 w-4" />
-                              {t('downloadImportTemplate', { defaultValue: 'הורדת תבנית למילוי' })}
+                              {t('downloadImportTemplate', { defaultValue: '\u05d4\u05d5\u05e8\u05d3\u05ea \u05ea\u05d1\u05e0\u05d9\u05ea \u05dc\u05de\u05d9\u05dc\u05d5\u05d9' })}
                             </a>
                             <button
                               type="button"
@@ -994,7 +1053,7 @@ export default function AddEvent({
                               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition-all hover:border-[#0038A8] hover:text-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                             >
                               <Upload className="h-4 w-4" />
-                              {t('bulkImportUploadTitle', { defaultValue: 'העלאת קובץ ממולא' })}
+                              {t('bulkImportUploadTitle', { defaultValue: '\u05d4\u05e2\u05dc\u05d0\u05ea \u05e7\u05d5\u05d1\u05e5 \u05de\u05de\u05d5\u05dc\u05d0' })}
                             </button>
                           </div>
 
@@ -1002,23 +1061,24 @@ export default function AddEvent({
                             <div className="min-w-0">
                               {selectedImportFile ? (
                                 <span className="block truncate font-bold text-slate-800 dark:text-slate-100">
-                                  {t('bulkImportSelectedFile', { defaultValue: 'קובץ שנבחר:' })} {selectedImportFile.name}
+                                  {t('bulkImportSelectedFile', { defaultValue: '\u05e7\u05d5\u05d1\u05e5 \u05e9\u05e0\u05d1\u05d7\u05e8:' })} {selectedImportFile.name}
                                 </span>
                               ) : (
                                 <span className="text-slate-500 dark:text-slate-400">
-                                  {t('bulkImportNoFileYet', { defaultValue: 'לא נבחר קובץ' })}
+                                  {t('bulkImportNoFileYet', { defaultValue: '\u05dc\u05d0 \u05e0\u05d1\u05d7\u05e8 \u05e7\u05d5\u05d1\u05e5' })}
                                 </span>
                               )}
                             </div>
                             {selectedImportFile ? (
                               <button
+                                data-testid="bulk-import-preview-button"
                                 type="button"
                                 onClick={parseImportWorkbook}
                                 disabled={isImportParsing}
                                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0038A8] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 {isImportParsing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-                                {t('bulkImportPreviewButton', { defaultValue: 'תצוגה מקדימה לקובץ' })}
+                                {t('bulkImportPreviewButton', { defaultValue: '\u05ea\u05e6\u05d5\u05d2\u05d4 \u05de\u05e7\u05d3\u05d9\u05de\u05d4 \u05dc\u05e7\u05d5\u05d1\u05e5' })}
                               </button>
                             ) : null}
                           </div>
@@ -1032,17 +1092,17 @@ export default function AddEvent({
                         {importPreviewRows.length > 0 ? (
                           <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-700">
                             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100">
-                              {t('bulkImportPreviewResults', { defaultValue: 'תוצאות קריאת הקובץ' })}: {importPreviewRows.length}
+                              {t('bulkImportPreviewResults', { defaultValue: '\u05ea\u05d5\u05e6\u05d0\u05d5\u05ea \u05e7\u05e8\u05d9\u05d0\u05ea \u05d4\u05e7\u05d5\u05d1\u05e5' })}: {importPreviewRows.length}
                             </div>
                             <div className="grid gap-3 border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900/70 md:grid-cols-3">
                               <div className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                                {t('bulkImportValidRows', { defaultValue: 'תקינות' })}: {importValidCount}
+                                {t('bulkImportValidRows', { defaultValue: '\u05ea\u05e7\u05d9\u05e0\u05d5\u05ea' })}: {importValidCount}
                               </div>
                               <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-                                {t('bulkImportDecisionRows', { defaultValue: 'דורשות החלטה' })}: {importNeedsDecisionCount}
+                                {t('bulkImportDecisionRows', { defaultValue: '\u05d3\u05d5\u05e8\u05e9\u05d5\u05ea \u05d4\u05d7\u05dc\u05d8\u05d4' })}: {importNeedsDecisionCount}
                               </div>
                               <div className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 dark:bg-rose-900/20 dark:text-rose-200">
-                                {t('bulkImportInvalidRows', { defaultValue: 'שגויות' })}: {importInvalidCount}
+                                {t('bulkImportInvalidRows', { defaultValue: '\u05e9\u05d2\u05d5\u05d9\u05d5\u05ea' })}: {importInvalidCount}
                               </div>
                             </div>
                             {isMobileLayout ? (
@@ -1061,19 +1121,18 @@ export default function AddEvent({
                                           type="button"
                                           onClick={() => removeImportPreviewRow(row.rowNumber)}
                                           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 transition-all hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200"
-                                          aria-label={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
-                                          title={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
+                                          aria-label={t('bulkImportRemoveRow', { defaultValue: '\u05d4\u05e1\u05e8 \u05e9\u05d5\u05e8\u05d4' })}
+                                          title={t('bulkImportRemoveRow', { defaultValue: '\u05d4\u05e1\u05e8 \u05e9\u05d5\u05e8\u05d4' })}
                                         >
                                           <Trash2 className="h-4 w-4" />
                                         </button>
                                       ) : null}
                                     </div>
-                                    <div className="grid gap-3 text-sm text-slate-700 dark:text-slate-200">
-                                      <div>
-                                        <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('hebrewDate')}</div>
-                                        <div className="break-words">{row.dayLabel} {row.monthLabel}</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">{row.sourceYearLabel}</div>
-                                      </div>
+                                      <div className="grid gap-3 text-sm text-slate-700 dark:text-slate-200">
+                                        <div>
+                                          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('sourceDate', { defaultValue: isRtl ? 'תאריך מקור' : 'Source date' })}</div>
+                                          {renderImportDateCell(row)}
+                                        </div>
                                       <div>
                                         <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{t('occurrences')}</div>
                                         <div>{row.occurrences}</div>
@@ -1095,7 +1154,7 @@ export default function AddEvent({
                                     <th className="w-12 border-b border-slate-200 px-2 py-2 dark:border-slate-700">#</th>
                                     <th className="w-[23%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('eventName')}</th>
                                     <th className="w-[15%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('category')}</th>
-                                    <th className="w-[18%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('hebrewDate')}</th>
+                                    <th className="w-[18%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('sourceDate', { defaultValue: isRtl ? 'תאריך מקור' : 'Source date' })}</th>
                                     <th className="w-[11%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('occurrences')}</th>
                                     <th className="w-[23%] border-b border-slate-200 px-2 py-2 dark:border-slate-700">{t('notes')}</th>
                                     <th className="w-12 border-b border-slate-200 px-2 py-2 dark:border-slate-700"></th>
@@ -1108,8 +1167,7 @@ export default function AddEvent({
                                       <td className="border-b border-slate-100 px-2 py-3 font-medium dark:border-slate-800">{row.title || '-'}</td>
                                       <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">{row.categoryLabel || '-'}</td>
                                       <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">
-                                        <div>{row.dayLabel} {row.monthLabel}</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">{row.sourceYearLabel}</div>
+                                        {renderImportDateCell(row)}
                                       </td>
                                       <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">{row.occurrences}</td>
                                       <td className="border-b border-slate-100 px-2 py-3 dark:border-slate-800">
@@ -1121,8 +1179,8 @@ export default function AddEvent({
                                                 : 'bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200'
                                             }`}>
                                               {getImportFallbackSelection(row.rowNumber)
-                                                ? t('bulkImportRowDecisionSelected', { defaultValue: 'נבחר טיפול לתאריך המיוחד' })
-                                                : t('bulkImportRowNeedsDecision', { defaultValue: 'נדרש לבחור טיפול לתאריך מיוחד' })}
+                                                ? t('bulkImportRowDecisionSelected', { defaultValue: '\u05e0\u05d1\u05d7\u05e8 \u05d8\u05d9\u05e4\u05d5\u05dc \u05dc\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05de\u05d9\u05d5\u05d7\u05d3' })
+                                                : t('bulkImportRowNeedsDecision', { defaultValue: '\u05e0\u05d3\u05e8\u05e9 \u05dc\u05d1\u05d7\u05d5\u05e8 \u05d8\u05d9\u05e4\u05d5\u05dc \u05dc\u05ea\u05d0\u05e8\u05d9\u05da \u05de\u05d9\u05d5\u05d7\u05d3' })}
                                             </div>
                                             <select
                                               value={getImportFallbackSelection(row.rowNumber)}
@@ -1134,15 +1192,15 @@ export default function AddEvent({
                                               }
                                               className="w-full rounded-lg border border-amber-200 bg-white px-2 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#0038A8] dark:border-amber-900/30 dark:bg-slate-900 dark:text-slate-200"
                                             >
-                                              <option value="">{t('bulkImportFallbackSelect', { defaultValue: 'בחר טיפול' })}</option>
-                                              <option value="29th">{t('bulkImportFallback29', { defaultValue: 'להעביר ל-כ״ט באותו חודש' })}</option>
-                                              <option value="1st">{t('bulkImportFallback1st', { defaultValue: 'לדחות ל-א׳ בחודש הבא' })}</option>
-                                              <option value="skip">{t('bulkImportFallbackSkip', { defaultValue: 'לדלג על אותה שנה' })}</option>
+                                              <option value="">{t('bulkImportFallbackSelect', { defaultValue: '\u05d1\u05d7\u05e8 \u05d8\u05d9\u05e4\u05d5\u05dc' })}</option>
+                                              <option value="29th">{t('bulkImportFallback29', { defaultValue: '\u05dc\u05d4\u05e2\u05d1\u05d9\u05e8 \u05dc-\u05db\u05f4\u05d8 \u05d1\u05d0\u05d5\u05ea\u05d5 \u05d7\u05d5\u05d3\u05e9' })}</option>
+                                              <option value="1st">{t('bulkImportFallback1st', { defaultValue: '\u05dc\u05d3\u05d7\u05d5\u05ea \u05dc-\u05d0\u05f3 \u05d1\u05d7\u05d5\u05d3\u05e9 \u05d4\u05d1\u05d0' })}</option>
+                                              <option value="skip">{t('bulkImportFallbackSkip', { defaultValue: '\u05dc\u05d3\u05dc\u05d2 \u05e2\u05dc \u05d0\u05d5\u05ea\u05d4 \u05e9\u05e0\u05d4' })}</option>
                                             </select>
                                           </div>
                                         ) : getImportRowStatus(row) === 'valid' ? (
                                           <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                            {t('bulkImportRowValid', { defaultValue: 'תקין לתצוגה' })}
+                                            {t('bulkImportRowValid', { defaultValue: '\u05ea\u05e7\u05d9\u05df \u05dc\u05ea\u05e6\u05d5\u05d2\u05d4' })}
                                           </span>
                                         ) : (
                                           <div className="space-y-1">
@@ -1160,8 +1218,8 @@ export default function AddEvent({
                                             type="button"
                                             onClick={() => removeImportPreviewRow(row.rowNumber)}
                                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-700 transition-all hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200"
-                                            aria-label={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
-                                            title={t('bulkImportRemoveRow', { defaultValue: 'הסר שורה' })}
+                                            aria-label={t('bulkImportRemoveRow', { defaultValue: '\u05d4\u05e1\u05e8 \u05e9\u05d5\u05e8\u05d4' })}
+                                            title={t('bulkImportRemoveRow', { defaultValue: '\u05d4\u05e1\u05e8 \u05e9\u05d5\u05e8\u05d4' })}
                                           >
                                             <Trash2 className="h-4 w-4" />
                                           </button>
@@ -1181,7 +1239,7 @@ export default function AddEvent({
 
                       <div className="space-y-2">
                         <div className="text-sm text-slate-500 dark:text-slate-400">
-                          {t('bulkImportCalendarsHint', { defaultValue: 'הקובץ לא מכיל סימון יומנים. כל פעולת ייבוא תחול על אותו סט יומנים שבחרת כאן.' })}
+                          {t('bulkImportCalendarsHint', { defaultValue: '\u05d4\u05e7\u05d5\u05d1\u05e5 \u05dc\u05d0 \u05de\u05db\u05d9\u05dc \u05e1\u05d9\u05de\u05d5\u05df \u05d9\u05d5\u05de\u05e0\u05d9\u05dd. \u05db\u05dc \u05e4\u05e2\u05d5\u05dc\u05ea \u05d9\u05d9\u05d1\u05d5\u05d0 \u05ea\u05d7\u05d5\u05dc \u05e2\u05dc \u05d0\u05d5\u05ea\u05d5 \u05e1\u05d8 \u05d9\u05d5\u05de\u05e0\u05d9\u05dd \u05e9\u05d1\u05d7\u05e8\u05ea \u05db\u05d0\u05df.' })}
                         </div>
                         {renderCalendarSelection()}
                       </div>
@@ -1190,12 +1248,12 @@ export default function AddEvent({
                         <div className="flex flex-col gap-3">
                           <div className="text-sm text-slate-500 dark:text-slate-400">
                             {selectedCalendarIds.length === 0
-                              ? t('bulkImportConfirmHintCalendars', { defaultValue: 'בחר לפחות יומן אחד לפני הייבוא.' })
+                              ? t('bulkImportConfirmHintCalendars', { defaultValue: '\u05d1\u05d7\u05e8 \u05dc\u05e4\u05d7\u05d5\u05ea \u05d9\u05d5\u05de\u05df \u05d0\u05d7\u05d3 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05d9\u05d9\u05d1\u05d5\u05d0.' })
                               : importInvalidCount > 0
-                              ? t('bulkImportConfirmHintInvalid', { defaultValue: 'הסר שורות שגויות לפני הייבוא.' })
+                              ? t('bulkImportConfirmHintInvalid', { defaultValue: '\u05d4\u05e1\u05e8 \u05e9\u05d5\u05e8\u05d5\u05ea \u05e9\u05d2\u05d5\u05d9\u05d5\u05ea \u05dc\u05e4\u05e0\u05d9 \u05d4\u05d9\u05d9\u05d1\u05d5\u05d0.' })
                               : importNeedsDecisionCount > 0
-                                ? t('bulkImportConfirmHintDecision', { defaultValue: 'בחר טיפול לכל תאריך מיוחד לפני הייבוא.' })
-                                : t('bulkImportConfirmHint', { defaultValue: 'כל השורות מוכנות לייבוא.' })}
+                                ? t('bulkImportConfirmHintDecision', { defaultValue: '\u05d1\u05d7\u05e8 \u05d8\u05d9\u05e4\u05d5\u05dc \u05dc\u05db\u05dc \u05ea\u05d0\u05e8\u05d9\u05da \u05de\u05d9\u05d5\u05d7\u05d3 \u05dc\u05e4\u05e0\u05d9 \u05d4\u05d9\u05d9\u05d1\u05d5\u05d0.' })
+                                : t('bulkImportConfirmHint', { defaultValue: '\u05db\u05dc \u05d4\u05e9\u05d5\u05e8\u05d5\u05ea \u05de\u05d5\u05db\u05e0\u05d5\u05ea \u05dc\u05d9\u05d9\u05d1\u05d5\u05d0.' })}
                           </div>
                           <button
                             type="button"
@@ -1204,7 +1262,7 @@ export default function AddEvent({
                             className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-900/20 transition-all hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60 ${isRtl ? 'self-start' : 'self-start'}`}
                           >
                             {isLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                            {t('bulkImportConfirmButton', { defaultValue: 'ייבוא האירועים' })}
+                            {t('bulkImportConfirmButton', { defaultValue: '\u05d9\u05d9\u05d1\u05d5\u05d0 \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2\u05d9\u05dd' })}
                           </button>
                         </div>
                       ) : null}
@@ -1275,12 +1333,14 @@ export default function AddEvent({
 
               <div className="sticky bottom-0 mt-3 flex flex-col gap-3 border-t border-slate-200 bg-white/95 pt-3 backdrop-blur dark:border-slate-700 dark:bg-slate-800/95 sm:mt-4 sm:flex-row sm:gap-4 sm:pt-4">
                 <button 
+                  data-testid="add-event-back-to-edit"
                   onClick={() => setShowPreview(false)}
                   className="flex-1 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition-all hover:bg-slate-50 sm:px-8 sm:py-4 sm:text-base dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 >
                   {t('backToEdit')}
                 </button>
                 <button 
+                  data-testid="add-event-confirm-sync"
                   onClick={() => submitEvent()}
                   disabled={isLoading}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold shadow-lg transition-all disabled:opacity-70 sm:px-8 sm:py-4 sm:text-base ${
@@ -1301,7 +1361,7 @@ export default function AddEvent({
           )}
           </div>
         </div>
-      </main>
+      </div>
       <LoginModal 
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}

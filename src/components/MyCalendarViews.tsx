@@ -1,7 +1,8 @@
 import { HDate } from '@hebcal/core';
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { CalendarViewMode } from '../types/appTypes';
+import { focusFirstElement } from './focusUtils';
 
 export { MonthCalendarView } from './MonthCalendarView';
 export { ScheduleCalendarView } from './ScheduleCalendarView';
@@ -75,6 +76,10 @@ export function CalendarToolbar({
 }: CalendarToolbarProps) {
   const [isDisplayMenuOpen, setIsDisplayMenuOpen] = useState(false);
   const displayMenuRef = useRef<HTMLDivElement | null>(null);
+  const displayPanelRef = useRef<HTMLDivElement | null>(null);
+  const displayToggleRef = useRef<HTMLButtonElement | null>(null);
+  const wasDisplayMenuOpenRef = useRef(false);
+  const displayOptionsPanelId = useId();
 
   const handleSelectAllDisplayOptions = (): void => {
     setShowGregorian(true);
@@ -99,8 +104,21 @@ export function CalendarToolbar({
   };
 
   useEffect(() => {
-    if (!isDisplayMenuOpen) return undefined;
+    if (!isDisplayMenuOpen) {
+      if (wasDisplayMenuOpenRef.current) {
+        displayToggleRef.current?.focus();
+      }
+      wasDisplayMenuOpenRef.current = false;
+      return undefined;
+    }
 
+    wasDisplayMenuOpenRef.current = true;
+    const firstCheckbox = displayPanelRef.current?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    if (firstCheckbox) {
+      firstCheckbox.focus();
+    } else {
+      focusFirstElement(displayPanelRef.current);
+    }
     const handlePointerDown = (event: MouseEvent): void => {
       if (!displayMenuRef.current?.contains(event.target as Node)) {
         setIsDisplayMenuOpen(false);
@@ -137,6 +155,7 @@ export function CalendarToolbar({
             <button
               type="button"
               onClick={handlePrevMonth}
+              aria-label={t('previousMonth')}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             >
               {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -144,6 +163,7 @@ export function CalendarToolbar({
             <button
               type="button"
               onClick={handleNextMonth}
+              aria-label={t('nextMonth')}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             >
               {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -170,10 +190,12 @@ export function CalendarToolbar({
             </div>
           ) : null}
           <div className="inline-flex rounded-full border border-slate-300 bg-white p-0.5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <button
-              type="button"
-              onClick={() => setViewMode('month')}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+          <button
+            data-testid="calendar-view-month-toggle"
+            type="button"
+            onClick={() => setViewMode('month')}
+            aria-pressed={viewMode === 'month'}
+            className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
                 viewMode === 'month'
                   ? 'bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-white'
                   : 'text-slate-500 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
@@ -181,10 +203,12 @@ export function CalendarToolbar({
             >
               {t('viewMonth')}
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('schedule')}
-              className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
+          <button
+            data-testid="calendar-view-schedule-toggle"
+            type="button"
+            onClick={() => setViewMode('schedule')}
+            aria-pressed={viewMode === 'schedule'}
+            className={`rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
                 viewMode === 'schedule'
                   ? 'bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-white'
                   : 'text-slate-500 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
@@ -195,18 +219,26 @@ export function CalendarToolbar({
           </div>
           <div className="relative" ref={displayMenuRef}>
             <button
+              ref={displayToggleRef}
+              data-testid="display-options-toggle"
               type="button"
               onClick={() => setIsDisplayMenuOpen((prev) => !prev)}
               className="flex h-[34px] items-center gap-2 rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
               aria-expanded={isDisplayMenuOpen}
-              aria-haspopup="menu"
+              aria-haspopup="dialog"
+              aria-controls={displayOptionsPanelId}
             >
               <span>{t('displayOptions')}</span>
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isDisplayMenuOpen ? 'rotate-180' : ''}`} />
             </button>
             {isDisplayMenuOpen ? (
               <div
-                role="menu"
+                ref={displayPanelRef}
+                id={displayOptionsPanelId}
+                data-testid="display-options-menu"
+                role="dialog"
+                aria-modal="false"
+                aria-label={t('displayOptions')}
                 className={`absolute top-full z-30 mt-2 min-w-[220px] rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700 dark:bg-slate-900 ${isRtl ? 'left-0' : 'right-0'}`}
               >
                 <div className="mb-1 flex items-center justify-between gap-2 px-1">

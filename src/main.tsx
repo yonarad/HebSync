@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
     if (import.meta.env.PROD) {
       const registration = await navigator.serviceWorker.register('/sw.js');
       let hasPendingRefresh = false;
-      const updatePrompt = 'יש גרסה חדשה זמינה. האם לרענן את הדף?';
+      const updatePrompt = '\u05d9\u05e9 \u05d2\u05e8\u05e1\u05d4 \u05d7\u05d3\u05e9\u05d4 \u05d6\u05de\u05d9\u05e0\u05d4. \u05d4\u05d0\u05dd \u05dc\u05e8\u05e2\u05e0\u05df \u05d0\u05ea \u05d4\u05d3\u05e3?';
 
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (hasPendingRefresh) {
