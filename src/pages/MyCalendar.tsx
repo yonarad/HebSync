@@ -633,17 +633,17 @@ export default function MyCalendar() {
 
     if (deltaX > 0) {
       if (isRtl) {
-        handlePrevMonth();
-      } else {
         handleNextMonth();
+      } else {
+        handlePrevMonth();
       }
       return;
     }
 
     if (isRtl) {
-      handleNextMonth();
-    } else {
       handlePrevMonth();
+    } else {
+      handleNextMonth();
     }
   };
 
