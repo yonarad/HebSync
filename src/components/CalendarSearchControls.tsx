@@ -389,15 +389,28 @@ export function MobileTextSearchDialog({
   t,
   searchFilters,
   setSearchFilters,
+  searchCalendarMode,
+  setSearchCalendarMode,
+  calendarSearchOptions,
   onSearchSubmit,
   onSearchClear,
   isSearchLoading,
 }: MobileTextSearchDialogProps &
   Pick<
     SharedSearchProps,
-    'isRtl' | 't' | 'searchFilters' | 'setSearchFilters' | 'onSearchSubmit' | 'onSearchClear' | 'isSearchLoading'
+    | 'isRtl'
+    | 't'
+    | 'searchFilters'
+    | 'setSearchFilters'
+    | 'searchCalendarMode'
+    | 'setSearchCalendarMode'
+    | 'calendarSearchOptions'
+    | 'onSearchSubmit'
+    | 'onSearchClear'
+    | 'isSearchLoading'
   >) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const dialogTitleId = useId();
@@ -406,6 +419,7 @@ export function MobileTextSearchDialog({
     if (!isOpen) {
       restoreFocusRef.current?.focus();
       restoreFocusRef.current = null;
+      setIsAdvancedOpen(false);
       return undefined;
     }
 
@@ -480,6 +494,16 @@ export function MobileTextSearchDialog({
           aria-label={t('searchEvents')}
         />
         <button
+          data-testid="mobile-search-advanced-toggle"
+          type="button"
+          onClick={() => setIsAdvancedOpen((prev) => !prev)}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          aria-label={t('toggleAdvancedSearch')}
+          aria-expanded={isAdvancedOpen}
+        >
+          <ChevronDown className={`h-5 w-5 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <button
           data-testid="mobile-search-submit"
           type="button"
           onClick={() => {
@@ -496,42 +520,62 @@ export function MobileTextSearchDialog({
         </button>
       </div>
       <div className="space-y-4 px-4 py-4">
-        <div className="grid gap-3">
-          <label className="space-y-1.5">
-            <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
-              {t('searchFromDate')}
-            </span>
-            <HebrewBoundaryField
-              t={t}
-              value={searchFilters.timeMin}
-              boundary="start"
-              fieldLabel={t('searchFromDate')}
-              onChange={(nextValue) =>
-                setSearchFilters((prev) => ({
-                  ...prev,
-                  timeMin: nextValue,
-                }))
-              }
-            />
-          </label>
-          <label className="space-y-1.5">
-            <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
-              {t('searchToDate')}
-            </span>
-            <HebrewBoundaryField
-              t={t}
-              value={searchFilters.timeMax}
-              boundary="end"
-              fieldLabel={t('searchToDate')}
-              onChange={(nextValue) =>
-                setSearchFilters((prev) => ({
-                  ...prev,
-                  timeMax: nextValue,
-                }))
-              }
-            />
-          </label>
-        </div>
+        {isAdvancedOpen ? (
+          <div className="grid gap-4">
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+                {t('searchIn')}
+              </span>
+              <select
+                value={searchCalendarMode}
+                onChange={(event) => setSearchCalendarMode(event.target.value)}
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              >
+                <option value="selected">{t('searchInSelectedCalendars')}</option>
+                <option value="all">{t('searchInAllCalendars')}</option>
+                {calendarSearchOptions.map((calendar) => (
+                  <option key={calendar.id} value={calendar.id}>
+                    {calendar.summary}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+                {t('searchFromDate')}
+              </span>
+              <HebrewBoundaryField
+                t={t}
+                value={searchFilters.timeMin}
+                boundary="start"
+                fieldLabel={t('searchFromDate')}
+                onChange={(nextValue) =>
+                  setSearchFilters((prev) => ({
+                    ...prev,
+                    timeMin: nextValue,
+                  }))
+                }
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+                {t('searchToDate')}
+              </span>
+              <HebrewBoundaryField
+                t={t}
+                value={searchFilters.timeMax}
+                boundary="end"
+                fieldLabel={t('searchToDate')}
+                onChange={(nextValue) =>
+                  setSearchFilters((prev) => ({
+                    ...prev,
+                    timeMax: nextValue,
+                  }))
+                }
+              />
+            </label>
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"

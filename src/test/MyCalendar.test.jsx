@@ -379,6 +379,19 @@ describe('My Calendar Component', () => {
     expect(await screen.findByLabelText('To date Hebrew year')).toHaveValue(String(endBoundary.getFullYear()));
   });
 
+  it('should keep mobile search simple by default and reveal advanced filters on demand', async () => {
+    renderDashboard();
+
+    fireEvent.click(await screen.findByTestId('mobile-search-toggle'));
+    expect(await screen.findByTestId('mobile-search-dialog')).toBeInTheDocument();
+    expect(screen.queryByText('Search in')).not.toBeInTheDocument();
+
+    fireEvent.click(await screen.findByTestId('mobile-search-advanced-toggle'));
+
+    expect(await screen.findByText('Search in')).toBeInTheDocument();
+    expect(await screen.findByRole('option', { name: 'Selected calendars' })).toBeInTheDocument();
+  });
+
   it('should expand the search range backward and forward by one year', async () => {
     const expectedRange = getExpectedDefaultSearchRange();
     const startBoundary = new HDate(new Date(`${expectedRange.inputTimeMin}T12:00:00`));

@@ -960,6 +960,9 @@ export default function MyCalendar() {
         t={t}
         searchFilters={searchFilters}
         setSearchFilters={setSearchFilters}
+        searchCalendarMode={searchCalendarMode}
+        setSearchCalendarMode={setSearchCalendarMode}
+        calendarSearchOptions={calendars}
         onSearchSubmit={() => performSearch()}
         onSearchClear={clearSearch}
         isSearchLoading={isSearchLoading}
