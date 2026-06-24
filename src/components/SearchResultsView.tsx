@@ -123,7 +123,7 @@ export function SearchResultsView({
         </button>
       </div>
 
-      <div className="h-full overflow-y-auto px-3 py-3 pb-20 dark:bg-slate-900 md:px-5 md:py-4 md:pb-24">
+      <div className="h-full overflow-y-auto px-3 py-3 pb-32 dark:bg-slate-900 md:px-5 md:py-4 md:pb-24">
         <div className={`mb-3 flex ${isRtl ? 'justify-start' : 'justify-end'}`}>
           <button
             data-testid="search-extend-backward"
