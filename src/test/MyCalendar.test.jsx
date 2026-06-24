@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { HDate } from '@hebcal/core';
 import MyCalendar from '../pages/MyCalendar';
 import * as googleApi from '../utils/googleApi';
 import { GCAL_AUTH_EXPIRED_EVENT } from '../utils/googleApi';
@@ -124,11 +125,16 @@ vi.mock('react-i18next', () => ({
         searchWhatPlaceholder: 'Try a title, description, or keyword',
         searchFromDate: 'From date',
         searchToDate: 'To date',
+        searchExtendBackward: 'Expand earlier',
+        searchExtendForward: 'Expand later',
         searchResultsMode: 'Search results',
         searchResultsTitle: 'Matching events',
+        searchResultsRange: `Showing events between ${options?.from ?? ''} and ${options?.to ?? ''}`,
         searchResultsCount: `${options?.count ?? 0} results`,
         noSearchResults: 'No events matched this search.',
         searchEventsError: 'Failed to search events',
+        month: 'Month',
+        hebrewYear: 'Hebrew year',
         untitledEvent: 'Untitled event',
         discardEventConfirm: 'Discard event draft?',
         noCalendarsYetInCalendarView: 'No calendars are available yet. Create a calendar from the sidebar to start adding events.',
@@ -178,6 +184,57 @@ const renderDashboard = () => {
   );
 };
 
+const resolveHebrewMonthForYear = (monthName, targetYear) => {
+  const targetMonths = [
+    'Tishrei',
+    'Cheshvan',
+    'Kislev',
+    'Tevet',
+    "Sh'vat",
+    ...(HDate.isLeapYear(targetYear) ? ['Adar I', 'Adar II'] : ['Adar']),
+    'Nisan',
+    'Iyyar',
+    'Sivan',
+    'Tamuz',
+    'Av',
+    'Elul',
+  ];
+
+  if (targetMonths.includes(monthName)) {
+    return monthName;
+  }
+
+  if (monthName === 'Adar' && targetMonths.includes('Adar II')) {
+    return 'Adar II';
+  }
+
+  if ((monthName === 'Adar I' || monthName === 'Adar II') && targetMonths.includes('Adar')) {
+    return 'Adar';
+  }
+
+  return monthName;
+};
+
+const getExpectedDefaultSearchRange = () => {
+  const currentHDate = new HDate(new Date());
+  const startOfMonth = new HDate(1, currentHDate.getMonthName(), currentHDate.getFullYear()).greg();
+  const targetMonth = resolveHebrewMonthForYear(currentHDate.getMonthName(), currentHDate.getFullYear() + 1);
+  const oneYearLater = new HDate(1, targetMonth, currentHDate.getFullYear() + 1).greg();
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    inputTimeMin: formatDate(startOfMonth),
+    inputTimeMax: formatDate(oneYearLater),
+    requestTimeMin: `${formatDate(startOfMonth)}T00:00:00.000Z`,
+    requestTimeMax: `${formatDate(oneYearLater)}T23:59:59.999Z`,
+  };
+};
+
 const hideAllHebcalDisplayOptions = () => {
   localStorage.setItem(
     'hebsync.calendar.displayOptions',
@@ -219,6 +276,7 @@ describe('My Calendar Component', () => {
     mockNavigate.mockClear();
     localStorage.clear();
     sessionStorage.clear();
+    vi.useRealTimers();
   });
 
   it('should keep english and hebrew locale keys in sync', () => {
@@ -268,6 +326,8 @@ describe('My Calendar Component', () => {
   });
 
   it('should search events and show matching results', async () => {
+    const expectedRange = getExpectedDefaultSearchRange();
+
     vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
       {
         id: 'evt-search',
@@ -289,13 +349,87 @@ describe('My Calendar Component', () => {
     fireEvent.keyDown(searchInput, { key: 'Enter' });
 
     expect(await screen.findByText('Matching events')).toBeInTheDocument();
+    expect(await screen.findByText(/Showing events between/)).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Jerusalem Day/ })).toBeInTheDocument();
     expect(googleApi.searchEvents).toHaveBeenCalledWith(
       expect.objectContaining({
         query: 'Jerusalem',
         calendarIds: ['cal1'],
+        timeMin: expectedRange.requestTimeMin,
+        timeMax: expectedRange.requestTimeMax,
       }),
     );
+  });
+
+  it('should prefill the search date range from the current month to one year ahead', async () => {
+    const expectedRange = getExpectedDefaultSearchRange();
+    const startBoundary = new HDate(new Date(`${expectedRange.inputTimeMin}T12:00:00`));
+    const endBoundary = new HDate(new Date(`${expectedRange.inputTimeMax}T12:00:00`));
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Toggle advanced search' }));
+
+    expect(await screen.findByLabelText('From date Month')).toHaveValue(startBoundary.getMonthName());
+    expect(await screen.findByLabelText('To date Month')).toHaveValue(endBoundary.getMonthName());
+    expect(await screen.findByLabelText('From date Hebrew year')).toHaveValue(String(startBoundary.getFullYear()));
+    expect(await screen.findByLabelText('To date Hebrew year')).toHaveValue(String(endBoundary.getFullYear()));
+  });
+
+  it('should expand the search range backward and forward by one year', async () => {
+    const expectedRange = getExpectedDefaultSearchRange();
+    const startBoundary = new HDate(new Date(`${expectedRange.inputTimeMin}T12:00:00`));
+    const previousYearMonth = resolveHebrewMonthForYear(startBoundary.getMonthName(), startBoundary.getFullYear() - 1);
+    const expandedBackwardMin = new HDate(1, previousYearMonth, startBoundary.getFullYear() - 1).greg();
+    const endBoundary = new HDate(new Date(`${expectedRange.inputTimeMax}T12:00:00`));
+    const nextYearMonth = resolveHebrewMonthForYear(endBoundary.getMonthName(), endBoundary.getFullYear() + 1);
+    const expandedForwardMax = new HDate(1, nextYearMonth, endBoundary.getFullYear() + 1).greg();
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    vi.mocked(googleApi.searchEvents).mockResolvedValue([
+      {
+        id: 'evt-search',
+        summary: 'Jerusalem Day',
+        description: 'City celebration',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    fireEvent.click(await screen.findByTestId('desktop-search-submit'));
+    expect(await screen.findByText('Matching events')).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByTestId('search-extend-backward'));
+
+    await waitFor(() => {
+      expect(vi.mocked(googleApi.searchEvents)).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          calendarIds: ['cal1'],
+          timeMin: `${formatDate(expandedBackwardMin)}T00:00:00.000Z`,
+          timeMax: expectedRange.requestTimeMax,
+        }),
+      );
+    });
+
+    fireEvent.click(await screen.findByTestId('search-extend-forward'));
+
+    await waitFor(() => {
+      expect(vi.mocked(googleApi.searchEvents)).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          calendarIds: ['cal1'],
+          timeMin: `${formatDate(expandedBackwardMin)}T00:00:00.000Z`,
+          timeMax: `${formatDate(expandedForwardMax)}T23:59:59.999Z`,
+        }),
+      );
+    });
   });
 
   it('should remove a deleted event from active search results', async () => {

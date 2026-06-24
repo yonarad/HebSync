@@ -1,6 +1,8 @@
 import { LoaderCircle, Search, X, ChevronDown } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { HDate } from '@hebcal/core';
 import type { Calendar, EventSearchParams } from '../types/appTypes';
+import { doesHebrewMonthExistInYear, formatHebrewYear, getMonthsForYear } from '../utils/hebcal';
 import { focusFirstElement, trapFocusWithin } from './focusUtils';
 
 export interface SharedSearchProps {
@@ -18,6 +20,119 @@ export interface SharedSearchProps {
   onSearchSubmit: () => void | Promise<void>;
   onSearchClear: () => void;
   isSearchLoading: boolean;
+}
+
+function formatDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function resolveHebrewMonthForYear(monthName: string, targetYear: number): string {
+  if (doesHebrewMonthExistInYear(targetYear, monthName)) {
+    return monthName;
+  }
+
+  if (monthName === 'Adar' && doesHebrewMonthExistInYear(targetYear, 'Adar II')) {
+    return 'Adar II';
+  }
+
+  if ((monthName === 'Adar I' || monthName === 'Adar II') && doesHebrewMonthExistInYear(targetYear, 'Adar')) {
+    return 'Adar';
+  }
+
+  return monthName;
+}
+
+function getHebrewBoundaryParts(value: string | undefined): { year: number; monthName: string } {
+  const parsedDate = value ? new Date(`${value}T12:00:00`) : new Date();
+  const hDate = new HDate(Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate);
+  return {
+    year: hDate.getFullYear(),
+    monthName: hDate.getMonthName(),
+  };
+}
+
+function buildGregorianBoundaryFromHebrew(
+  year: number,
+  monthName: string,
+  boundary: 'start' | 'end',
+): string {
+  const safeMonthName = resolveHebrewMonthForYear(monthName, year);
+  const day =
+    boundary === 'start'
+      ? 1
+      : HDate.daysInMonth(HDate.monthFromName(safeMonthName), year);
+  return formatDateInputValue(new HDate(day, safeMonthName, year).greg());
+}
+
+function HebrewBoundaryField({
+  t,
+  value,
+  boundary,
+  fieldLabel,
+  onChange,
+}: {
+  t: (key: string) => string;
+  value: string | undefined;
+  boundary: 'start' | 'end';
+  fieldLabel: string;
+  onChange: (nextValue: string) => void;
+}) {
+  const { year, monthName } = getHebrewBoundaryParts(value);
+  const months = getMonthsForYear(year);
+  const currentHebrewYear = new HDate().getFullYear();
+  const yearOptions = Array.from({ length: 61 }, (_, index) => currentHebrewYear + 30 - index);
+
+  const updateYear = (rawYear: string) => {
+    const nextYear = Number.parseInt(rawYear, 10);
+    if (!Number.isFinite(nextYear) || nextYear <= 0) return;
+    onChange(buildGregorianBoundaryFromHebrew(nextYear, monthName, boundary));
+  };
+
+  const updateMonth = (nextMonth: string) => {
+    onChange(buildGregorianBoundaryFromHebrew(year, nextMonth, boundary));
+  };
+
+  return (
+    <div className="grid gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
+      <label className="space-y-1.5">
+        <span className="block text-[11px] font-bold text-slate-500 dark:text-slate-300">
+          {t('month')}
+        </span>
+        <select
+          value={resolveHebrewMonthForYear(monthName, year)}
+          onChange={(event) => updateMonth(event.target.value)}
+          aria-label={`${fieldLabel} ${t('month')}`}
+          className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        >
+          {months.map((month) => (
+            <option key={month.id} value={month.id}>
+              {month.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="space-y-1.5">
+        <span className="block text-[11px] font-bold text-slate-500 dark:text-slate-300">
+          {t('hebrewYear')}
+        </span>
+        <select
+          value={year}
+          onChange={(event) => updateYear(event.target.value)}
+          aria-label={`${fieldLabel} ${t('hebrewYear')}`}
+          className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        >
+          {yearOptions.map((optionYear) => (
+            <option key={optionYear} value={optionYear}>
+              {formatHebrewYear(optionYear)}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
 }
 
 export function DesktopCalendarSearch({
@@ -176,9 +291,9 @@ export function DesktopCalendarSearch({
           data-testid="desktop-search-panel"
           role="region"
           aria-label={t('toggleAdvancedSearch')}
-          className="absolute right-0 top-full z-40 mt-3 w-[min(46rem,72vw)] overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700/70 dark:bg-slate-900"
+          className="absolute left-1/2 top-full z-40 mt-3 w-[min(42rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.42)] dark:border-slate-700/70 dark:bg-slate-900"
         >
-          <div className="grid gap-3 px-4 pb-4 pt-4 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)]">
+          <div className="grid gap-4 px-4 pb-4 pt-4 md:grid-cols-2">
             <label className="space-y-1.5">
               <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
                 {t('searchIn')}
@@ -220,34 +335,40 @@ export function DesktopCalendarSearch({
               <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
                 {t('searchFromDate')}
               </span>
-              <input
-                type="date"
-                value={searchFilters.timeMin || ''}
-                onChange={(event) =>
-                  setSearchFilters((prev) => ({
-                    ...prev,
-                    timeMin: event.target.value,
-                  }))
-                }
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
+              <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/80">
+                <HebrewBoundaryField
+                  t={t}
+                  value={searchFilters.timeMin}
+                  boundary="start"
+                  fieldLabel={t('searchFromDate')}
+                  onChange={(nextValue) =>
+                    setSearchFilters((prev) => ({
+                      ...prev,
+                      timeMin: nextValue,
+                    }))
+                  }
+                />
+              </div>
             </label>
 
             <label className="space-y-1.5">
               <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
                 {t('searchToDate')}
               </span>
-              <input
-                type="date"
-                value={searchFilters.timeMax || ''}
-                onChange={(event) =>
-                  setSearchFilters((prev) => ({
-                    ...prev,
-                    timeMax: event.target.value,
-                  }))
-                }
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-colors focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
+              <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/80">
+                <HebrewBoundaryField
+                  t={t}
+                  value={searchFilters.timeMax}
+                  boundary="end"
+                  fieldLabel={t('searchToDate')}
+                  onChange={(nextValue) =>
+                    setSearchFilters((prev) => ({
+                      ...prev,
+                      timeMax: nextValue,
+                    }))
+                  }
+                />
+              </div>
             </label>
           </div>
         </div>
@@ -374,17 +495,55 @@ export function MobileTextSearchDialog({
           {isSearchLoading || isSubmitting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
         </button>
       </div>
-      <div className="px-4 py-4">
-        <button
-          type="button"
-          onClick={() => {
-            onSearchClear();
-            onClose();
-          }}
-          className="text-sm font-bold text-[#0038A8] dark:text-blue-300"
-        >
-          {t('clearSearch')}
-        </button>
+      <div className="space-y-4 px-4 py-4">
+        <div className="grid gap-3">
+          <label className="space-y-1.5">
+            <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+              {t('searchFromDate')}
+            </span>
+            <HebrewBoundaryField
+              t={t}
+              value={searchFilters.timeMin}
+              boundary="start"
+              fieldLabel={t('searchFromDate')}
+              onChange={(nextValue) =>
+                setSearchFilters((prev) => ({
+                  ...prev,
+                  timeMin: nextValue,
+                }))
+              }
+            />
+          </label>
+          <label className="space-y-1.5">
+            <span className="block text-xs font-bold text-slate-500 dark:text-slate-300">
+              {t('searchToDate')}
+            </span>
+            <HebrewBoundaryField
+              t={t}
+              value={searchFilters.timeMax}
+              boundary="end"
+              fieldLabel={t('searchToDate')}
+              onChange={(nextValue) =>
+                setSearchFilters((prev) => ({
+                  ...prev,
+                  timeMax: nextValue,
+                }))
+              }
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onSearchClear();
+              onClose();
+            }}
+            className="text-sm font-bold text-[#0038A8] dark:text-blue-300"
+          >
+            {t('clearSearch')}
+          </button>
+        </div>
       </div>
     </div>
   );

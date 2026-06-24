@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search } from 'lucide-react';
+import { HDate } from '@hebcal/core';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
 import {
@@ -44,6 +45,7 @@ import type {
   OverflowDay,
   PendingCalendarCreateState,
 } from '../types/appTypes';
+import { doesHebrewMonthExistInYear } from '../utils/hebcal';
 
 const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
 const AddEvent = lazy(() => import('./AddEvent'));
@@ -62,6 +64,48 @@ function toSearchBoundary(value: string | undefined, boundary: 'start' | 'end'):
   if (!value) return '';
   const suffix = boundary === 'start' ? 'T00:00:00.000Z' : 'T23:59:59.999Z';
   return `${value}${suffix}`;
+}
+
+function formatDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildDefaultSearchRange(referenceDate = new Date()): Pick<EventSearchParams, 'timeMin' | 'timeMax'> {
+  const currentHDate = new HDate(referenceDate);
+  const startOfHebrewMonth = new HDate(1, currentHDate.getMonthName(), currentHDate.getFullYear()).greg();
+  const oneYearLater = getHebrewMonthBoundaryShift(formatDateInputValue(startOfHebrewMonth), 1);
+
+  return {
+    timeMin: formatDateInputValue(startOfHebrewMonth),
+    timeMax: oneYearLater,
+  };
+}
+
+function resolveHebrewMonthForYear(monthName: string, targetYear: number): string {
+  if (doesHebrewMonthExistInYear(targetYear, monthName)) {
+    return monthName;
+  }
+
+  if (monthName === 'Adar' && doesHebrewMonthExistInYear(targetYear, 'Adar II')) {
+    return 'Adar II';
+  }
+
+  if ((monthName === 'Adar I' || monthName === 'Adar II') && doesHebrewMonthExistInYear(targetYear, 'Adar')) {
+    return 'Adar';
+  }
+
+  return monthName;
+}
+
+function getHebrewMonthBoundaryShift(value: string, yearsDelta: number): string {
+  const [year, month, day] = value.split('-').map(Number);
+  const hDate = new HDate(new Date(year, month - 1, day, 12));
+  const targetYear = hDate.getFullYear() + yearsDelta;
+  const targetMonth = resolveHebrewMonthForYear(hDate.getMonthName(), targetYear);
+  return formatDateInputValue(new HDate(1, targetMonth, targetYear).greg());
 }
 
 function formatHebcalCategory(
@@ -162,6 +206,7 @@ export default function MyCalendar() {
     viewMode,
   } = useMyCalendarData({ t });
 
+  const defaultSearchRange = buildDefaultSearchRange();
   const [overflowDay, setOverflowDay] = useState<OverflowDay | null>(null);
   const [selectedHebcalDetails, setSelectedHebcalDetails] = useState<{
     title: string;
@@ -175,8 +220,7 @@ export default function MyCalendar() {
   const [searchFilters, setSearchFilters] = useState<EventSearchParams>({
     calendarIds: [],
     query: '',
-    timeMin: '',
-    timeMax: '',
+    ...defaultSearchRange,
   });
   const [searchCalendarMode, setSearchCalendarMode] = useState<string>('selected');
   const [isDesktopSearchOpen, setIsDesktopSearchOpen] = useState(false);
@@ -523,8 +567,8 @@ export default function MyCalendar() {
     </button>
   ) : undefined;
 
-  async function performSearch(): Promise<void> {
-    const query = searchFilters.query?.trim() || '';
+  async function performSearch(filters: EventSearchParams = searchFilters): Promise<void> {
+    const query = filters.query?.trim() || '';
     const effectiveCalendarIds =
       searchCalendarMode === 'selected'
         ? selectedCalendarIds
@@ -535,7 +579,7 @@ export default function MyCalendar() {
             : [];
 
     const hasAnyFilter = Boolean(
-      query || searchFilters.timeMin || searchFilters.timeMax || effectiveCalendarIds.length > 0,
+      query || filters.timeMin || filters.timeMax || effectiveCalendarIds.length > 0,
     );
 
     if (!hasAnyFilter) {
@@ -547,10 +591,10 @@ export default function MyCalendar() {
     setIsSearchLoading(true);
     try {
       const results = await searchEvents({
-        ...searchFilters,
+        ...filters,
         query,
-        timeMin: toSearchBoundary(searchFilters.timeMin, 'start'),
-        timeMax: toSearchBoundary(searchFilters.timeMax, 'end'),
+        timeMin: toSearchBoundary(filters.timeMin, 'start'),
+        timeMax: toSearchBoundary(filters.timeMax, 'end'),
         calendarIds: effectiveCalendarIds,
       });
       setSearchResults(results);
@@ -579,13 +623,29 @@ export default function MyCalendar() {
               ? [searchCalendarMode]
               : [],
       query: '',
-      timeMin: '',
-      timeMax: '',
+      ...defaultSearchRange,
     });
     setSearchResults([]);
     setIsSearchActive(false);
     setIsSearchPanelOpen(false);
     setIsDesktopSearchOpen(false);
+  };
+
+  const extendSearchRange = async (direction: 'backward' | 'forward'): Promise<void> => {
+    const nextFilters: EventSearchParams = {
+      ...searchFilters,
+      timeMin:
+        direction === 'backward'
+          ? getHebrewMonthBoundaryShift(searchFilters.timeMin || defaultSearchRange.timeMin || '', -1)
+          : searchFilters.timeMin,
+      timeMax:
+        direction === 'forward'
+          ? getHebrewMonthBoundaryShift(searchFilters.timeMax || defaultSearchRange.timeMax || '', 1)
+          : searchFilters.timeMax,
+    };
+
+    setSearchFilters(nextFilters);
+    await performSearch(nextFilters);
   };
 
   const formatEventTimeRange = (event: GoogleCalendarEvent): string => {
@@ -804,7 +864,11 @@ export default function MyCalendar() {
                   getEventColor={getEventColor}
                   handleEventClick={handleEventClick}
                   calendars={calendars}
+                  searchTimeMin={searchFilters.timeMin}
+                  searchTimeMax={searchFilters.timeMax}
                   onClearSearch={clearSearch}
+                  onExtendSearchBackward={() => extendSearchRange('backward')}
+                  onExtendSearchForward={() => extendSearchRange('forward')}
                 />
               ) : viewMode === 'month' ? (
                 <MonthCalendarView

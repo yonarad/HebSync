@@ -18,7 +18,11 @@ export interface SearchResultsViewProps {
   getEventColor: (event: GoogleCalendarEvent) => string;
   handleEventClick: (event: GoogleCalendarEvent) => void;
   calendars: Calendar[];
+  searchTimeMin?: string;
+  searchTimeMax?: string;
   onClearSearch: () => void;
+  onExtendSearchBackward: () => void | Promise<void>;
+  onExtendSearchForward: () => void | Promise<void>;
 }
 
 function formatEventDateLabel(
@@ -74,11 +78,22 @@ export function SearchResultsView({
   getEventColor,
   handleEventClick,
   calendars,
+  searchTimeMin,
+  searchTimeMax,
   onClearSearch,
+  onExtendSearchBackward,
+  onExtendSearchForward,
 }: SearchResultsViewProps) {
   const calendarNameById = new Map(
     calendars.map((calendar) => [calendar.id, calendar.summary]),
   );
+  const activeSearchRangeLabel =
+    searchTimeMin && searchTimeMax
+      ? t('searchResultsRange', {
+          from: formatHebrewEventDateLabel(searchTimeMin, false),
+          to: formatHebrewEventDateLabel(searchTimeMax, false),
+        })
+      : '';
 
   return (
     <div
@@ -90,6 +105,11 @@ export function SearchResultsView({
           <h3 className="text-sm font-black text-slate-900 dark:text-slate-100">
             {t('searchResultsTitle')}
           </h3>
+          {activeSearchRangeLabel ? (
+            <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+              {activeSearchRangeLabel}
+            </p>
+          ) : null}
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             {t('searchResultsCount', { count: searchResults.length })}
           </p>
@@ -104,6 +124,17 @@ export function SearchResultsView({
       </div>
 
       <div className="h-full overflow-y-auto px-3 py-3 pb-20 dark:bg-slate-900 md:px-5 md:py-4 md:pb-24">
+        <div className={`mb-3 flex ${isRtl ? 'justify-start' : 'justify-end'}`}>
+          <button
+            data-testid="search-extend-backward"
+            type="button"
+            onClick={() => void onExtendSearchBackward()}
+            disabled={isSearchLoading}
+            className="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:border-[#0038A8] hover:text-[#0038A8] disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          >
+            {t('searchExtendBackward')}
+          </button>
+        </div>
         {!isSearchLoading && searchResults.length === 0 ? (
           <CalendarEmptyState message={t('noSearchResults')} />
         ) : (
@@ -170,6 +201,17 @@ export function SearchResultsView({
                 </button>
               );
             })}
+            <div className={`flex pt-2 ${isRtl ? 'justify-start' : 'justify-end'}`}>
+              <button
+                data-testid="search-extend-forward"
+                type="button"
+                onClick={() => void onExtendSearchForward()}
+                disabled={isSearchLoading}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition-colors hover:border-[#0038A8] hover:text-[#0038A8] disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              >
+                {t('searchExtendForward')}
+              </button>
+            </div>
           </div>
         )}
       </div>
