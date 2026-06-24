@@ -76,7 +76,7 @@ function formatDateInputValue(date: Date): string {
 function buildDefaultSearchRange(referenceDate = new Date()): Pick<EventSearchParams, 'timeMin' | 'timeMax'> {
   const currentHDate = new HDate(referenceDate);
   const startOfHebrewMonth = new HDate(1, currentHDate.getMonthName(), currentHDate.getFullYear()).greg();
-  const oneYearLater = getHebrewMonthBoundaryShift(formatDateInputValue(startOfHebrewMonth), 1, 'end');
+  const oneYearLater = getHebrewYearWindowEnd(formatDateInputValue(startOfHebrewMonth), 1);
 
   return {
     timeMin: formatDateInputValue(startOfHebrewMonth),
@@ -114,6 +114,21 @@ function getHebrewMonthBoundaryShift(
       ? 1
       : HDate.daysInMonth(HDate.monthFromName(targetMonth), targetYear);
   return formatDateInputValue(new HDate(targetDay, targetMonth, targetYear).greg());
+}
+
+function getHebrewYearWindowEnd(startValue: string, yearsAhead: number): string {
+  const nextYearStart = getHebrewMonthBoundaryShift(startValue, yearsAhead, 'start');
+  const [year, month, day] = nextYearStart.split('-').map(Number);
+  const endDate = new Date(year, month - 1, day);
+  endDate.setDate(endDate.getDate() - 1);
+  return formatDateInputValue(endDate);
+}
+
+function getNextDateInputValue(value: string): string {
+  const [year, month, day] = value.split('-').map(Number);
+  const nextDate = new Date(year, month - 1, day);
+  nextDate.setDate(nextDate.getDate() + 1);
+  return formatDateInputValue(nextDate);
 }
 
 function formatHebcalCategory(
@@ -648,7 +663,7 @@ export default function MyCalendar() {
           : searchFilters.timeMin,
       timeMax:
         direction === 'forward'
-          ? getHebrewMonthBoundaryShift(searchFilters.timeMax || defaultSearchRange.timeMax || '', 1, 'end')
+          ? getHebrewYearWindowEnd(getNextDateInputValue(searchFilters.timeMax || defaultSearchRange.timeMax || ''), 1)
           : searchFilters.timeMax,
     };
 

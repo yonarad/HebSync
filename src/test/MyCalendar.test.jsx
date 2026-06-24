@@ -219,11 +219,9 @@ const getExpectedDefaultSearchRange = () => {
   const currentHDate = new HDate(new Date());
   const startOfMonth = new HDate(1, currentHDate.getMonthName(), currentHDate.getFullYear()).greg();
   const targetMonth = resolveHebrewMonthForYear(currentHDate.getMonthName(), currentHDate.getFullYear() + 1);
-  const oneYearLater = new HDate(
-    HDate.daysInMonth(HDate.monthFromName(targetMonth), currentHDate.getFullYear() + 1),
-    targetMonth,
-    currentHDate.getFullYear() + 1,
-  ).greg();
+  const oneYearLaterStart = new HDate(1, targetMonth, currentHDate.getFullYear() + 1).greg();
+  const oneYearLater = new Date(oneYearLaterStart);
+  oneYearLater.setDate(oneYearLater.getDate() - 1);
   const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -387,12 +385,20 @@ describe('My Calendar Component', () => {
     const previousYearMonth = resolveHebrewMonthForYear(startBoundary.getMonthName(), startBoundary.getFullYear() - 1);
     const expandedBackwardMin = new HDate(1, previousYearMonth, startBoundary.getFullYear() - 1).greg();
     const endBoundary = new HDate(new Date(`${expectedRange.inputTimeMax}T12:00:00`));
-    const nextYearMonth = resolveHebrewMonthForYear(endBoundary.getMonthName(), endBoundary.getFullYear() + 1);
-    const expandedForwardMax = new HDate(
-      HDate.daysInMonth(HDate.monthFromName(nextYearMonth), endBoundary.getFullYear() + 1),
+    const currentForwardAnchor = new Date(`${expectedRange.inputTimeMax}T12:00:00`);
+    currentForwardAnchor.setDate(currentForwardAnchor.getDate() + 1);
+    const currentForwardAnchorHDate = new HDate(currentForwardAnchor);
+    const nextYearMonth = resolveHebrewMonthForYear(
+      currentForwardAnchorHDate.getMonthName(),
+      currentForwardAnchorHDate.getFullYear() + 1,
+    );
+    const expandedForwardMaxStart = new HDate(
+      1,
       nextYearMonth,
-      endBoundary.getFullYear() + 1,
+      currentForwardAnchorHDate.getFullYear() + 1,
     ).greg();
+    const expandedForwardMax = new Date(expandedForwardMaxStart);
+    expandedForwardMax.setDate(expandedForwardMax.getDate() - 1);
     const formatDate = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
