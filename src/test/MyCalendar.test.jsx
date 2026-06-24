@@ -219,7 +219,11 @@ const getExpectedDefaultSearchRange = () => {
   const currentHDate = new HDate(new Date());
   const startOfMonth = new HDate(1, currentHDate.getMonthName(), currentHDate.getFullYear()).greg();
   const targetMonth = resolveHebrewMonthForYear(currentHDate.getMonthName(), currentHDate.getFullYear() + 1);
-  const oneYearLater = new HDate(1, targetMonth, currentHDate.getFullYear() + 1).greg();
+  const oneYearLater = new HDate(
+    HDate.daysInMonth(HDate.monthFromName(targetMonth), currentHDate.getFullYear() + 1),
+    targetMonth,
+    currentHDate.getFullYear() + 1,
+  ).greg();
   const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -384,7 +388,11 @@ describe('My Calendar Component', () => {
     const expandedBackwardMin = new HDate(1, previousYearMonth, startBoundary.getFullYear() - 1).greg();
     const endBoundary = new HDate(new Date(`${expectedRange.inputTimeMax}T12:00:00`));
     const nextYearMonth = resolveHebrewMonthForYear(endBoundary.getMonthName(), endBoundary.getFullYear() + 1);
-    const expandedForwardMax = new HDate(1, nextYearMonth, endBoundary.getFullYear() + 1).greg();
+    const expandedForwardMax = new HDate(
+      HDate.daysInMonth(HDate.monthFromName(nextYearMonth), endBoundary.getFullYear() + 1),
+      nextYearMonth,
+      endBoundary.getFullYear() + 1,
+    ).greg();
     const formatDate = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
