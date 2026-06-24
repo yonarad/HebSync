@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { HDate } from '@hebcal/core';
 import MyCalendar from '../pages/MyCalendar';
@@ -276,8 +276,68 @@ const flattenLocaleEntries = (value, prefix = '') => {
 describe('My Calendar Component', () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    window.innerWidth = 1024;
+    window.innerHeight = 768;
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-05-18T12:00:00Z'));
+    vi.mocked(googleApi.getAccessToken).mockReturnValue('mock-token');
+    vi.mocked(googleApi.getScopeMode).mockReturnValue('all_events');
+    vi.mocked(googleApi.fetchSession).mockResolvedValue({ scopeMode: 'all_events' });
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+      },
+    ]);
+    vi.mocked(googleApi.fetchGoogleCalendarColors).mockResolvedValue({ calendar: {} });
+    vi.mocked(googleApi.fetchMyAppEvents).mockResolvedValue([]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([]);
+    vi.mocked(googleApi.searchEvents).mockResolvedValue([]);
+    vi.mocked(googleApi.authenticateWithGoogle).mockImplementation(() => {});
+    vi.mocked(googleApi.canEditCalendars).mockImplementation(
+      (scopeMode) => scopeMode === 'app_created' || scopeMode === 'all_events',
+    );
+    vi.mocked(googleApi.usesAllCalendarsMode).mockImplementation(
+      (scopeMode) => scopeMode === 'read_only' || scopeMode === 'all_events',
+    );
+    vi.mocked(googleApi.isHebSyncCalendar).mockImplementation(
+      (calendar) =>
+        Boolean(
+          calendar?.description &&
+          calendar.description.includes('ID:hebcal-sync-app'),
+        ),
+    );
+    vi.mocked(googleApi.revokeAccess).mockResolvedValue(undefined);
+    vi.mocked(googleApi.deleteAccountData).mockResolvedValue(undefined);
+    vi.mocked(googleApi.createNewCalendar).mockReset();
+    vi.mocked(googleApi.createHebcalEvent).mockReset();
+    vi.mocked(googleApi.deleteEvent).mockResolvedValue(true);
+    vi.mocked(googleApi.deleteRecurringEventScope).mockResolvedValue(true);
+    vi.mocked(googleApi.updateEvent).mockImplementation(async (_calendarId, _eventId, updates) => ({
+      id: _eventId,
+      calendarId: _calendarId,
+      ...updates,
+    }));
+    vi.mocked(googleApi.updateRecurringEventScope).mockImplementation(async (event, updates) => ({
+      ...event,
+      ...updates,
+    }));
+    vi.mocked(googleApi.isRecurringEvent).mockImplementation(
+      (event) => Boolean(event?.recurringEventId || event?.recurrence?.length),
+    );
+    vi.mocked(googleApi.supportsFutureScopedChanges).mockImplementation(
+      (event) =>
+        event?.extendedProperties?.private?.appIdentifier === 'MyHebrewCalendar' &&
+        Boolean(event?.recurringEventId || event?.recurrence?.length),
+    );
+    vi.mocked(googleApi.isAuthError).mockImplementation((error) => error?.code === 'AUTH_EXPIRED');
     localStorage.clear();
     sessionStorage.clear();
+  });
+
+  afterEach(() => {
     vi.useRealTimers();
   });
 
@@ -608,7 +668,7 @@ describe('My Calendar Component', () => {
     renderDashboard();
 
     const dayButtons = await screen.findAllByLabelText(/Create an event on day/i);
-    fireEvent.click(dayButtons[0].closest('[data-calendar-day-cell="true"]'));
+    fireEvent.click(dayButtons[0]);
 
     expect(
       await screen.findByText('addEventTitle', {}, { timeout: 15000 }),
@@ -1043,7 +1103,7 @@ describe('My Calendar Component', () => {
 
     renderDashboard();
 
-    expect(await screen.findByText(/Visible Month Event/)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Visible Month Event/ })).toBeInTheDocument();
     expect(screen.queryByText('The selected calendars do not have events in this time range.')).not.toBeInTheDocument();
   });
 
@@ -1086,7 +1146,7 @@ describe('My Calendar Component', () => {
   it('should navigate between months when swiping on mobile', async () => {
     const originalWidth = window.innerWidth;
     window.innerWidth = 375;
-    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([]);
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([]);
 
     renderDashboard();
 
