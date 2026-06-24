@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, type KeyboardEvent } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search } from 'lucide-react';
 import { HDate } from '@hebcal/core';
@@ -48,6 +48,9 @@ import type {
 import { doesHebrewMonthExistInYear } from '../utils/hebcal';
 
 const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
+const SWIPE_LOCK_THRESHOLD_PX = 16;
+const SWIPE_NAVIGATION_THRESHOLD_PX = 72;
+const SWIPE_DIRECTION_RATIO = 1.25;
 const AddEvent = lazy(() => import('./AddEvent'));
 
 function activateOnKeyboard(
@@ -255,6 +258,11 @@ export default function MyCalendar() {
   const [hasAutoPromptedLogin, setHasAutoPromptedLogin] = useState(false);
   const [recurringActionMode, setRecurringActionMode] = useState<'delete' | 'update' | null>(null);
   const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
+  const swipeGestureRef = useRef<{
+    startX: number;
+    startY: number;
+    lockedAxis: 'x' | 'y' | null;
+  } | null>(null);
 
   const {
     editDesc,
@@ -539,6 +547,104 @@ export default function MyCalendar() {
 
   const handlePrevMonth = (): void => {
     setViewHDate((prev) => getPrevMonthHDate(prev));
+  };
+
+  const resetSwipeGesture = (): void => {
+    swipeGestureRef.current = null;
+  };
+
+  const handleCalendarTouchStart = (event: React.TouchEvent<HTMLDivElement>): void => {
+    if (
+      !isMobileViewport ||
+      isSearchActive ||
+      isSidebarOpen ||
+      isMobileSearchOpen ||
+      overflowDay ||
+      selectedEvent ||
+      selectedHebcalDetails ||
+      isAddEventModalOpen ||
+      event.touches.length !== 1
+    ) {
+      resetSwipeGesture();
+      return;
+    }
+
+    const touch = event.touches[0];
+    swipeGestureRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      lockedAxis: null,
+    };
+  };
+
+  const handleCalendarTouchMove = (event: React.TouchEvent<HTMLDivElement>): void => {
+    const gesture = swipeGestureRef.current;
+    if (!gesture || event.touches.length !== 1) {
+      resetSwipeGesture();
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - gesture.startX;
+    const deltaY = touch.clientY - gesture.startY;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (!gesture.lockedAxis) {
+      if (
+        absDeltaY > SWIPE_LOCK_THRESHOLD_PX &&
+        absDeltaY > absDeltaX * 1.1
+      ) {
+        gesture.lockedAxis = 'y';
+        return;
+      }
+
+      if (
+        absDeltaX > SWIPE_LOCK_THRESHOLD_PX &&
+        absDeltaX > absDeltaY * 1.1
+      ) {
+        gesture.lockedAxis = 'x';
+      }
+    }
+  };
+
+  const handleCalendarTouchEnd = (event: React.TouchEvent<HTMLDivElement>): void => {
+    const gesture = swipeGestureRef.current;
+    if (!gesture || event.changedTouches.length !== 1) {
+      resetSwipeGesture();
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - gesture.startX;
+    const deltaY = touch.clientY - gesture.startY;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    resetSwipeGesture();
+
+    if (
+      gesture.lockedAxis === 'y' ||
+      absDeltaX < SWIPE_NAVIGATION_THRESHOLD_PX ||
+      absDeltaX < absDeltaY * SWIPE_DIRECTION_RATIO
+    ) {
+      return;
+    }
+
+    if (deltaX > 0) {
+      if (isRtl) {
+        handlePrevMonth();
+      } else {
+        handleNextMonth();
+      }
+      return;
+    }
+
+    if (isRtl) {
+      handleNextMonth();
+    } else {
+      handlePrevMonth();
+    }
   };
 
   const days = buildMonthDays(viewHDate, calendarEvents);
@@ -875,6 +981,11 @@ export default function MyCalendar() {
             <div
               data-testid="calendar-surface"
               className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] dark:border-slate-700/60 dark:bg-slate-900"
+              onTouchStart={handleCalendarTouchStart}
+              onTouchMove={handleCalendarTouchMove}
+              onTouchEnd={handleCalendarTouchEnd}
+              onTouchCancel={resetSwipeGesture}
+              style={{ touchAction: 'pan-y' }}
             >
               {isSearchActive ? (
                 <SearchResultsView

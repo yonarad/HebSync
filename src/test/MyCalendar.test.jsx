@@ -1083,6 +1083,35 @@ describe('My Calendar Component', () => {
     window.innerWidth = originalWidth;
   });
 
+  it('should navigate between months when swiping on mobile', async () => {
+    const originalWidth = window.innerWidth;
+    window.innerWidth = 375;
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValue([]);
+
+    renderDashboard();
+
+    await screen.findByTestId('calendar-surface');
+
+    const initialCallCount = vi.mocked(googleApi.fetchEventsInRange).mock.calls.length;
+    const calendarSurface = screen.getByTestId('calendar-surface');
+
+    fireEvent.touchStart(calendarSurface, {
+      touches: [{ clientX: 280, clientY: 220 }],
+    });
+    fireEvent.touchMove(calendarSurface, {
+      touches: [{ clientX: 180, clientY: 228 }],
+    });
+    fireEvent.touchEnd(calendarSurface, {
+      changedTouches: [{ clientX: 180, clientY: 228 }],
+    });
+
+    await waitFor(() => {
+      expect(vi.mocked(googleApi.fetchEventsInRange).mock.calls.length).toBeGreaterThan(initialCallCount);
+    });
+
+    window.innerWidth = originalWidth;
+  });
+
   it('should show a loading state in schedule view before events resolve', async () => {
     const originalWidth = window.innerWidth;
     window.innerWidth = 375;
