@@ -1,8 +1,24 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScheduleCalendarView } from '../components/MyCalendarViews';
 
 describe('ScheduleCalendarView', () => {
+  const scrollIntoViewMock = vi.fn();
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-25T10:00:00'));
+    scrollIntoViewMock.mockReset();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoViewMock,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('keeps the Hebrew day label for today instead of switching to Gregorian', () => {
     render(
       <ScheduleCalendarView
@@ -68,6 +84,138 @@ describe('ScheduleCalendarView', () => {
 
     expect(within(dayButton).getByText('\u05d9"\u05d7')).toBeInTheDocument();
     expect(within(dayButton).queryByText('25')).not.toBeInTheDocument();
+  });
+
+  it('scrolls to today when today has content in schedule view', () => {
+    render(
+      <ScheduleCalendarView
+        t={(key, options) => {
+          if (key === 'createEventOnDay') {
+            return `Create event on ${String(options?.hebrewDay ?? '')} (${String(options?.gregorianDay ?? '')})`;
+          }
+
+          if (key.startsWith('days.')) {
+            return 'Day';
+          }
+
+          return key;
+        }}
+        isRtl={false}
+        showEventAges={false}
+        showFasts={false}
+        showHolidayEvents={false}
+        showNationalHolidays={false}
+        showRoshChodesh={false}
+        showSpecialShabbat={false}
+        showWeeklyParsha={false}
+        showGregorian
+        scheduleDays={[
+          {
+            hDay: 17,
+            hDayGematriya: '17',
+            hMonthName: 'Sivan',
+            gDay: 24,
+            gMonthLabel: 'May',
+            gDate: new Date('2026-05-24T12:00:00'),
+            events: [{ summary: 'Yesterday', start: { date: '2026-05-24' }, end: { date: '2026-05-25' } }],
+            hYear: 5786,
+            isToday: false,
+            isShabbat: false,
+            weekday: 0,
+          },
+          {
+            hDay: 18,
+            hDayGematriya: '18',
+            hMonthName: 'Sivan',
+            gDay: 25,
+            gMonthLabel: 'May',
+            gDate: new Date('2026-05-25T12:00:00'),
+            events: [{ summary: 'Today', start: { date: '2026-05-25' }, end: { date: '2026-05-26' } }],
+            hYear: 5786,
+            isToday: true,
+            isShabbat: false,
+            weekday: 1,
+          },
+        ]}
+        hMonthNameHebrew="Sivan"
+        getEventColor={() => '#1a73e8'}
+        handleEventClick={vi.fn()}
+        handleHebcalDetailsClick={vi.fn()}
+        isCalendarLoading={false}
+        handleCreateFromDay={vi.fn()}
+        emptyStateMessage=""
+      />,
+    );
+
+    const todaySection = document.querySelector('[data-schedule-date="2026-05-25"]');
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+    expect(scrollIntoViewMock.mock.instances[0]).toBe(todaySection);
+  });
+
+  it('scrolls to the closest day with content when today has no content', () => {
+    render(
+      <ScheduleCalendarView
+        t={(key, options) => {
+          if (key === 'createEventOnDay') {
+            return `Create event on ${String(options?.hebrewDay ?? '')} (${String(options?.gregorianDay ?? '')})`;
+          }
+
+          if (key.startsWith('days.')) {
+            return 'Day';
+          }
+
+          return key;
+        }}
+        isRtl={false}
+        showEventAges={false}
+        showFasts={false}
+        showHolidayEvents={false}
+        showNationalHolidays={false}
+        showRoshChodesh={false}
+        showSpecialShabbat={false}
+        showWeeklyParsha={false}
+        showGregorian
+        scheduleDays={[
+          {
+            hDay: 15,
+            hDayGematriya: '15',
+            hMonthName: 'Sivan',
+            gDay: 22,
+            gMonthLabel: 'May',
+            gDate: new Date('2026-05-22T12:00:00'),
+            events: [{ summary: 'Far', start: { date: '2026-05-22' }, end: { date: '2026-05-23' } }],
+            hYear: 5786,
+            isToday: false,
+            isShabbat: false,
+            weekday: 5,
+          },
+          {
+            hDay: 19,
+            hDayGematriya: '19',
+            hMonthName: 'Sivan',
+            gDay: 26,
+            gMonthLabel: 'May',
+            gDate: new Date('2026-05-26T12:00:00'),
+            events: [{ summary: 'Closest', start: { date: '2026-05-26' }, end: { date: '2026-05-27' } }],
+            hYear: 5786,
+            isToday: false,
+            isShabbat: false,
+            weekday: 2,
+          },
+        ]}
+        hMonthNameHebrew="Sivan"
+        getEventColor={() => '#1a73e8'}
+        handleEventClick={vi.fn()}
+        handleHebcalDetailsClick={vi.fn()}
+        isCalendarLoading={false}
+        handleCreateFromDay={vi.fn()}
+        emptyStateMessage=""
+      />,
+    );
+
+    const nearestSection = document.querySelector('[data-schedule-date="2026-05-26"]');
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+    expect(scrollIntoViewMock.mock.instances[0]).toBe(nearestSection);
   });
 
   it('renders all-day events as filled chips and timed events as dotted rows', () => {

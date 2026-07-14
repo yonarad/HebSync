@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef } from 'react';
 import {
   getHolidayDetails,
   getHolidayLabels,
@@ -62,6 +63,62 @@ export function ScheduleCalendarView({
   emptyStateMessage,
   emptyStateAction,
 }: ScheduleCalendarViewProps) {
+  const daySectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const getDayDateKey = (date: Date): string => date.toISOString().slice(0, 10);
+  const initialScrollTargetKey = useMemo(() => {
+    if (scheduleDays.length === 0) {
+      return null;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    const todayMatch = scheduleDays.find((dayObj) => {
+      const dayDate = new Date(dayObj.gDate);
+      dayDate.setHours(0, 0, 0, 0);
+      return dayDate.getTime() === todayTime;
+    });
+
+    if (todayMatch) {
+      return getDayDateKey(todayMatch.gDate);
+    }
+
+    const nearestDay = scheduleDays.reduce((closest, dayObj) => {
+      const dayDate = new Date(dayObj.gDate);
+      dayDate.setHours(0, 0, 0, 0);
+      const diff = dayDate.getTime() - todayTime;
+
+      if (!closest) {
+        return { dayObj, diff };
+      }
+
+      const absDiff = Math.abs(diff);
+      const closestAbsDiff = Math.abs(closest.diff);
+
+      if (absDiff < closestAbsDiff) {
+        return { dayObj, diff };
+      }
+
+      if (absDiff === closestAbsDiff && diff > closest.diff) {
+        return { dayObj, diff };
+      }
+
+      return closest;
+    }, null as { dayObj: CalendarDay; diff: number } | null);
+
+    return nearestDay ? getDayDateKey(nearestDay.dayObj.gDate) : null;
+  }, [scheduleDays]);
+
+  useEffect(() => {
+    if (!initialScrollTargetKey) {
+      return;
+    }
+
+    const targetSection = daySectionRefs.current[initialScrollTargetKey];
+    targetSection?.scrollIntoView({ block: 'start' });
+  }, [initialScrollTargetKey]);
+
   return (
     <div
       data-testid="schedule-calendar-view"
@@ -97,6 +154,10 @@ export function ScheduleCalendarView({
               return (
                 <section
                   key={dayObj.gDate.toISOString()}
+                  ref={(node) => {
+                    daySectionRefs.current[getDayDateKey(dayObj.gDate)] = node;
+                  }}
+                  data-schedule-date={getDayDateKey(dayObj.gDate)}
                   className="grid grid-cols-[44px_minmax(0,1fr)] gap-0.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[60px_minmax(0,1fr)] md:gap-1"
                 >
                   <div
