@@ -462,6 +462,65 @@ describe('googleApi client utilities', () => {
     expect(deleted).toBe(true);
   });
 
+  it('sends custom Google reminder overrides when creating HebSync events', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            authenticated: true,
+            user: {
+              scopeMode: 'all_events',
+              csrfToken: 'csrf-write',
+            },
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 'evt-created',
+            summary: 'Birthday',
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      );
+
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue(
+      '22222222-2222-2222-2222-222222222222',
+    );
+
+    await createHebcalEvent(
+      'Birthday',
+      'birthday',
+      5784,
+      'VALUE=DATE:20261110',
+      'cal1',
+      '',
+      {
+        reminder: {
+          mode: 'custom',
+          method: 'popup',
+          daysBefore: 2,
+          hour: 21,
+        },
+      },
+    );
+
+    const [, createOptions] = fetchSpy.mock.calls[1];
+    const body = JSON.parse(String(createOptions?.body));
+    expect(body.eventPayload.reminders).toEqual({
+      useDefault: false,
+      overrides: [{ method: 'popup', minutes: 1620 }],
+    });
+  });
+
   it('guards missing calendar ids and covers metadata fallbacks', async () => {
     await expect(
       createHebcalEvent('Birthday', 'birthday', 5784, 'VALUE=DATE:20261110', ''),

@@ -2,6 +2,7 @@ import { gregorianToHebrew } from '../utils/hebcal';
 import { logout } from '../utils/googleApi';
 import type {
   CreateHebcalEventOptions,
+  EventReminderSettings,
   FallbackChoice,
   GoogleCalendarEvent,
   PreviewOccurrence,
@@ -57,6 +58,8 @@ interface UseAddEventPreviewSubmitParams {
   openLoginModal: (mode: LoginModalMode) => void;
   requires30thFallbackDecision: (month: string, day: number) => boolean;
   selectedCalendarIds: string[];
+  reminderSettings?: EventReminderSettings;
+  onCreatedEventLink?: (url: string | null) => void;
   setFeedbackContext?: (value: 'manualValidation' | 'general' | null) => void;
   setFeedbackMessage?: (value: string | null) => void;
   setFeedbackTone?: (value: 'error' | 'success' | null) => void;
@@ -96,7 +99,9 @@ export default function useAddEventPreviewSubmit({
   onComplete,
   openLoginModal,
   requires30thFallbackDecision,
+  reminderSettings,
   selectedCalendarIds,
+  onCreatedEventLink,
   setFeedbackContext = () => {},
   setFeedbackMessage = () => {},
   setFeedbackTone = () => {},
@@ -141,6 +146,7 @@ export default function useAddEventPreviewSubmit({
     setFeedbackContext(null);
     setFeedbackMessage(null);
     setFeedbackTone(null);
+    onCreatedEventLink?.(null);
 
     if (!title) {
       setFeedbackContext('manualValidation');
@@ -236,29 +242,37 @@ export default function useAddEventPreviewSubmit({
       }
 
       await Promise.all(
-        selectedCalendarIds.map((calendarId) =>
-          createHebcalEvent(
+        selectedCalendarIds.map((calendarId) => {
+          const options: CreateHebcalEventOptions = {
+            specialDate: requires30thFallbackDecision(
+              targetParts.targetMonth,
+              targetParts.targetDay,
+            )
+              ? {
+                  monthName: targetParts.targetMonth,
+                  day: targetParts.targetDay,
+                  fallback: fallback30th,
+                }
+              : null,
+          };
+
+          if (reminderSettings) {
+            options.reminder = reminderSettings;
+          }
+
+          return createHebcalEvent(
             title,
             category,
             targetParts.targetYear,
             rdateString,
             calendarId,
             notes,
-            {
-              specialDate: requires30thFallbackDecision(
-                targetParts.targetMonth,
-                targetParts.targetDay,
-              )
-                ? {
-                    monthName: targetParts.targetMonth,
-                    day: targetParts.targetDay,
-                    fallback: fallback30th,
-                  }
-                : null,
-            },
-          ),
-        ),
-      );
+            options,
+          );
+        }),
+      ).then((events) => {
+        onCreatedEventLink?.(events.find((event) => event.htmlLink)?.htmlLink || null);
+      });
 
       setFeedbackTone('success');
       setFeedbackMessage(

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { HDate } from '@hebcal/core';
 import { getHebrewMonthGregorianRange } from '../utils/calendarView';
+import { buildGoogleCalendarSettingsUrl } from '../utils/googleCalendarLinks';
 import {
   authenticateWithGoogle,
   canEditCalendars,
@@ -156,6 +157,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const [myEvents, setMyEvents] = useState<MyCalendarEventListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoadingCount, setIsGoogleLoadingCount] = useState(0);
+  const [isCreatingCalendar, setIsCreatingCalendar] = useState(false);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [hasLoadedCalendarData, setHasLoadedCalendarData] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -168,6 +170,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const [viewHDate, setViewHDate] = useState<HDate>(new HDate());
   const [calendarEvents, setCalendarEvents] = useState<GoogleCalendarEvent[]>([]);
   const [googleCalendarColors, setGoogleCalendarColors] = useState<GoogleCalendarColors | null>(null);
+  const [createdCalendarSettingsUrl, setCreatedCalendarSettingsUrl] = useState<string | null>(null);
   const [showGregorian, setShowGregorian] = useState(initialDisplayOptions.showGregorian);
   const [showEventAges, setShowEventAges] = useState(initialDisplayOptions.showEventAges);
   const [showFasts, setShowFasts] = useState(initialDisplayOptions.showFasts);
@@ -458,11 +461,18 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const handleCreateCalendar = async (): Promise<void> => {
     const name = window.prompt(t('newCalendarPrompt'));
     if (!name) return;
+    setIsCreatingCalendar(true);
+    setCreatedCalendarSettingsUrl(null);
     try {
-      await createNewCalendar(name);
+      const createdCalendar = await createNewCalendar(name);
+      if (createdCalendar?.id) {
+        setCreatedCalendarSettingsUrl(buildGoogleCalendarSettingsUrl(createdCalendar.id));
+      }
       await loadCalendars();
     } catch {
       alert(t('createCalendarError'));
+    } finally {
+      setIsCreatingCalendar(false);
     }
   };
 
@@ -497,6 +507,8 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   return {
     calendarEvents,
     calendars,
+    createdCalendarSettingsUrl,
+    clearCreatedCalendarSettingsUrl: () => setCreatedCalendarSettingsUrl(null),
     getCalendarColor,
     getEventColor,
     handleChangePermissions,
@@ -512,6 +524,7 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     isAllCalendarsMode,
     isAuthenticated,
     isCalendarLoading,
+    isCreatingCalendar,
     isFetchingGoogle,
     isGoogleLoadingCount,
     isLoading,

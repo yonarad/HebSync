@@ -116,7 +116,7 @@ export function ScheduleCalendarView({
     }
 
     const targetSection = daySectionRefs.current[initialScrollTargetKey];
-    targetSection?.scrollIntoView({ block: 'start' });
+    targetSection?.scrollIntoView?.({ block: 'start' });
   }, [initialScrollTargetKey]);
 
   return (

@@ -457,7 +457,6 @@ describe('My Calendar Component', () => {
     const startBoundary = new HDate(new Date(`${expectedRange.inputTimeMin}T12:00:00`));
     const previousYearMonth = resolveHebrewMonthForYear(startBoundary.getMonthName(), startBoundary.getFullYear() - 1);
     const expandedBackwardMin = new HDate(1, previousYearMonth, startBoundary.getFullYear() - 1).greg();
-    const endBoundary = new HDate(new Date(`${expectedRange.inputTimeMax}T12:00:00`));
     const currentForwardAnchor = new Date(`${expectedRange.inputTimeMax}T12:00:00`);
     currentForwardAnchor.setDate(currentForwardAnchor.getDate() + 1);
     const currentForwardAnchorHDate = new HDate(currentForwardAnchor);

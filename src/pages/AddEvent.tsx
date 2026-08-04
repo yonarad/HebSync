@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, GripHorizontal } from 'lucide-react';
+import { Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, GripHorizontal, Bell, ExternalLink } from 'lucide-react';
 import LoginModal from '../components/LoginModal';
 import { getMonthsForYear, getDaysInHebrewMonth, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 import { authenticateWithGoogle, getAccessToken, createHebcalEvent, revokeAccess } from '../utils/googleApi';
+import { DEFAULT_REMINDER_HOUR } from '../utils/googleCalendarReminders';
+import { buildGoogleCalendarSettingsUrl } from '../utils/googleCalendarLinks';
 import useAddEventCalendarData from '../hooks/useAddEventCalendarData';
 import useAddEventImport from '../hooks/useAddEventImport';
 import useAddEventPreviewSubmit from '../hooks/useAddEventPreviewSubmit';
-import type { AddEventPrefillDate, Calendar, PreviewOccurrence, ScopeMode } from '../types/appTypes';
+import type { AddEventPrefillDate, Calendar, EventReminderMode, EventReminderSettings, PreviewOccurrence, ScopeMode } from '../types/appTypes';
 import type { FallbackChoice, ImportPreviewRow } from '../types/appTypes';
 
 import { useTranslation } from 'react-i18next';
@@ -89,11 +91,15 @@ export default function AddEvent({
   const [feedbackContext, setFeedbackContext] = useState<'manualValidation' | 'general' | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [feedbackTone, setFeedbackTone] = useState<'error' | 'success' | null>(null);
+  const [createdEventLink, setCreatedEventLink] = useState<string | null>(null);
   const {
     calendars,
     clearCalendarSession,
+    createdCalendarSettingsUrl,
+    clearCreatedCalendarSettingsUrl,
     handleCreateCalendar,
     hasWriteAccess,
+    isCreatingCalendar,
     isCalendarLoading,
     loadCalendars,
     readOnlyCalendars,
@@ -187,6 +193,15 @@ export default function AddEvent({
   })();
   const [notes, setNotes] = useState('');
   const [availableMonths, setAvailableMonths] = useState<Array<{ id: string; label: string }>>(() => getMonthsForYear(year));
+  const [eventReminderMode, setEventReminderMode] = useState<EventReminderMode>('calendar_default');
+  const [eventReminderDaysBefore, setEventReminderDaysBefore] = useState<1 | 2>(1);
+  const [eventReminderHour, setEventReminderHour] = useState(DEFAULT_REMINDER_HOUR);
+  const reminderSettings: EventReminderSettings = {
+    mode: eventReminderMode,
+    method: 'popup',
+    daysBefore: eventReminderDaysBefore,
+    hour: eventReminderHour,
+  };
   
   // Preview State
   const [showPreview, setShowPreview] = useState(false);
@@ -239,6 +254,7 @@ export default function AddEvent({
     parseDayValue,
     parseSourceYearValue,
     requires30thFallbackDecision,
+    reminderSettings,
     selectedCalendarIds,
     setIsLoading,
     t,
@@ -273,7 +289,9 @@ export default function AddEvent({
     onComplete,
     openLoginModal,
     requires30thFallbackDecision,
+    reminderSettings,
     selectedCalendarIds,
+    onCreatedEventLink: setCreatedEventLink,
     setFeedbackContext,
     setFeedbackMessage,
     setFeedbackTone,
@@ -407,6 +425,92 @@ export default function AddEvent({
     setFeedbackTone(null);
   };
 
+  const updateReminderMode = (mode: EventReminderMode) => {
+    setEventReminderMode(mode);
+    setCreatedEventLink(null);
+  };
+
+  const renderReminderControls = () => (
+    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center gap-2">
+        <Bell className="h-4 w-4 text-[#0038A8]" />
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+          {t('eventReminders', { defaultValue: isRtl ? 'תזכורות' : 'Reminders' })}
+        </h3>
+      </div>
+      <div className="grid gap-2 md:grid-cols-3">
+        {[
+          {
+            mode: 'calendar_default' as EventReminderMode,
+            label: t('reminderCalendarDefault', { defaultValue: isRtl ? 'לפי הגדרת היומן' : 'Calendar default' }),
+          },
+          {
+            mode: 'none' as EventReminderMode,
+            label: t('reminderNone', { defaultValue: isRtl ? 'ללא תזכורת' : 'No reminder' }),
+          },
+          {
+            mode: 'custom' as EventReminderMode,
+            label: t('reminderCustom', { defaultValue: isRtl ? 'תזכורת מותאמת' : 'Custom reminder' }),
+          },
+        ].map((option) => (
+          <button
+            key={option.mode}
+            type="button"
+            aria-pressed={eventReminderMode === option.mode}
+            onClick={() => updateReminderMode(option.mode)}
+            className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${
+              eventReminderMode === option.mode
+                ? 'border-[#0038A8] bg-blue-50 text-[#0038A8] dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-300'
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {eventReminderMode === 'custom' ? (
+        <div className="grid gap-3 border-t border-slate-100 pt-3 md:grid-cols-2 dark:border-slate-800">
+          <div className="space-y-1.5">
+            <label htmlFor="event-reminder-days" className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {t('reminderWhen', { defaultValue: isRtl ? 'מתי' : 'When' })}
+            </label>
+            <select
+              id="event-reminder-days"
+              value={eventReminderDaysBefore}
+              onChange={(event) => setEventReminderDaysBefore(Number(event.target.value) as 1 | 2)}
+              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium text-slate-900 outline-none focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <option value={1}>{t('reminderOneDayBefore', { defaultValue: isRtl ? 'יום לפני' : 'One day before' })}</option>
+              <option value={2}>{t('reminderTwoDaysBefore', { defaultValue: isRtl ? 'יומיים לפני' : 'Two days before' })}</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="event-reminder-hour" className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {t('reminderHour', { defaultValue: isRtl ? 'שעה' : 'Hour' })}
+            </label>
+            <select
+              id="event-reminder-hour"
+              value={eventReminderHour}
+              onChange={(event) => setEventReminderHour(Number(event.target.value))}
+              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium text-slate-900 outline-none focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            >
+              {Array.from({ length: 24 }, (_, hourValue) => (
+                <option key={hourValue} value={hourValue}>
+                  {hourValue.toString().padStart(2, '0')}:00
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      ) : null}
+      <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+        {eventReminderMode === 'custom'
+          ? t('reminderCustomHint', { defaultValue: isRtl ? 'התזכורת תישלח כהתראת Google Calendar. אפשר לערוך הגדרות מתקדמות ב-Google לאחר היצירה.' : 'The reminder will be saved as a Google Calendar notification. Advanced settings can be edited in Google after creation.' })
+          : t('reminderDefaultHint', { defaultValue: isRtl ? 'בחירה זו לא משנה את הגדרות היומן.' : 'This does not change the calendar settings.' })}
+      </p>
+    </div>
+  );
+
   const commitSyncSpanInput = () => {
     setSyncSpanInput(String(syncSpan));
   };
@@ -425,7 +529,9 @@ export default function AddEvent({
       return (
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center dark:border-slate-700 dark:bg-slate-900">
           <RefreshCw className="mx-auto h-6 w-6 animate-spin text-[#0038A8]" />
-          <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">{t('loadingGoogleData')}</p>
+          <p className="mt-3 text-sm font-bold text-slate-600 dark:text-slate-300">
+            {isCreatingCalendar ? t('creatingCalendar') : t('loadingGoogleData')}
+          </p>
         </div>
       );
     }
@@ -444,9 +550,15 @@ export default function AddEvent({
               <button
                 type="button"
                 onClick={handleCreateCalendar}
-                className="inline-flex items-center justify-center rounded-full bg-[#0038A8] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#002d86]"
+                disabled={isCreatingCalendar}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0038A8] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#002d86] disabled:cursor-wait disabled:opacity-70"
               >
-                {hasWriteAccess ? t('createCalendarToContinue') : t('allowCalendarCreation')}
+                {isCreatingCalendar ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
+                {isCreatingCalendar
+                  ? t('creatingCalendar')
+                  : hasWriteAccess
+                    ? t('createCalendarToContinue')
+                    : t('allowCalendarCreation')}
               </button>
               <button
                 type="button"
@@ -465,12 +577,12 @@ export default function AddEvent({
       cal: Calendar,
       { disabled = false, readOnly = false }: { disabled?: boolean; readOnly?: boolean } = {},
     ) => (
-      <label
+      <div
         key={cal.id}
         className={`flex items-center gap-3 rounded-xl border p-3 transition-all ${isRtl ? 'flex-row-reverse text-right' : ''} ${
           disabled
-            ? 'cursor-not-allowed border-slate-200 bg-slate-100/80 opacity-75 dark:border-slate-700 dark:bg-slate-800/70'
-            : 'cursor-pointer'
+            ? 'border-slate-200 bg-slate-100/80 opacity-75 dark:border-slate-700 dark:bg-slate-800/70'
+            : ''
         } ${
           !disabled && selectedCalendarIds.includes(cal.id)
             ? 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'
@@ -479,33 +591,48 @@ export default function AddEvent({
               : ''
         }`}
       >
-        <div className="h-4 w-4 flex-shrink-0 rounded-full" style={{ backgroundColor: cal.color }}></div>
-        <input
-          type="checkbox"
-          checked={selectedCalendarIds.includes(cal.id)}
-          onChange={() => {
-            clearManualValidationFeedback();
-            toggleCalendar(cal.id);
-          }}
-          disabled={disabled}
-          className="h-4 w-4 rounded text-[#0038A8] disabled:cursor-not-allowed disabled:opacity-60"
-        />
-        <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
-          <span
-            className={`block truncate text-sm font-medium ${
-              disabled ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'
-            }`}
-            title={cal.summary}
-          >
-            {cal.summary}
-          </span>
-          {readOnly ? (
-            <span className="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-              {t('readOnlyCalendarBadge', { defaultValue: isRtl ? '\u05dc\u05e6\u05e4\u05d9\u05d9\u05d4 \u05d1\u05dc\u05d1\u05d3' : 'View only' })}
+        <label className={`flex min-w-0 flex-1 items-center gap-3 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} ${isRtl ? 'flex-row-reverse' : ''}`}>
+          <div className="h-4 w-4 flex-shrink-0 rounded-full" style={{ backgroundColor: cal.color }}></div>
+          <input
+            type="checkbox"
+            checked={selectedCalendarIds.includes(cal.id)}
+            onChange={() => {
+              clearManualValidationFeedback();
+              toggleCalendar(cal.id);
+            }}
+            disabled={disabled}
+            className="h-4 w-4 rounded text-[#0038A8] disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          <div className={`min-w-0 flex-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+            <span
+              className={`block truncate text-sm font-medium ${
+                disabled ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'
+              }`}
+              title={cal.summary}
+            >
+              {cal.summary}
             </span>
-          ) : null}
-        </div>
-      </label>
+            {readOnly ? (
+              <span className="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                {t('readOnlyCalendarBadge', { defaultValue: isRtl ? '\u05dc\u05e6\u05e4\u05d9\u05d9\u05d4 \u05d1\u05dc\u05d1\u05d3' : 'View only' })}
+              </span>
+            ) : null}
+          </div>
+        </label>
+        <a
+          href={buildGoogleCalendarSettingsUrl(cal.id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-blue-50 hover:text-[#0038A8] dark:text-slate-500 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
+          aria-label={t('openCalendarSettingsFor', {
+            calendar: cal.summary,
+            defaultValue: `Open settings for ${cal.summary}`,
+          })}
+          title={t('openCalendarSettingsInGoogle')}
+        >
+          <ExternalLink className="h-4 w-4" />
+        </a>
+      </div>
     );
 
     return (
@@ -677,7 +804,43 @@ export default function AddEvent({
                   : 'border border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-200'
               }`}
             >
-              {feedbackMessage}
+              <div>{feedbackMessage}</div>
+              {feedbackTone === 'success' && createdEventLink ? (
+                <a
+                  href={createdEventLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex text-sm font-bold underline decoration-current underline-offset-2"
+                >
+                  {t('openInGoogleCalendar', { defaultValue: isRtl ? 'פתח ב-Google Calendar' : 'Open in Google Calendar' })}
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+
+          {createdCalendarSettingsUrl ? (
+            <div
+              role="status"
+              className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-950 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-100"
+            >
+              <div>{t('calendarCreatedReminderSettingsHint')}</div>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <a
+                  href={createdCalendarSettingsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold underline decoration-current underline-offset-2"
+                >
+                  {t('openCalendarSettingsInGoogle')}
+                </a>
+                <button
+                  type="button"
+                  onClick={clearCreatedCalendarSettingsUrl}
+                  className="text-xs font-bold text-blue-700 underline decoration-current underline-offset-2 dark:text-blue-200"
+                >
+                  {t('close')}
+                </button>
+              </div>
             </div>
           ) : null}
 
@@ -986,6 +1149,8 @@ export default function AddEvent({
                         </div>
                       </div>
 
+                      {renderReminderControls()}
+
                       {renderCalendarSelection()}
                     </div>
 
@@ -1236,6 +1401,10 @@ export default function AddEvent({
 
                       </div>
 
+
+                      <div className="space-y-2">
+                        {renderReminderControls()}
+                      </div>
 
                       <div className="space-y-2">
                         <div className="text-sm text-slate-500 dark:text-slate-400">

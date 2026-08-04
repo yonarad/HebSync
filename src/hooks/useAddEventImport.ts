@@ -8,6 +8,7 @@ import {
 
 import type {
   CreateHebcalEventOptions,
+  EventReminderSettings,
   FallbackChoice,
   GoogleCalendarEvent,
   ImportDateType,
@@ -89,6 +90,7 @@ interface UseAddEventImportParams {
     day: number | null,
   ) => boolean;
   selectedCalendarIds: string[];
+  reminderSettings?: EventReminderSettings;
   setIsLoading: (value: boolean) => void;
   t: (key: string) => string;
   validateHebrewDateForYear: (
@@ -151,6 +153,7 @@ export default function useAddEventImport({
   parseDayValue,
   parseSourceYearValue,
   requires30thFallbackDecision,
+  reminderSettings,
   selectedCalendarIds,
   setIsLoading,
   t,
@@ -622,8 +625,25 @@ export default function useAddEventImport({
 
         try {
           await Promise.all(
-            selectedCalendarIds.map((calendarId) =>
-              createHebcalEvent(
+            selectedCalendarIds.map((calendarId) => {
+              const options: CreateHebcalEventOptions = {
+                specialDate: requires30thFallbackDecision(
+                  row.monthId,
+                  row.dayValue,
+                )
+                  ? {
+                      monthName: row.monthId as string,
+                      day: row.dayValue as number,
+                      fallback,
+                    }
+                  : null,
+              };
+
+              if (reminderSettings) {
+                options.reminder = reminderSettings;
+              }
+
+              return createHebcalEvent(
                 row.title,
                 importCategoryMap[row.categoryLabel] ??
                   importCategoryMap[row.categoryLabel.toLowerCase()] ??
@@ -632,20 +652,9 @@ export default function useAddEventImport({
                 rdateString,
                 calendarId,
                 row.notes,
-                {
-                  specialDate: requires30thFallbackDecision(
-                    row.monthId,
-                    row.dayValue,
-                  )
-                    ? {
-                        monthName: row.monthId as string,
-                        day: row.dayValue as number,
-                        fallback,
-                      }
-                    : null,
-                },
-              ),
-            ),
+                options,
+              );
+            }),
           );
           createdCount += 1;
         } catch (error: unknown) {

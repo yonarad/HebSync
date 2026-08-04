@@ -78,6 +78,10 @@
     "noCalendarsForEventCreation": "No calendars are available yet, so there's nowhere to add this event. Create a calendar first, then choose it here.",
     "noCalendarsForEventCreationReadOnly": "No calendars are available yet. To create one and continue, allow calendar creation access first.",
     "createCalendarToContinue": "Create a calendar",
+    "creatingCalendar": "Creating calendar...",
+    "calendarCreatedReminderSettingsHint": "The calendar was created. Default reminders can be changed in Google Calendar settings.",
+    "openCalendarSettingsInGoogle": "Open calendar settings in Google",
+    "openCalendarSettingsFor": "Open settings for {{calendar}}",
     "loginRequiredInCalendarView": "Connect your Google account to view calendars and start managing Hebrew events here.",
     "noCalendarsYetInCalendarView": "No calendars are available yet. Create a calendar from the sidebar to start adding events.",
     "noSelectedCalendarsInCalendarView": "There are calendars available, but none are selected. Choose one or more calendars from the sidebar.",
@@ -304,6 +308,17 @@
     "viewMonth": "Month",
     "viewSchedule": "Schedule",
     "noEventsInView": "The selected calendars do not have events in this time range.",
+    "eventReminders": "Reminders",
+    "reminderCalendarDefault": "Calendar default",
+    "reminderNone": "No reminder",
+    "reminderCustom": "Custom reminder",
+    "reminderWhen": "When",
+    "reminderOneDayBefore": "One day before",
+    "reminderTwoDaysBefore": "Two days before",
+    "reminderHour": "Hour",
+    "reminderCustomHint": "The reminder will be saved as a Google Calendar notification. Advanced settings can be edited in Google after creation.",
+    "reminderDefaultHint": "This does not change the calendar settings.",
+    "openInGoogleCalendar": "Open in Google Calendar",
     "allDay": "All day"
   }
 }

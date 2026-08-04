@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  ExternalLink,
   Info,
   PencilLine,
   RefreshCw,
@@ -13,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import type { Calendar } from '../types/appTypes';
+import { buildGoogleCalendarSettingsUrl } from '../utils/googleCalendarLinks';
 
 interface CalendarGroupProps {
   title: string;
@@ -103,22 +105,37 @@ function CalendarGroup({
         <div className="border-t border-slate-100 px-2 pb-2 pt-1 dark:border-slate-800">
           <div className="space-y-1">
             {groupCalendars.map((cal) => (
-              <label
+              <div
                 key={cal.id}
-                className="flex cursor-pointer items-center gap-2 rounded-lg p-1.5 text-xs text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="flex items-center gap-1 rounded-lg p-1.5 text-xs text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
               >
-                <div
-                  className="h-3 w-3 flex-shrink-0 rounded-full"
-                  style={{ backgroundColor: cal.color }}
-                />
-                <input
-                  type="checkbox"
-                  checked={selectedCalendarIds.includes(cal.id)}
-                  onChange={() => toggleCalendar(cal.id)}
-                  className="h-3 w-3 rounded border-slate-300 text-[#0038A8]"
-                />
-                <span className="truncate">{cal.summary}</span>
-              </label>
+                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+                  <div
+                    className="h-3 w-3 flex-shrink-0 rounded-full"
+                    style={{ backgroundColor: cal.color }}
+                  />
+                  <input
+                    type="checkbox"
+                    checked={selectedCalendarIds.includes(cal.id)}
+                    onChange={() => toggleCalendar(cal.id)}
+                    className="h-3 w-3 rounded border-slate-300 text-[#0038A8]"
+                  />
+                  <span className="truncate">{cal.summary}</span>
+                </label>
+                <a
+                  href={buildGoogleCalendarSettingsUrl(cal.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-blue-50 hover:text-[#0038A8] dark:text-slate-500 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
+                  aria-label={t('openCalendarSettingsFor', {
+                    calendar: cal.summary,
+                    defaultValue: `Open settings for ${cal.summary}`,
+                  })}
+                  title={t('openCalendarSettingsInGoogle')}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
             ))}
           </div>
         </div>
@@ -140,6 +157,7 @@ interface MyCalendarSidebarProps {
   promptForEditingUpgrade: () => void;
   calendars: Calendar[];
   isFetchingGoogle: boolean;
+  isCreatingCalendar: boolean;
   refreshCalendarsLabel: string;
   handleRefreshCalendars: () => void;
   handleCreateCalendar: () => Promise<void> | void;
@@ -176,6 +194,7 @@ export default function MyCalendarSidebar({
   promptForEditingUpgrade,
   calendars,
   isFetchingGoogle,
+  isCreatingCalendar,
   refreshCalendarsLabel,
   handleRefreshCalendars,
   handleCreateCalendar,
@@ -305,9 +324,17 @@ export default function MyCalendarSidebar({
                   <button
                     type="button"
                     onClick={handleCreateCalendar}
-                    className="shrink-0 rounded bg-blue-50 px-2 py-1 text-[10px] font-bold text-[#0038A8] dark:bg-blue-900/30 dark:text-blue-300"
+                    disabled={isCreatingCalendar}
+                    className="inline-flex shrink-0 items-center gap-1 rounded bg-blue-50 px-2 py-1 text-[10px] font-bold text-[#0038A8] transition-colors disabled:cursor-wait disabled:opacity-70 dark:bg-blue-900/30 dark:text-blue-300"
                   >
-                    + {t('new')}
+                    {isCreatingCalendar ? (
+                      <>
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        {t('creatingCalendar')}
+                      </>
+                    ) : (
+                      <>+ {t('new')}</>
+                    )}
                   </button>
                 </div>
               </div>

@@ -18,6 +18,7 @@ import {
   chunkRdates,
   getCreatedByMetadataLabel,
 } from './googleApiSpecialDates';
+import { buildGoogleEventReminders } from './googleCalendarReminders';
 
 interface CreateEventPayload {
   summary: string;
@@ -29,6 +30,7 @@ interface CreateEventPayload {
     date: string;
   };
   recurrence: string[];
+  reminders?: GoogleCalendarEvent['reminders'];
   extendedProperties: {
     private: {
       appIdentifier: string;
@@ -183,6 +185,7 @@ export async function createHebcalEvent(
       date: startDateFormatted,
     },
     recurrence: remainingRdates.length > 0 ? chunkRdates(remainingRdates) : [],
+    reminders: buildGoogleEventReminders(options.reminder),
     extendedProperties: {
       private: {
         appIdentifier: 'MyHebrewCalendar',

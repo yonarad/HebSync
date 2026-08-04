@@ -176,6 +176,8 @@ export default function MyCalendar() {
   const {
     calendarEvents,
     calendars,
+    createdCalendarSettingsUrl,
+    clearCreatedCalendarSettingsUrl,
     getEventColor,
     handleChangePermissions,
     handleCreateCalendar,
@@ -190,6 +192,7 @@ export default function MyCalendar() {
     isAllCalendarsMode,
     isAuthenticated,
     isCalendarLoading,
+    isCreatingCalendar,
     isFetchingGoogle,
     loadCalendarData,
     loadCalendars,
@@ -919,6 +922,7 @@ export default function MyCalendar() {
           promptForEditingUpgrade={promptForEditingUpgrade}
           calendars={calendars}
           isFetchingGoogle={isFetchingGoogle}
+          isCreatingCalendar={isCreatingCalendar}
           refreshCalendarsLabel={refreshCalendarsLabel}
           handleRefreshCalendars={handleRefreshCalendars}
           handleCreateCalendar={handleCreateCalendar}
@@ -977,6 +981,33 @@ export default function MyCalendar() {
               setViewHDate={setViewHDate}
               isSearchActive={isSearchActive}
             />
+
+            {createdCalendarSettingsUrl ? (
+              <div
+                role="status"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-950 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-100"
+              >
+                <div className="min-w-0">
+                  <span>{t('calendarCreatedReminderSettingsHint')}</span>{' '}
+                  <a
+                    href={createdCalendarSettingsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold underline decoration-current underline-offset-2"
+                  >
+                    {t('openCalendarSettingsInGoogle')}
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearCreatedCalendarSettingsUrl}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-blue-700 transition-colors hover:bg-blue-100 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                  aria-label={t('close')}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
 
             <div
               data-testid="calendar-surface"

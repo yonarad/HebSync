@@ -37,6 +37,7 @@ describe('MyCalendarSidebar', () => {
       },
     ],
     isFetchingGoogle: false,
+    isCreatingCalendar: false,
     refreshCalendarsLabel: 'Refresh calendars',
     handleRefreshCalendars: vi.fn(),
     handleCreateCalendar: vi.fn(),

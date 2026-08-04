@@ -101,16 +101,39 @@ export interface GoogleEventPrivateProperties {
   [key: string]: string | undefined;
 }
 
+export type GoogleReminderMethod = 'popup' | 'email';
+
+export interface GoogleEventReminder {
+  method: GoogleReminderMethod;
+  minutes: number;
+}
+
+export type EventReminderMode = 'calendar_default' | 'none' | 'custom';
+
+export interface EventReminderSettings {
+  mode: EventReminderMode;
+  method?: GoogleReminderMethod;
+  daysBefore?: 1 | 2;
+  hour?: number;
+}
+
+export interface GoogleEventReminders {
+  useDefault: boolean;
+  overrides?: GoogleEventReminder[];
+}
+
 export interface GoogleCalendarEvent {
   id?: string;
   summary?: string;
   description?: string;
+  htmlLink?: string;
   location?: string;
   colorId?: string;
   backgroundColor?: string;
   foregroundColor?: string;
   start?: GoogleCalendarDateTime;
   end?: GoogleCalendarDateTime;
+  reminders?: GoogleEventReminders;
   recurrence?: string[];
   recurringEventId?: string;
   originalStartTime?: GoogleCalendarDateTime;
@@ -212,6 +235,7 @@ export interface SpecialDateMetadataInput {
 
 export interface CreateHebcalEventOptions {
   specialDate?: SpecialDateMetadataInput | null;
+  reminder?: EventReminderSettings;
 }
 
 export interface HebcalDisplayDetail {

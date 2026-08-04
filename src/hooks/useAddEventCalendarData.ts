@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { resolveCalendarColor } from '../utils/googleCalendarColors';
+import { buildGoogleCalendarSettingsUrl } from '../utils/googleCalendarLinks';
 import {
   canEditCalendars,
   createNewCalendar,
@@ -27,9 +28,11 @@ export default function useAddEventCalendarData({
   t,
 }: UseAddEventCalendarDataParams) {
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [isCreatingCalendar, setIsCreatingCalendar] = useState(false);
   const [scopeMode, setScopeMode] = useState<ScopeMode>(getScopeMode());
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [selectedCalendarIds, setSelectedCalendarIds] = useState<string[]>([]);
+  const [createdCalendarSettingsUrl, setCreatedCalendarSettingsUrl] = useState<string | null>(null);
   const [showReadOnlyCalendars, setShowReadOnlyCalendars] = useState(false);
 
   const hasWriteAccess = canEditCalendars(scopeMode);
@@ -76,8 +79,13 @@ export default function useAddEventCalendarData({
     if (!name) return;
 
     setIsCalendarLoading(true);
+    setIsCreatingCalendar(true);
+    setCreatedCalendarSettingsUrl(null);
     try {
-      await createNewCalendar(name);
+      const createdCalendar = await createNewCalendar(name);
+      if (createdCalendar?.id) {
+        setCreatedCalendarSettingsUrl(buildGoogleCalendarSettingsUrl(createdCalendar.id));
+      }
       await loadCalendars();
       if (onCalendarsChanged) {
         await onCalendarsChanged();
@@ -86,6 +94,7 @@ export default function useAddEventCalendarData({
       alert(t('createCalendarError'));
     } finally {
       setIsCalendarLoading(false);
+      setIsCreatingCalendar(false);
     }
   };
 
@@ -133,8 +142,11 @@ export default function useAddEventCalendarData({
   return {
     calendars,
     clearCalendarSession,
+    createdCalendarSettingsUrl,
+    clearCreatedCalendarSettingsUrl: () => setCreatedCalendarSettingsUrl(null),
     handleCreateCalendar,
     hasWriteAccess,
+    isCreatingCalendar,
     isCalendarLoading,
     loadCalendars,
     readOnlyCalendars,
