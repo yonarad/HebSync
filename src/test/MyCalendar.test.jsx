@@ -171,6 +171,16 @@ vi.mock('react-i18next', () => ({
         reminderSummaryNone: 'No reminder',
         reminderSummaryCustom: `${options?.day ?? ''} at ${options?.hour ?? ''}`,
         reminderSummaryUnsupported: 'Custom reminder in Google Calendar',
+        reminderSummaryOverride: `${options?.method ?? ''}: ${options?.time ?? ''}`,
+        reminderMethodPopup: 'Notification',
+        reminderMethodEmail: 'Email',
+        reminderTimingAtEventTime: 'At event time',
+        reminderTimingOneMinuteBefore: '1 minute before',
+        reminderTimingMinutesBefore: `${options?.count ?? ''} minutes before`,
+        reminderTimingOneHourBefore: '1 hour before',
+        reminderTimingHoursBefore: `${options?.count ?? ''} hours before`,
+        reminderTimingOneDayBefore: '1 day before',
+        reminderTimingDaysBefore: `${options?.count ?? ''} days before`,
         openEventInGoogleCalendar: 'Open event in Google Calendar',
         unsupportedReminderHint: 'Unsupported reminder settings',
         recommended: 'Recommended',
@@ -704,7 +714,10 @@ describe('My Calendar Component', () => {
         start: { date: '2026-05-18' },
         reminders: {
           useDefault: false,
-          overrides: [{ method: 'popup', minutes: 180 }],
+          overrides: [
+            { method: 'popup', minutes: 180 },
+            { method: 'email', minutes: 45 },
+          ],
         },
       },
     ]);
@@ -721,7 +734,8 @@ describe('My Calendar Component', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Jerusalem Day/ }));
 
     expect(await screen.findByText('Reminders')).toBeInTheDocument();
-    expect(screen.getByText('One day before at 21:00')).toBeInTheDocument();
+    expect(screen.getByText('Notification: One day before at 21:00')).toBeInTheDocument();
+    expect(screen.getByText('Email: 45 minutes before')).toBeInTheDocument();
   });
 
   it('should update event reminder settings from the event details dialog', async () => {

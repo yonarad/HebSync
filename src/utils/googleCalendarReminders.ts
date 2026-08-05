@@ -71,7 +71,9 @@ export function buildGoogleEventReminders(
   };
 }
 
-function parseAllDayReminderMinutes(minutes: number): Pick<EventReminderSettings, 'daysBefore' | 'hour'> | null {
+export function getAllDayReminderTimingFromMinutes(
+  minutes: number,
+): Pick<EventReminderSettings, 'daysBefore' | 'hour'> | null {
   if (!Number.isInteger(minutes)) return null;
 
   for (const daysBefore of [1, 2] as const) {
@@ -121,7 +123,7 @@ export function getReminderSettingsFromGoogleEvent(
     };
   }
 
-  const parsedTiming = parseAllDayReminderMinutes(override.minutes);
+  const parsedTiming = getAllDayReminderTimingFromMinutes(override.minutes);
   if (!parsedTiming) {
     return {
       settings: DEFAULT_REMINDER_SETTINGS,
