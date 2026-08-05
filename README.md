@@ -4,6 +4,37 @@ HebSync is a Vite + React app for syncing Hebrew-date events with Google Calenda
 
 The frontend source now uses TypeScript across `src`, with Vitest coverage for the main calendar and event flows.
 
+## Current architecture
+
+HebSync now uses a server-backed Google OAuth and Google Calendar integration:
+
+- Google OAuth authorization code flow starts from the frontend and completes in `/api/auth/google/*`.
+- Session state is stored server-side and referenced by `HttpOnly` cookies.
+- Google `refresh_token` values are encrypted before storage.
+- Browser Google Calendar calls go through local/Vercel API routes under `/api/google/*`.
+- The browser keeps only minimal auth state, such as the selected permission mode, and does not store Google access or refresh tokens.
+
+Main client integration files:
+
+- [src/utils/googleApiCore.ts](src/utils/googleApiCore.ts)
+- [src/utils/googleApiEvents.ts](src/utils/googleApiEvents.ts)
+- [src/hooks/useMyCalendarData.ts](src/hooks/useMyCalendarData.ts)
+- [src/pages/AddEvent.tsx](src/pages/AddEvent.tsx)
+
+Main server integration files:
+
+- [api/auth/google/start.js](api/auth/google/start.js)
+- [api/auth/google/callback.js](api/auth/google/callback.js)
+- [api/auth/session.js](api/auth/session.js)
+- [api/auth/logout.js](api/auth/logout.js)
+- [api/google/calendars.js](api/google/calendars.js)
+- [api/google/events.js](api/google/events.js)
+- [api/google/event.js](api/google/event.js)
+- [api/google/events/app.js](api/google/events/app.js)
+- [api/google/events/in-range.js](api/google/events/in-range.js)
+- [api/google/events/search.js](api/google/events/search.js)
+- [db/schema.sql](db/schema.sql)
+
 ## Server-side OAuth setup
 
 The project now includes a secure server-side OAuth foundation for:
@@ -13,19 +44,11 @@ The project now includes a secure server-side OAuth foundation for:
 - Encrypted Google `refresh_token` storage
 - `HttpOnly` session cookies
 
-Relevant files:
-
-- [api/auth/google/start.js](C:/dev/HebSync/api/auth/google/start.js)
-- [api/auth/google/callback.js](C:/dev/HebSync/api/auth/google/callback.js)
-- [api/auth/session.js](C:/dev/HebSync/api/auth/session.js)
-- [api/auth/logout.js](C:/dev/HebSync/api/auth/logout.js)
-- [db/schema.sql](C:/dev/HebSync/db/schema.sql)
-
 ## 1. Create a Neon database
 
 1. Create a free Neon project.
 2. Copy the connection string.
-3. Run the SQL in [db/schema.sql](C:/dev/HebSync/db/schema.sql) in the Neon SQL editor.
+3. Run the SQL in [db/schema.sql](db/schema.sql) in the Neon SQL editor.
 
 ## 2. Configure Google OAuth
 
@@ -45,7 +68,7 @@ Important:
 
 ## 3. Environment variables
 
-Copy [.env.example](C:/dev/HebSync/.env.example) to `.env` locally and add the same values in Vercel Project Settings.
+Copy [.env.example](.env.example) to `.env` locally and add the same values in Vercel Project Settings.
 
 Required variables:
 
@@ -120,19 +143,43 @@ npm run typecheck
 npm test
 ```
 
-## 6. Frontend integration
+As of 2026-08-05, the current local baseline passes:
 
-The current frontend still calls Google Calendar utilities from [src/utils/googleApi.ts](C:/dev/HebSync/src/utils/googleApi.ts). To complete the security migration:
+- `npm run typecheck`
+- `npm test` with 25 test files and 231 tests passing
 
-1. Replace `authenticateWithGoogle(...)` with a redirect to `/api/auth/google/start?scopeMode=...`
-2. Replace `getAccessToken()` checks with `GET /api/auth/session`
-3. Move Google Calendar API calls from the browser into Vercel Functions
-4. Stop storing tokens in `localStorage`
+## Implementation status
+
+The security migration is mostly complete:
+
+- `authenticateWithGoogle(...)` redirects to `/api/auth/google/start`.
+- Session checks use `/api/auth/session` through `fetchSession()`.
+- Calendar list, color, creation, event creation, event fetch, event update, event delete, app-event loading, range loading, and search calls all go through `/api/google/*`.
+- CSRF headers are attached by `authorizedFetch()` for non-read requests.
+- `getAccessToken()` is now a compatibility marker for an active server session, not a real Google access token.
+
+Known cleanup:
+
+- Rename or replace `getAccessToken()` to avoid implying that the browser has a Google token.
+- Keep the privacy/legal copy aligned with the server-side token model.
+- Remove any old test setup references to legacy `gcal_token` only when the related fallback behavior is no longer needed.
 
 ## Recommended next step
 
-After this setup, the next clean step is migrating one real Google API call end-to-end, for example:
+Before adding new features, verify the full Google integration against real credentials:
 
-- `fetchAllCalendars`
+1. Start the combined local app with `npm run dev`.
+2. Sign in with Google through `http://localhost:3000`.
+3. Confirm session creation in Neon and an `HttpOnly` browser session cookie.
+4. Exercise the core flows:
+   - load calendars
+   - create a HebSync calendar
+   - create a Hebrew-date event
+   - search events
+   - edit an event
+   - delete an event
+   - logout/revoke access
+5. Deploy to Vercel with matching environment variables and Google OAuth redirect URIs.
+6. Repeat the same smoke test on the production deployment.
 
-That gives you one fully secure server-side path before moving the rest of the app.
+See [HANDOFF.md](HANDOFF.md) for a concise project handoff.
