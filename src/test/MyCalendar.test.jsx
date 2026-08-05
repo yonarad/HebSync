@@ -263,6 +263,20 @@ const getExpectedDefaultSearchRange = () => {
   };
 };
 
+const formatGregorianDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getVisibleDateInCurrentHebrewMonth = () => {
+  const currentHDate = new HDate(new Date());
+  return formatGregorianDate(
+    new HDate(1, currentHDate.getMonthName(), currentHDate.getFullYear()).greg(),
+  );
+};
+
 const hideAllHebcalDisplayOptions = () => {
   localStorage.setItem(
     'hebsync.calendar.displayOptions',
@@ -1210,6 +1224,8 @@ describe('My Calendar Component', () => {
   });
 
   it('should not show the month empty state when visible events exist', async () => {
+    const visibleEventDate = getVisibleDateInCurrentHebrewMonth();
+
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
       {
         id: 'cal1',
@@ -1223,7 +1239,7 @@ describe('My Calendar Component', () => {
         id: 'evt1',
         summary: 'Visible Month Event',
         calendarId: 'cal1',
-        start: { date: '2026-05-18' },
+        start: { date: visibleEventDate },
         extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', originalHebrewYear: '5770' } },
       },
     ]);
