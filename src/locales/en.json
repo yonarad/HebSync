@@ -336,7 +336,7 @@
     "reminderTimingDaysBefore": "{{count}} days before",
     "openInGoogleCalendar": "Open in Google Calendar",
     "openEventInGoogleCalendar": "Open event in Google Calendar",
-    "unsupportedReminderHint": "This event has reminder settings that HebSync cannot edit yet. Choosing a reminder here will replace the existing Google Calendar reminder settings.",
+    "unsupportedReminderHint": "These reminders were set in Google Calendar. Choosing one of the options below will replace them.",
     "allDay": "All day"
   }
 }

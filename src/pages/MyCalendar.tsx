@@ -1274,12 +1274,13 @@ export default function MyCalendar() {
                   <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={4} className="w-full resize-none rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('description')} />
                   <EventReminderControls
                     calendarDefaultReminders={selectedEventCalendar?.defaultReminders}
+                    currentReminders={selectedEvent.reminders?.overrides}
                     isAllDay={Boolean(selectedEvent.start?.date)}
                     isRtl={isRtl}
+                    isUnsupported={isReminderUnsupported}
                     t={t}
                     value={editReminderSettings}
                     onChange={setEditReminderSettings}
-                    unsupportedMessage={isReminderUnsupported ? t('unsupportedReminderHint') : null}
                   />
                 </div>
               ) : (

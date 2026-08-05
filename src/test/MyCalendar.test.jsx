@@ -184,7 +184,7 @@ vi.mock('react-i18next', () => ({
         reminderTimingOneDayBefore: '1 day before',
         reminderTimingDaysBefore: `${options?.count ?? ''} days before`,
         openEventInGoogleCalendar: 'Open event in Google Calendar',
-        unsupportedReminderHint: 'Unsupported reminder settings',
+        unsupportedReminderHint: 'These reminders were set in Google Calendar.',
         recommended: 'Recommended',
       };
       return translations[key] ?? key;
@@ -937,6 +937,44 @@ describe('My Calendar Component', () => {
     expect((await screen.findAllByText('Calendar default')).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Notification: One day before at 21:00')).toBeInTheDocument();
     expect(screen.getByText('Email: 45 minutes before')).toBeInTheDocument();
+  });
+
+  it('should show unsupported Google reminder overrides without selecting calendar default while editing', async () => {
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Google Reminder Event',
+        description: 'Uses Google reminder overrides',
+        calendarId: 'cal1',
+        start: { dateTime: '2026-05-18T08:00:00.000Z' },
+        end: { dateTime: '2026-05-18T09:00:00.000Z' },
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'popup', minutes: 30 },
+            { method: 'email', minutes: 1440 },
+          ],
+        },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Google Reminder' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Google Reminder Event/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'edit' }));
+
+    expect(await screen.findByText('Custom reminder in Google Calendar')).toBeInTheDocument();
+    expect(screen.getByText('Notification: 30 minutes before')).toBeInTheDocument();
+    expect(screen.getByText('Email: 1 day before')).toBeInTheDocument();
+    expect(screen.getByText('These reminders were set in Google Calendar.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Calendar default' })).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('should show a floating add event button for authenticated users', async () => {

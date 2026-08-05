@@ -5,22 +5,24 @@ import EventReminderOverrideList from './EventReminderOverrideList';
 
 interface EventReminderControlsProps {
   calendarDefaultReminders?: GoogleEventReminder[];
+  currentReminders?: GoogleEventReminder[];
   isAllDay?: boolean;
   isRtl: boolean;
   t: (key: string, options?: Record<string, unknown>) => string;
   value: EventReminderSettings;
   onChange: (settings: EventReminderSettings) => void;
-  unsupportedMessage?: string | null;
+  isUnsupported?: boolean;
 }
 
 export default function EventReminderControls({
   calendarDefaultReminders,
+  currentReminders = [],
+  isUnsupported = false,
   isAllDay = false,
   isRtl,
   t,
   value,
   onChange,
-  unsupportedMessage = null,
 }: EventReminderControlsProps) {
   const mode = value.mode;
   const daysBefore = value.daysBefore || DEFAULT_REMINDER_DAYS_BEFORE;
@@ -43,10 +45,27 @@ export default function EventReminderControls({
           {t('eventReminders', { defaultValue: isRtl ? 'תזכורות' : 'Reminders' })}
         </h3>
       </div>
-      {unsupportedMessage ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-          {unsupportedMessage}
-        </p>
+      {isUnsupported ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+          <p className="font-bold">
+            {t('reminderSummaryUnsupported', {
+              defaultValue: isRtl ? 'תזכורת מותאמת ב-Google Calendar' : 'Custom reminder in Google Calendar',
+            })}
+          </p>
+          {currentReminders.length > 0 ? (
+            <div className="mt-2">
+              <EventReminderOverrideList
+                isAllDay={isAllDay}
+                isRtl={isRtl}
+                reminders={currentReminders}
+                t={t}
+              />
+            </div>
+          ) : null}
+          <p className="mt-2 font-medium">
+            {t('unsupportedReminderHint')}
+          </p>
+        </div>
       ) : null}
       <div className="grid gap-2 md:grid-cols-3">
         {[
@@ -66,10 +85,10 @@ export default function EventReminderControls({
           <button
             key={option.mode}
             type="button"
-            aria-pressed={mode === option.mode}
+            aria-pressed={!isUnsupported && mode === option.mode}
             onClick={() => updateMode(option.mode)}
             className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${
-              mode === option.mode
+              !isUnsupported && mode === option.mode
                 ? 'border-[#0038A8] bg-blue-50 text-[#0038A8] dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-300'
                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
             }`}
@@ -78,7 +97,7 @@ export default function EventReminderControls({
           </button>
         ))}
       </div>
-      {mode === 'custom' ? (
+      {!isUnsupported && mode === 'custom' ? (
         <div className="grid gap-3 border-t border-slate-100 pt-3 md:grid-cols-2 dark:border-slate-800">
           <div className="space-y-1.5">
             <label htmlFor="event-reminder-days" className="text-xs font-bold text-slate-500 dark:text-slate-400">
@@ -129,7 +148,7 @@ export default function EventReminderControls({
           </div>
         </div>
       ) : null}
-      {mode === 'calendar_default' && Array.isArray(calendarDefaultReminders) ? (
+      {!isUnsupported && mode === 'calendar_default' && Array.isArray(calendarDefaultReminders) ? (
         <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs dark:border-blue-900/40 dark:bg-blue-950/20">
           <p className="font-bold text-slate-700 dark:text-slate-200">
             {t('reminderSummaryCalendarDefaultApplied', {
