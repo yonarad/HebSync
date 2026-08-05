@@ -167,6 +167,10 @@ vi.mock('react-i18next', () => ({
         reminderHour: 'Hour',
         reminderCustomHint: 'The reminder will be saved as a Google Calendar notification.',
         reminderDefaultHint: 'This does not change the calendar settings.',
+        reminderSummaryCalendarDefault: 'Calendar default',
+        reminderSummaryNone: 'No reminder',
+        reminderSummaryCustom: `${options?.day ?? ''} at ${options?.hour ?? ''}`,
+        reminderSummaryUnsupported: 'Custom reminder in Google Calendar',
         openEventInGoogleCalendar: 'Open event in Google Calendar',
         unsupportedReminderHint: 'Unsupported reminder settings',
         recommended: 'Recommended',
@@ -688,6 +692,36 @@ describe('My Calendar Component', () => {
       'href',
       'https://calendar.google.com/calendar/event?eid=evt-search',
     );
+  });
+
+  it('should show reminder details in the event details dialog', async () => {
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Jerusalem Day',
+        description: 'City celebration',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+        reminders: {
+          useDefault: false,
+          overrides: [{ method: 'popup', minutes: 180 }],
+        },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Jerusalem' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Jerusalem Day/ }));
+
+    expect(await screen.findByText('Reminders')).toBeInTheDocument();
+    expect(screen.getByText('One day before at 21:00')).toBeInTheDocument();
   });
 
   it('should update event reminder settings from the event details dialog', async () => {

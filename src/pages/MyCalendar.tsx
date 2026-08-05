@@ -35,6 +35,7 @@ import {
 } from '../components/MyCalendarViews';
 import MyCalendarSidebar from '../components/MyCalendarSidebar';
 import EventReminderControls from '../components/EventReminderControls';
+import EventReminderSummary from '../components/EventReminderSummary';
 import useMyCalendarData from '../hooks/useMyCalendarData';
 import useCalendarEventActions from '../hooks/useCalendarEventActions';
 import useInstallPrompt from '../hooks/useInstallPrompt';
@@ -1308,6 +1309,11 @@ export default function MyCalendar() {
                             {timeRange}
                           </div>
                         )}
+                        <EventReminderSummary
+                          isRtl={isRtl}
+                          reminders={selectedEvent.reminders}
+                          t={t}
+                        />
                         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || t('noDescription')}</div>
                       </>
                     );
