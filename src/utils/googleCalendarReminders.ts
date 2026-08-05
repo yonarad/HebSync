@@ -20,6 +20,24 @@ export interface ParsedGoogleEventReminderSettings {
   isUnsupported: boolean;
 }
 
+export function areGoogleReminderOverridesEqual(
+  first?: GoogleEventReminders['overrides'],
+  second?: GoogleEventReminders['overrides'],
+): boolean {
+  if (!Array.isArray(first) || !Array.isArray(second)) return false;
+  if (first.length !== second.length) return false;
+
+  const normalize = (overrides: NonNullable<GoogleEventReminders['overrides']>) =>
+    overrides
+      .map((override) => `${override.method}:${override.minutes}`)
+      .sort();
+
+  const normalizedFirst = normalize(first);
+  const normalizedSecond = normalize(second);
+
+  return normalizedFirst.every((override, index) => override === normalizedSecond[index]);
+}
+
 export function getAllDayReminderMinutes(
   daysBefore: 1 | 2,
   hour: number,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  areGoogleReminderOverridesEqual,
   buildGoogleEventReminders,
   getAllDayReminderMinutes,
   getReminderSettingsFromGoogleEvent,
@@ -36,6 +37,27 @@ describe('googleCalendarReminders', () => {
   it('rejects unsupported reminder timing values', () => {
     expect(() => getAllDayReminderMinutes(1, -1)).toThrow();
     expect(() => getAllDayReminderMinutes(1, 24)).toThrow();
+  });
+
+  it('compares Google reminder override lists without depending on order', () => {
+    expect(
+      areGoogleReminderOverridesEqual(
+        [
+          { method: 'popup', minutes: 180 },
+          { method: 'email', minutes: 45 },
+        ],
+        [
+          { method: 'email', minutes: 45 },
+          { method: 'popup', minutes: 180 },
+        ],
+      ),
+    ).toBe(true);
+    expect(
+      areGoogleReminderOverridesEqual(
+        [{ method: 'popup', minutes: 180 }],
+        [{ method: 'email', minutes: 180 }],
+      ),
+    ).toBe(false);
   });
 
   it('parses editable Google reminder settings from existing events', () => {

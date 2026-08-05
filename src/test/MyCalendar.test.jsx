@@ -977,6 +977,56 @@ describe('My Calendar Component', () => {
     expect(screen.getByRole('button', { name: 'Calendar default' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('should treat event reminder overrides matching calendar defaults as calendar default while editing', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+        defaultReminders: [
+          { method: 'popup', minutes: 180 },
+          { method: 'email', minutes: 180 },
+        ],
+      },
+    ]);
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Matching Default Reminder Event',
+        description: 'Uses default reminders as overrides',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'email', minutes: 180 },
+            { method: 'popup', minutes: 180 },
+          ],
+        },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Matching Default Reminder' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Matching Default Reminder Event/ }));
+    expect(await screen.findByText('Calendar default')).toBeInTheDocument();
+    expect(screen.getByText('Notification: One day before at 21:00')).toBeInTheDocument();
+    expect(screen.getByText('Email: One day before at 21:00')).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'edit' }));
+
+    expect(screen.queryByText('Custom reminder in Google Calendar')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Calendar default' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
   it('should show a floating add event button for authenticated users', async () => {
     renderDashboard();
     expect(await screen.findByRole('button', { name: 'addEvent' })).toBeInTheDocument();

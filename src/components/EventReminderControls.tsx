@@ -1,6 +1,11 @@
 import { Bell } from 'lucide-react';
 import type { EventReminderMode, EventReminderSettings, GoogleEventReminder } from '../types/appTypes';
-import { DEFAULT_REMINDER_DAYS_BEFORE, DEFAULT_REMINDER_HOUR, DEFAULT_REMINDER_METHOD } from '../utils/googleCalendarReminders';
+import {
+  areGoogleReminderOverridesEqual,
+  DEFAULT_REMINDER_DAYS_BEFORE,
+  DEFAULT_REMINDER_HOUR,
+  DEFAULT_REMINDER_METHOD,
+} from '../utils/googleCalendarReminders';
 import EventReminderOverrideList from './EventReminderOverrideList';
 
 interface EventReminderControlsProps {
@@ -27,6 +32,9 @@ export default function EventReminderControls({
   const mode = value.mode;
   const daysBefore = value.daysBefore || DEFAULT_REMINDER_DAYS_BEFORE;
   const hour = value.hour ?? DEFAULT_REMINDER_HOUR;
+  const matchesCalendarDefault = areGoogleReminderOverridesEqual(currentReminders, calendarDefaultReminders);
+  const effectiveMode = isUnsupported && matchesCalendarDefault ? 'calendar_default' : mode;
+  const effectiveIsUnsupported = isUnsupported && !matchesCalendarDefault;
 
   const updateMode = (nextMode: EventReminderMode) => {
     onChange({
@@ -45,7 +53,7 @@ export default function EventReminderControls({
           {t('eventReminders', { defaultValue: isRtl ? 'תזכורות' : 'Reminders' })}
         </h3>
       </div>
-      {isUnsupported ? (
+      {effectiveIsUnsupported ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
           <p className="font-bold">
             {t('reminderSummaryUnsupported', {
@@ -85,10 +93,10 @@ export default function EventReminderControls({
           <button
             key={option.mode}
             type="button"
-            aria-pressed={!isUnsupported && mode === option.mode}
+            aria-pressed={!effectiveIsUnsupported && effectiveMode === option.mode}
             onClick={() => updateMode(option.mode)}
             className={`rounded-xl border px-3 py-2 text-sm font-bold transition-colors ${
-              !isUnsupported && mode === option.mode
+              !effectiveIsUnsupported && effectiveMode === option.mode
                 ? 'border-[#0038A8] bg-blue-50 text-[#0038A8] dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-300'
                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
             }`}
@@ -97,7 +105,7 @@ export default function EventReminderControls({
           </button>
         ))}
       </div>
-      {!isUnsupported && mode === 'custom' ? (
+      {!effectiveIsUnsupported && effectiveMode === 'custom' ? (
         <div className="grid gap-3 border-t border-slate-100 pt-3 md:grid-cols-2 dark:border-slate-800">
           <div className="space-y-1.5">
             <label htmlFor="event-reminder-days" className="text-xs font-bold text-slate-500 dark:text-slate-400">
@@ -148,7 +156,7 @@ export default function EventReminderControls({
           </div>
         </div>
       ) : null}
-      {!isUnsupported && mode === 'calendar_default' && Array.isArray(calendarDefaultReminders) ? (
+      {!effectiveIsUnsupported && effectiveMode === 'calendar_default' && Array.isArray(calendarDefaultReminders) ? (
         <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs dark:border-blue-900/40 dark:bg-blue-950/20">
           <p className="font-bold text-slate-700 dark:text-slate-200">
             {t('reminderSummaryCalendarDefaultApplied', {

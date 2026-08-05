@@ -1,7 +1,10 @@
 import { Bell } from 'lucide-react';
 import type { GoogleEventReminder, GoogleEventReminders } from '../types/appTypes';
 import EventReminderOverrideList, { formatAllDayReminderTiming } from './EventReminderOverrideList';
-import { getReminderSettingsFromGoogleEvent } from '../utils/googleCalendarReminders';
+import {
+  areGoogleReminderOverridesEqual,
+  getReminderSettingsFromGoogleEvent,
+} from '../utils/googleCalendarReminders';
 
 interface EventReminderSummaryProps {
   calendarDefaultReminders?: GoogleEventReminder[];
@@ -21,14 +24,15 @@ export default function EventReminderSummary({
   const parsedReminder = getReminderSettingsFromGoogleEvent(reminders);
   const { settings } = parsedReminder;
   const overrides = !reminders?.useDefault ? reminders?.overrides || [] : [];
-  const usesCalendarDefault = reminders?.useDefault !== false;
   const hasCalendarDefaultReminders = Array.isArray(calendarDefaultReminders);
+  const overridesMatchCalendarDefault = areGoogleReminderOverridesEqual(overrides, calendarDefaultReminders);
+  const usesCalendarDefault = reminders?.useDefault !== false || overridesMatchCalendarDefault;
   const displayedOverrides = overrides.length > 0
     ? overrides
     : usesCalendarDefault && calendarDefaultReminders
       ? calendarDefaultReminders
       : [];
-  const isShowingCalendarDefaults = usesCalendarDefault && overrides.length === 0 && displayedOverrides.length > 0;
+  const isShowingCalendarDefaults = usesCalendarDefault && displayedOverrides.length > 0;
 
   const text = (() => {
     if (settings.mode === 'none') {
