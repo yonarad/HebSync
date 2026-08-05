@@ -1261,9 +1261,9 @@ export default function MyCalendar() {
       )}
 
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-slate-900/50 p-3 backdrop-blur-sm sm:items-center sm:p-4" dir={isRtl ? 'rtl' : 'ltr'}>
-          <div data-testid="event-details-dialog" role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-slate-700 dark:bg-slate-900 sm:max-h-[calc(100dvh-2rem)]">
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-slate-900/50 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-sm sm:items-center sm:p-4" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div data-testid="event-details-dialog" role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="flex max-h-[calc(100svh-1.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-slate-700 dark:bg-slate-900 sm:max-h-[calc(100svh-2rem)]">
+            <div data-testid="event-details-header" className="flex shrink-0 items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
               <h2 id="event-details-title" className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
               <button type="button" aria-label={t('close')} onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
             </div>

@@ -56,22 +56,28 @@ test.describe('month calendar accessibility', () => {
     await page.getByRole('button', { name: 'ערוך' }).click();
 
     const dialog = page.getByTestId('event-details-dialog');
+    const header = page.getByTestId('event-details-header');
     const footer = page.getByTestId('event-details-footer');
     await expect(dialog).toBeVisible();
+    await expect(header).toBeVisible();
     await expect(footer).toBeVisible();
 
     const metrics = await page.evaluate(() => {
       const dialogElement = document.querySelector('[data-testid="event-details-dialog"]');
+      const headerElement = document.querySelector('[data-testid="event-details-header"]');
       const footerElement = document.querySelector('[data-testid="event-details-footer"]');
-      if (!dialogElement || !footerElement) {
-        throw new Error('Expected event details dialog and footer to exist');
+      if (!dialogElement || !headerElement || !footerElement) {
+        throw new Error('Expected event details dialog, header, and footer to exist');
       }
       const dialogRect = dialogElement.getBoundingClientRect();
+      const headerRect = headerElement.getBoundingClientRect();
       const footerRect = footerElement.getBoundingClientRect();
       return {
         viewportHeight: window.innerHeight,
         dialogTop: dialogRect.top,
         dialogBottom: dialogRect.bottom,
+        headerTop: headerRect.top,
+        headerBottom: headerRect.bottom,
         footerTop: footerRect.top,
         footerBottom: footerRect.bottom,
         dialogScrollHeight: dialogElement.scrollHeight,
@@ -81,6 +87,8 @@ test.describe('month calendar accessibility', () => {
 
     expect(metrics.dialogTop).toBeGreaterThanOrEqual(0);
     expect(metrics.dialogBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+    expect(metrics.headerTop).toBeGreaterThanOrEqual(0);
+    expect(metrics.headerBottom).toBeGreaterThan(0);
     expect(metrics.footerTop).toBeGreaterThanOrEqual(0);
     expect(metrics.footerBottom).toBeLessThanOrEqual(metrics.viewportHeight);
     expect(metrics.dialogScrollHeight).toBeLessThanOrEqual(metrics.dialogClientHeight + 1);
