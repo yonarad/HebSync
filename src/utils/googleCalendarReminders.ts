@@ -69,6 +69,26 @@ export function buildGoogleEventReminders(
     };
   }
 
+  if (settings.overrides?.length) {
+    return {
+      useDefault: false,
+      overrides: settings.overrides.map((override) => {
+        if (override.method !== 'popup' && override.method !== 'email') {
+          throw new Error('Reminder method must be popup or email');
+        }
+
+        if (!Number.isInteger(override.minutes) || override.minutes < 0) {
+          throw new Error('Reminder minutes must be a non-negative integer');
+        }
+
+        return {
+          method: override.method,
+          minutes: override.minutes,
+        };
+      }),
+    };
+  }
+
   const method = settings.method || DEFAULT_REMINDER_METHOD;
   const daysBefore = settings.daysBefore || DEFAULT_REMINDER_DAYS_BEFORE;
   const hour = settings.hour ?? DEFAULT_REMINDER_HOUR;
@@ -121,6 +141,32 @@ export function getReminderSettingsFromGoogleEvent(
       settings: {
         ...DEFAULT_REMINDER_SETTINGS,
         mode: 'none',
+      },
+      isUnsupported: false,
+    };
+  }
+
+  const hasOnlySupportedOverrides = overrides.every((override) =>
+    (override.method === 'popup' || override.method === 'email') &&
+    Number.isInteger(override.minutes) &&
+    override.minutes >= 0
+  );
+  const parsedOverrideTiming = overrides
+    .map((override) => getAllDayReminderTimingFromMinutes(override.minutes));
+
+  if (
+    overrides.length > 1 &&
+    hasOnlySupportedOverrides &&
+    parsedOverrideTiming.every(Boolean)
+  ) {
+    const firstTiming = parsedOverrideTiming[0];
+    return {
+      settings: {
+        mode: 'custom',
+        method: overrides[0].method,
+        daysBefore: firstTiming?.daysBefore,
+        hour: firstTiming?.hour,
+        overrides,
       },
       isUnsupported: false,
     };

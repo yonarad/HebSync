@@ -323,6 +323,7 @@
     "reminderSummaryCalendarDefaultNone": "Calendar default: no reminders",
     "reminderSummaryNone": "No reminder",
     "reminderSummaryCustom": "{{day}} at {{hour}}",
+    "reminderSummaryCustomList": "Custom reminders",
     "reminderSummaryUnsupported": "Custom reminder in Google Calendar",
     "reminderSummaryOverride": "{{method}}: {{time}}",
     "reminderMethodPopup": "Notification",

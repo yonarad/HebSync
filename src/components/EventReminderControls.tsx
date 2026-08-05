@@ -32,8 +32,10 @@ export default function EventReminderControls({
   const mode = value.mode;
   const daysBefore = value.daysBefore || DEFAULT_REMINDER_DAYS_BEFORE;
   const hour = value.hour ?? DEFAULT_REMINDER_HOUR;
+  const customOverrides = value.mode === 'custom' ? value.overrides || [] : [];
+  const hasMultipleCustomOverrides = customOverrides.length > 1;
   const matchesCalendarDefault = areGoogleReminderOverridesEqual(currentReminders, calendarDefaultReminders);
-  const effectiveMode = isUnsupported && matchesCalendarDefault ? 'calendar_default' : mode;
+  const effectiveMode = matchesCalendarDefault ? 'calendar_default' : mode;
   const effectiveIsUnsupported = isUnsupported && !matchesCalendarDefault;
 
   const updateMode = (nextMode: EventReminderMode) => {
@@ -105,7 +107,24 @@ export default function EventReminderControls({
           </button>
         ))}
       </div>
-      {!effectiveIsUnsupported && effectiveMode === 'custom' ? (
+      {!effectiveIsUnsupported && effectiveMode === 'custom' && hasMultipleCustomOverrides ? (
+        <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs dark:border-blue-900/40 dark:bg-blue-950/20">
+          <p className="font-bold text-slate-700 dark:text-slate-200">
+            {t('reminderSummaryCustomList', {
+              defaultValue: isRtl ? 'תזכורות מותאמות' : 'Custom reminders',
+            })}
+          </p>
+          <div className="mt-2">
+            <EventReminderOverrideList
+              isAllDay={isAllDay}
+              isRtl={isRtl}
+              reminders={customOverrides}
+              t={t}
+            />
+          </div>
+        </div>
+      ) : null}
+      {!effectiveIsUnsupported && effectiveMode === 'custom' && !hasMultipleCustomOverrides ? (
         <div className="grid gap-3 border-t border-slate-100 pt-3 md:grid-cols-2 dark:border-slate-800">
           <div className="space-y-1.5">
             <label htmlFor="event-reminder-days" className="text-xs font-bold text-slate-500 dark:text-slate-400">

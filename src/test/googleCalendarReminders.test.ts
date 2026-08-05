@@ -99,16 +99,16 @@ describe('googleCalendarReminders', () => {
     expect(
       getReminderSettingsFromGoogleEvent({
         useDefault: false,
-        overrides: [
-          { method: 'popup', minutes: 180 },
-          { method: 'email', minutes: 1440 },
-        ],
+        overrides: [{ method: 'popup', minutes: 5 }],
       }).isUnsupported,
     ).toBe(true);
     expect(
       getReminderSettingsFromGoogleEvent({
         useDefault: false,
-        overrides: [{ method: 'popup', minutes: 5 }],
+        overrides: [
+          { method: 'popup', minutes: 180 },
+          { method: 'email', minutes: 5 },
+        ],
       }).isUnsupported,
     ).toBe(true);
     expect(
@@ -117,5 +117,29 @@ describe('googleCalendarReminders', () => {
         overrides: [{ method: 'email', minutes: 180 }],
       }).isUnsupported,
     ).toBe(true);
+  });
+
+  it('parses multiple editable all-day reminder overrides from existing events', () => {
+    expect(
+      getReminderSettingsFromGoogleEvent({
+        useDefault: false,
+        overrides: [
+          { method: 'popup', minutes: 180 },
+          { method: 'email', minutes: 180 },
+        ],
+      }),
+    ).toEqual({
+      settings: {
+        mode: 'custom',
+        method: 'popup',
+        daysBefore: 1,
+        hour: 21,
+        overrides: [
+          { method: 'popup', minutes: 180 },
+          { method: 'email', minutes: 180 },
+        ],
+      },
+      isUnsupported: false,
+    });
   });
 });

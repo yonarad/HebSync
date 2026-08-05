@@ -116,6 +116,7 @@ export interface EventReminderSettings {
   method?: GoogleReminderMethod;
   daysBefore?: 1 | 2;
   hour?: number;
+  overrides?: GoogleEventReminder[];
 }
 
 export interface GoogleEventReminders {

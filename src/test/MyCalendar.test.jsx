@@ -172,6 +172,7 @@ vi.mock('react-i18next', () => ({
         reminderSummaryCalendarDefaultNone: 'Calendar default: no reminders',
         reminderSummaryNone: 'No reminder',
         reminderSummaryCustom: `${options?.day ?? ''} at ${options?.hour ?? ''}`,
+        reminderSummaryCustomList: 'Custom reminders',
         reminderSummaryUnsupported: 'Custom reminder in Google Calendar',
         reminderSummaryOverride: `${options?.method ?? ''}: ${options?.time ?? ''}`,
         reminderMethodPopup: 'Notification',
@@ -975,6 +976,43 @@ describe('My Calendar Component', () => {
     expect(screen.getByText('Email: 1 day before')).toBeInTheDocument();
     expect(screen.getByText('These reminders were set in Google Calendar.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Calendar default' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('should support multiple editable all-day reminder overrides while editing', async () => {
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Multiple Reminder Event',
+        description: 'Uses multiple supported reminders',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'popup', minutes: 180 },
+            { method: 'email', minutes: 180 },
+          ],
+        },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Multiple Reminder' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Multiple Reminder Event/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'edit' }));
+
+    expect(await screen.findByText('Custom reminders')).toBeInTheDocument();
+    expect(screen.getByText('Notification: One day before at 21:00')).toBeInTheDocument();
+    expect(screen.getByText('Email: One day before at 21:00')).toBeInTheDocument();
+    expect(screen.queryByText('Custom reminder in Google Calendar')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Custom reminder' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('should treat event reminder overrides matching calendar defaults as calendar default while editing', async () => {

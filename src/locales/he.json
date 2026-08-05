@@ -315,6 +315,7 @@
     "reminderSummaryCalendarDefaultNone": "לפי הגדרת היומן: ללא תזכורות",
     "reminderSummaryNone": "ללא תזכורת",
     "reminderSummaryCustom": "{{day}} בשעה {{hour}}",
+    "reminderSummaryCustomList": "תזכורות מותאמות",
     "reminderSummaryUnsupported": "תזכורת מותאמת ב-Google Calendar",
     "reminderSummaryOverride": "{{method}}: {{time}}",
     "reminderMethodPopup": "התראה",
