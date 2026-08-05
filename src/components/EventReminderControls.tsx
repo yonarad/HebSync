@@ -34,9 +34,14 @@ export default function EventReminderControls({
   const hour = value.hour ?? DEFAULT_REMINDER_HOUR;
   const customOverrides = value.mode === 'custom' ? value.overrides || [] : [];
   const hasMultipleCustomOverrides = customOverrides.length > 1;
-  const matchesCalendarDefault = areGoogleReminderOverridesEqual(currentReminders, calendarDefaultReminders);
-  const effectiveMode = matchesCalendarDefault ? 'calendar_default' : mode;
-  const effectiveIsUnsupported = isUnsupported && !matchesCalendarDefault;
+  const valueOverridesMatchCalendarDefault =
+    value.mode === 'custom' &&
+    Array.isArray(value.overrides) &&
+    areGoogleReminderOverridesEqual(value.overrides, calendarDefaultReminders);
+  const currentOverridesMatchCalendarDefault =
+    areGoogleReminderOverridesEqual(currentReminders, calendarDefaultReminders);
+  const effectiveMode = valueOverridesMatchCalendarDefault ? 'calendar_default' : mode;
+  const effectiveIsUnsupported = isUnsupported && !currentOverridesMatchCalendarDefault;
 
   const updateMode = (nextMode: EventReminderMode) => {
     onChange({

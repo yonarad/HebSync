@@ -1263,8 +1263,23 @@ export default function MyCalendar() {
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-slate-900/50 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur-sm sm:items-center sm:p-4" dir={isRtl ? 'rtl' : 'ltr'}>
           <div data-testid="event-details-dialog" role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="flex max-h-[calc(100svh-1.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-slate-700 dark:bg-slate-900 sm:max-h-[calc(100svh-2rem)]">
-            <div data-testid="event-details-header" className="flex shrink-0 items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
-              <h2 id="event-details-title" className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
+            <div data-testid="event-details-header" className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 p-6 dark:border-slate-800">
+              <div className="flex min-w-0 items-center gap-2">
+                <h2 id="event-details-title" className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
+                {!isEditing && selectedEvent.htmlLink ? (
+                  <a
+                    href={selectedEvent.htmlLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('openEventInGoogleCalendar')}
+                    title={t('openEventInGoogleCalendar')}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 text-xs font-bold text-[#0038A8] shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200 dark:hover:bg-blue-900/60"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Google Calendar</span>
+                  </a>
+                ) : null}
+              </div>
               <button type="button" aria-label={t('close')} onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
             </div>
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-6">
@@ -1296,17 +1311,6 @@ export default function MyCalendar() {
                     return (
                       <>
                         <h3 className="text-2xl font-bold text-[#0038A8] dark:text-blue-400">{selectedEvent.summary}{ageSuffix}</h3>
-                        {selectedEvent.htmlLink ? (
-                          <a
-                            href={selectedEvent.htmlLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-[#0038A8] transition-colors hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                            {t('openEventInGoogleCalendar')}
-                          </a>
-                        ) : null}
                         {timeRange && (
                           <div
                             data-testid="event-time-range"
@@ -1315,6 +1319,7 @@ export default function MyCalendar() {
                             {timeRange}
                           </div>
                         )}
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || t('noDescription')}</div>
                         <EventReminderSummary
                           calendarDefaultReminders={selectedEventCalendar?.defaultReminders}
                           isAllDay={Boolean(selectedEvent.start?.date)}
@@ -1322,7 +1327,6 @@ export default function MyCalendar() {
                           reminders={selectedEvent.reminders}
                           t={t}
                         />
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 min-h-[100px] text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{selectedEvent.description || t('noDescription')}</div>
                       </>
                     );
                   })()}

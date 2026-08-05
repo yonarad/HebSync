@@ -1063,6 +1063,13 @@ describe('My Calendar Component', () => {
 
     expect(screen.queryByText('Custom reminder in Google Calendar')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Calendar default' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'No reminder' }));
+    expect(screen.getByRole('button', { name: 'No reminder' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Custom reminder' }));
+    expect(screen.getByRole('button', { name: 'Custom reminder' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Hour')).toBeInTheDocument();
   });
 
   it('should show a floating add event button for authenticated users', async () => {
