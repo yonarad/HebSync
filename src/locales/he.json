@@ -311,6 +311,8 @@
     "reminderCustomHint": "התזכורת תישלח כהתראת Google Calendar. אפשר לערוך הגדרות מתקדמות ב-Google לאחר היצירה.",
     "reminderDefaultHint": "בחירה זו לא משנה את הגדרות היומן.",
     "reminderSummaryCalendarDefault": "לפי הגדרת היומן",
+    "reminderSummaryCalendarDefaultApplied": "ברירת המחדל של היומן",
+    "reminderSummaryCalendarDefaultNone": "לפי הגדרת היומן: ללא תזכורות",
     "reminderSummaryNone": "ללא תזכורת",
     "reminderSummaryCustom": "{{day}} בשעה {{hour}}",
     "reminderSummaryUnsupported": "תזכורת מותאמת ב-Google Calendar",

@@ -168,6 +168,8 @@ vi.mock('react-i18next', () => ({
         reminderCustomHint: 'The reminder will be saved as a Google Calendar notification.',
         reminderDefaultHint: 'This does not change the calendar settings.',
         reminderSummaryCalendarDefault: 'Calendar default',
+        reminderSummaryCalendarDefaultApplied: 'Calendar default',
+        reminderSummaryCalendarDefaultNone: 'Calendar default: no reminders',
         reminderSummaryNone: 'No reminder',
         reminderSummaryCustom: `${options?.day ?? ''} at ${options?.hour ?? ''}`,
         reminderSummaryUnsupported: 'Custom reminder in Google Calendar',
@@ -270,12 +272,7 @@ const formatGregorianDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const getVisibleDateInCurrentHebrewMonth = () => {
-  const currentHDate = new HDate(new Date());
-  return formatGregorianDate(
-    new HDate(1, currentHDate.getMonthName(), currentHDate.getFullYear()).greg(),
-  );
-};
+const getVisibleDateInCurrentHebrewMonth = () => formatGregorianDate(new Date());
 
 const hideAllHebcalDisplayOptions = () => {
   localStorage.setItem(
@@ -752,6 +749,117 @@ describe('My Calendar Component', () => {
     expect(screen.getByText('Email: 45 minutes before')).toBeInTheDocument();
   });
 
+  it('should show calendar default reminder details when an event uses defaults', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+        defaultReminders: [
+          { method: 'popup', minutes: 30 },
+          { method: 'email', minutes: 1440 },
+        ],
+      },
+    ]);
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Default Reminder Event',
+        description: 'Uses calendar defaults',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+        reminders: { useDefault: true },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Default Reminder' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Default Reminder Event/ }));
+
+    expect(await screen.findByText('Calendar default')).toBeInTheDocument();
+    expect(screen.getByText('Notification: 30 minutes before')).toBeInTheDocument();
+    expect(screen.getByText('Email: One day before at 00:00')).toBeInTheDocument();
+  });
+
+  it('should show timed event default reminders as relative offsets', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+        defaultReminders: [{ method: 'popup', minutes: 180 }],
+      },
+    ]);
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Timed Default Reminder Event',
+        description: 'Uses calendar defaults',
+        calendarId: 'cal1',
+        start: { dateTime: '2026-05-18T08:00:00.000Z' },
+        end: { dateTime: '2026-05-18T09:00:00.000Z' },
+        reminders: { useDefault: true },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Timed Default Reminder' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Timed Default Reminder Event/ }));
+
+    expect(await screen.findByText('Notification: 3 hours before')).toBeInTheDocument();
+  });
+
+  it('should show when calendar default reminders are empty', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+        defaultReminders: [],
+      },
+    ]);
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'No Default Reminder Event',
+        description: 'Uses empty calendar defaults',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+        reminders: { useDefault: true },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'No Default Reminder' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /No Default Reminder Event/ }));
+
+    expect(await screen.findByText('Calendar default: no reminders')).toBeInTheDocument();
+  });
+
   it('should update event reminder settings from the event details dialog', async () => {
     vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
       {
@@ -788,6 +896,47 @@ describe('My Calendar Component', () => {
         },
       });
     });
+  });
+
+  it('should show calendar default reminder details while editing an event', async () => {
+    vi.mocked(googleApi.fetchAllCalendars).mockResolvedValueOnce([
+      {
+        id: 'cal1',
+        summary: 'HebSync',
+        accessRole: 'owner',
+        description: 'Created by HebCal-Sync. [ID:hebcal-sync-app]',
+        defaultReminders: [
+          { method: 'popup', minutes: 180 },
+          { method: 'email', minutes: 45 },
+        ],
+      },
+    ]);
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Editable Default Reminder Event',
+        description: 'Uses calendar defaults',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+        reminders: { useDefault: true },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Editable Default Reminder' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Editable Default Reminder Event/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'edit' }));
+
+    expect((await screen.findAllByText('Calendar default')).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Notification: One day before at 21:00')).toBeInTheDocument();
+    expect(screen.getByText('Email: 45 minutes before')).toBeInTheDocument();
   });
 
   it('should show a floating add event button for authenticated users', async () => {
@@ -1245,6 +1394,8 @@ describe('My Calendar Component', () => {
     ]);
 
     renderDashboard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
 
     expect(await screen.findByRole('button', { name: /Visible Month Event/ })).toBeInTheDocument();
     expect(screen.queryByText('The selected calendars do not have events in this time range.')).not.toBeInTheDocument();

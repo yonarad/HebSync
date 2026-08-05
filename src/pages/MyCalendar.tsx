@@ -685,6 +685,9 @@ export default function MyCalendar() {
     (isAuthenticated &&
       (isCalendarLoading || isFetchingGoogle || !hasLoadedCalendarData));
   const isMonthLoading = isScheduleLoading;
+  const selectedEventCalendar = selectedEvent
+    ? calendars.find((calendar) => calendar.id === selectedEvent.calendarId)
+    : undefined;
   const emptyStateMessage =
     !isAuthenticated
       ? t('loginRequiredInCalendarView')
@@ -1270,6 +1273,8 @@ export default function MyCalendar() {
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full rounded-xl border border-slate-200 p-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('eventName')} />
                   <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={4} className="w-full resize-none rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('description')} />
                   <EventReminderControls
+                    calendarDefaultReminders={selectedEventCalendar?.defaultReminders}
+                    isAllDay={Boolean(selectedEvent.start?.date)}
                     isRtl={isRtl}
                     t={t}
                     value={editReminderSettings}
@@ -1310,6 +1315,8 @@ export default function MyCalendar() {
                           </div>
                         )}
                         <EventReminderSummary
+                          calendarDefaultReminders={selectedEventCalendar?.defaultReminders}
+                          isAllDay={Boolean(selectedEvent.start?.date)}
                           isRtl={isRtl}
                           reminders={selectedEvent.reminders}
                           t={t}

@@ -1,8 +1,11 @@
 import { Bell } from 'lucide-react';
-import type { EventReminderMode, EventReminderSettings } from '../types/appTypes';
+import type { EventReminderMode, EventReminderSettings, GoogleEventReminder } from '../types/appTypes';
 import { DEFAULT_REMINDER_DAYS_BEFORE, DEFAULT_REMINDER_HOUR, DEFAULT_REMINDER_METHOD } from '../utils/googleCalendarReminders';
+import EventReminderOverrideList from './EventReminderOverrideList';
 
 interface EventReminderControlsProps {
+  calendarDefaultReminders?: GoogleEventReminder[];
+  isAllDay?: boolean;
   isRtl: boolean;
   t: (key: string, options?: Record<string, unknown>) => string;
   value: EventReminderSettings;
@@ -11,6 +14,8 @@ interface EventReminderControlsProps {
 }
 
 export default function EventReminderControls({
+  calendarDefaultReminders,
+  isAllDay = false,
   isRtl,
   t,
   value,
@@ -122,6 +127,31 @@ export default function EventReminderControls({
               ))}
             </select>
           </div>
+        </div>
+      ) : null}
+      {mode === 'calendar_default' && Array.isArray(calendarDefaultReminders) ? (
+        <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-xs dark:border-blue-900/40 dark:bg-blue-950/20">
+          <p className="font-bold text-slate-700 dark:text-slate-200">
+            {t('reminderSummaryCalendarDefaultApplied', {
+              defaultValue: isRtl ? 'ברירת המחדל של היומן' : 'Calendar default',
+            })}
+          </p>
+          {calendarDefaultReminders.length > 0 ? (
+            <div className="mt-2">
+              <EventReminderOverrideList
+                isAllDay={isAllDay}
+                isRtl={isRtl}
+                reminders={calendarDefaultReminders}
+                t={t}
+              />
+            </div>
+          ) : (
+            <p className="mt-1 font-medium text-slate-600 dark:text-slate-300">
+              {t('reminderSummaryCalendarDefaultNone', {
+                defaultValue: isRtl ? 'לפי הגדרת היומן: ללא תזכורות' : 'Calendar default: no reminders',
+              })}
+            </p>
+          )}
         </div>
       ) : null}
       <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">

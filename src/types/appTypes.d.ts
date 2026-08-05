@@ -10,6 +10,7 @@ export interface Calendar {
   color?: string;
   colorId?: string;
   backgroundColor?: string;
+  defaultReminders?: GoogleEventReminder[];
 }
 
 export interface StoredAuthState {

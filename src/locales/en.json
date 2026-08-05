@@ -319,6 +319,8 @@
     "reminderCustomHint": "The reminder will be saved as a Google Calendar notification. Advanced settings can be edited in Google after creation.",
     "reminderDefaultHint": "This does not change the calendar settings.",
     "reminderSummaryCalendarDefault": "Calendar default",
+    "reminderSummaryCalendarDefaultApplied": "Calendar default",
+    "reminderSummaryCalendarDefaultNone": "Calendar default: no reminders",
     "reminderSummaryNone": "No reminder",
     "reminderSummaryCustom": "{{day}} at {{hour}}",
     "reminderSummaryUnsupported": "Custom reminder in Google Calendar",
