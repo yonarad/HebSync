@@ -1257,13 +1257,13 @@ export default function MyCalendar() {
       )}
 
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
-          <div data-testid="event-details-dialog" role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-end justify-center overflow-hidden bg-slate-900/50 p-3 backdrop-blur-sm sm:items-center sm:p-4" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div data-testid="event-details-dialog" role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-slate-700 dark:bg-slate-900 sm:max-h-[calc(100dvh-2rem)]">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 p-6 dark:border-slate-800">
               <h2 id="event-details-title" className="text-xl font-bold text-slate-800 dark:text-white">{t('eventDetails')}</h2>
               <button type="button" aria-label={t('close')} onClick={() => setSelectedEvent(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-6">
               {isEditing ? (
                 <div className="space-y-4">
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full rounded-xl border border-slate-200 p-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('eventName')} />
@@ -1315,7 +1315,7 @@ export default function MyCalendar() {
                 </div>
               )}
             </div>
-            <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex justify-between gap-3 bg-slate-50 dark:bg-slate-900/50">
+            <div data-testid="event-details-footer" className="flex shrink-0 justify-between gap-3 border-t border-slate-100 bg-slate-50 p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-slate-900/50">
               <button
                 data-testid="event-details-delete-button"
                 onClick={handleDeleteClick}

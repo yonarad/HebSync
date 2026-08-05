@@ -47,6 +47,45 @@ test.describe('month calendar accessibility', () => {
     await expectNoA11yViolations(page, '[data-testid="event-details-dialog"]');
   });
 
+  test('mobile event edit dialog keeps actions visible while content scrolls', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openCalendar(page);
+
+    await page.getByTestId('calendar-view-schedule-toggle').click();
+    await page.getByTestId('schedule-recurring-event-chip').first().click();
+    await page.getByRole('button', { name: 'ערוך' }).click();
+
+    const dialog = page.getByTestId('event-details-dialog');
+    const footer = page.getByTestId('event-details-footer');
+    await expect(dialog).toBeVisible();
+    await expect(footer).toBeVisible();
+
+    const metrics = await page.evaluate(() => {
+      const dialogElement = document.querySelector('[data-testid="event-details-dialog"]');
+      const footerElement = document.querySelector('[data-testid="event-details-footer"]');
+      if (!dialogElement || !footerElement) {
+        throw new Error('Expected event details dialog and footer to exist');
+      }
+      const dialogRect = dialogElement.getBoundingClientRect();
+      const footerRect = footerElement.getBoundingClientRect();
+      return {
+        viewportHeight: window.innerHeight,
+        dialogTop: dialogRect.top,
+        dialogBottom: dialogRect.bottom,
+        footerTop: footerRect.top,
+        footerBottom: footerRect.bottom,
+        dialogScrollHeight: dialogElement.scrollHeight,
+        dialogClientHeight: dialogElement.clientHeight,
+      };
+    });
+
+    expect(metrics.dialogTop).toBeGreaterThanOrEqual(0);
+    expect(metrics.dialogBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+    expect(metrics.footerTop).toBeGreaterThanOrEqual(0);
+    expect(metrics.footerBottom).toBeLessThanOrEqual(metrics.viewportHeight);
+    expect(metrics.dialogScrollHeight).toBeLessThanOrEqual(metrics.dialogClientHeight + 1);
+  });
+
   test('recurring action dialog has no accessibility violations when open', async ({ page }) => {
     await page.setViewportSize({ width: 1365, height: 768 });
     await openCalendar(page);
