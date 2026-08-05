@@ -157,6 +157,18 @@ vi.mock('react-i18next', () => ({
         recurringActionScopeFutureHint: 'Apply from this point onward.',
         recurringDeleteConfirm: 'Delete selected scope',
         recurringUpdateConfirm: 'Apply changes',
+        eventReminders: 'Reminders',
+        reminderCalendarDefault: 'Calendar default',
+        reminderNone: 'No reminder',
+        reminderCustom: 'Custom reminder',
+        reminderWhen: 'When',
+        reminderOneDayBefore: 'One day before',
+        reminderTwoDaysBefore: 'Two days before',
+        reminderHour: 'Hour',
+        reminderCustomHint: 'The reminder will be saved as a Google Calendar notification.',
+        reminderDefaultHint: 'This does not change the calendar settings.',
+        openEventInGoogleCalendar: 'Open event in Google Calendar',
+        unsupportedReminderHint: 'Unsupported reminder settings',
         recommended: 'Recommended',
       };
       return translations[key] ?? key;
@@ -646,6 +658,74 @@ describe('My Calendar Component', () => {
       expect(screen.getByRole('button', { name: /Jerusalem Day Updated/ })).toBeInTheDocument();
     });
     expect(googleApi.searchEvents.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should show a Google Calendar link in the event details dialog', async () => {
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Jerusalem Day',
+        description: 'City celebration',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+        htmlLink: 'https://calendar.google.com/calendar/event?eid=evt-search',
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Jerusalem' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Jerusalem Day/ }));
+
+    const googleLink = await screen.findByRole('link', { name: /Open event in Google Calendar/ });
+    expect(googleLink).toHaveAttribute(
+      'href',
+      'https://calendar.google.com/calendar/event?eid=evt-search',
+    );
+  });
+
+  it('should update event reminder settings from the event details dialog', async () => {
+    vi.mocked(googleApi.searchEvents).mockResolvedValueOnce([
+      {
+        id: 'evt-search',
+        summary: 'Jerusalem Day',
+        description: 'City celebration',
+        calendarId: 'cal1',
+        start: { date: '2026-05-18' },
+      },
+    ]);
+
+    renderDashboard();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Search events' }))[0]);
+    const searchInput = await screen.findByRole('textbox', { name: 'Search events' });
+    fireEvent.change(searchInput, {
+      target: { value: 'Jerusalem' },
+    });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Jerusalem Day/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'edit' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Custom reminder' }));
+    fireEvent.change(screen.getByLabelText('Hour'), { target: { value: '9' } });
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    await waitFor(() => {
+      expect(googleApi.updateEvent).toHaveBeenCalledWith('cal1', 'evt-search', {
+        summary: 'Jerusalem Day',
+        description: 'City celebration',
+        reminders: {
+          useDefault: false,
+          overrides: [{ method: 'popup', minutes: 900 }],
+        },
+      });
+    });
   });
 
   it('should show a floating add event button for authenticated users', async () => {

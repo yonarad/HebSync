@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search } from 'lucide-react';
+import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search, ExternalLink } from 'lucide-react';
 import { HDate } from '@hebcal/core';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
@@ -34,6 +34,7 @@ import {
   DayEventsPopover,
 } from '../components/MyCalendarViews';
 import MyCalendarSidebar from '../components/MyCalendarSidebar';
+import EventReminderControls from '../components/EventReminderControls';
 import useMyCalendarData from '../hooks/useMyCalendarData';
 import useCalendarEventActions from '../hooks/useCalendarEventActions';
 import useInstallPrompt from '../hooks/useInstallPrompt';
@@ -275,12 +276,15 @@ export default function MyCalendar() {
     handleUpdate,
     isDeleting,
     isEditing,
+    isReminderUnsupported,
     isUpdating,
     selectedEvent,
     setEditDesc,
+    setEditReminderSettings,
     setEditTitle,
     setIsEditing,
     setSelectedEvent,
+    editReminderSettings,
   } = useCalendarEventActions({
     hasWriteAccess,
     promptForEditingUpgrade,
@@ -1264,6 +1268,13 @@ export default function MyCalendar() {
                 <div className="space-y-4">
                   <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full rounded-xl border border-slate-200 p-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('eventName')} />
                   <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={4} className="w-full resize-none rounded-xl border border-slate-200 p-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#0038A8] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500" placeholder={t('description')} />
+                  <EventReminderControls
+                    isRtl={isRtl}
+                    t={t}
+                    value={editReminderSettings}
+                    onChange={setEditReminderSettings}
+                    unsupportedMessage={isReminderUnsupported ? t('unsupportedReminderHint') : null}
+                  />
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1278,6 +1289,17 @@ export default function MyCalendar() {
                     return (
                       <>
                         <h3 className="text-2xl font-bold text-[#0038A8] dark:text-blue-400">{selectedEvent.summary}{ageSuffix}</h3>
+                        {selectedEvent.htmlLink ? (
+                          <a
+                            href={selectedEvent.htmlLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-[#0038A8] transition-colors hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            {t('openEventInGoogleCalendar')}
+                          </a>
+                        ) : null}
                         {timeRange && (
                           <div
                             data-testid="event-time-range"

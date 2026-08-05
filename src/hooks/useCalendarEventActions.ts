@@ -6,7 +6,12 @@ import {
   updateEvent,
   updateRecurringEventScope,
 } from '../utils/googleApi';
-import type { GoogleCalendarEvent } from '../types/appTypes';
+import type { EventReminderSettings, GoogleCalendarEvent } from '../types/appTypes';
+import {
+  buildGoogleEventReminders,
+  DEFAULT_REMINDER_SETTINGS,
+  getReminderSettingsFromGoogleEvent,
+} from '../utils/googleCalendarReminders';
 
 interface UseCalendarEventActionsParams {
   hasWriteAccess: boolean;
@@ -31,14 +36,27 @@ export default function useCalendarEventActions({
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editReminderSettings, setEditReminderSettingsState] = useState<EventReminderSettings>(DEFAULT_REMINDER_SETTINGS);
+  const [isReminderUnsupported, setIsReminderUnsupported] = useState(false);
+  const [hasReminderChanged, setHasReminderChanged] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleEventClick = (event: GoogleCalendarEvent): void => {
+    const parsedReminders = getReminderSettingsFromGoogleEvent(event.reminders);
     setSelectedEvent(event);
     setEditTitle(event.summary || '');
     setEditDesc(event.description || '');
+    setEditReminderSettingsState(parsedReminders.settings);
+    setIsReminderUnsupported(parsedReminders.isUnsupported);
+    setHasReminderChanged(false);
     setIsEditing(false);
+  };
+
+  const setEditReminderSettings = (settings: EventReminderSettings): void => {
+    setEditReminderSettingsState(settings);
+    setIsReminderUnsupported(false);
+    setHasReminderChanged(true);
   };
 
   const handleDelete = async (
@@ -84,10 +102,13 @@ export default function useCalendarEventActions({
     setIsUpdating(true);
     try {
       const eventBeforeUpdate = selectedEvent;
-      const updates = {
+      const updates: Partial<GoogleCalendarEvent> = {
         summary: editTitle,
         description: editDesc,
       };
+      if (hasReminderChanged) {
+        updates.reminders = buildGoogleEventReminders(editReminderSettings);
+      }
       let updatedEvent: GoogleCalendarEvent;
       if (scope === 'single') {
         updatedEvent = await updateEvent(selectedEvent.calendarId, selectedEvent.id, updates);
@@ -102,6 +123,7 @@ export default function useCalendarEventActions({
         summary: updatedEvent.summary ?? updates.summary ?? eventBeforeUpdate.summary,
         description:
           updatedEvent.description ?? updates.description ?? eventBeforeUpdate.description,
+        reminders: updatedEvent.reminders ?? updates.reminders ?? eventBeforeUpdate.reminders,
       });
       await loadCalendarData();
     } catch {
@@ -113,15 +135,18 @@ export default function useCalendarEventActions({
 
   return {
     editDesc,
+    editReminderSettings,
     editTitle,
     handleDelete,
     handleEventClick,
     handleUpdate,
     isDeleting,
     isEditing,
+    isReminderUnsupported,
     isUpdating,
     selectedEvent,
     setEditDesc,
+    setEditReminderSettings,
     setEditTitle,
     setIsEditing,
     setSelectedEvent,

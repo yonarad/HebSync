@@ -140,6 +140,109 @@ describe('useCalendarEventActions', () => {
     expect(result.current.isEditing).toBe(false);
   });
 
+  it('updates reminder settings when they are edited', async () => {
+    vi.mocked(updateEvent).mockResolvedValueOnce({
+      id: 'evt1',
+      calendarId: 'cal1',
+      summary: 'Updated title',
+      reminders: {
+        useDefault: false,
+        overrides: [{ method: 'popup', minutes: 180 }],
+      },
+    } as never);
+
+    const { result } = renderHook(() =>
+      useCalendarEventActions({
+        hasWriteAccess: true,
+        promptForEditingUpgrade,
+        t,
+        loadCalendarData,
+        loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
+      }),
+    );
+
+    act(() => {
+      result.current.handleEventClick({
+        id: 'evt1',
+        calendarId: 'cal1',
+        summary: 'Original title',
+      });
+      result.current.setEditTitle('Updated title');
+      result.current.setEditReminderSettings({
+        mode: 'custom',
+        method: 'popup',
+        daysBefore: 1,
+        hour: 21,
+      });
+    });
+
+    await act(async () => {
+      await result.current.handleUpdate();
+    });
+
+    expect(updateEvent).toHaveBeenCalledWith('cal1', 'evt1', {
+      summary: 'Updated title',
+      description: '',
+      reminders: {
+        useDefault: false,
+        overrides: [{ method: 'popup', minutes: 180 }],
+      },
+    });
+  });
+
+  it('does not overwrite unsupported reminder settings unless reminders are edited', async () => {
+    const existingReminders = {
+      useDefault: false,
+      overrides: [
+        { method: 'popup' as const, minutes: 180 },
+        { method: 'email' as const, minutes: 1440 },
+      ],
+    };
+    vi.mocked(updateEvent).mockResolvedValueOnce({
+      id: 'evt1',
+      calendarId: 'cal1',
+      summary: 'Updated title',
+    } as never);
+
+    const { result } = renderHook(() =>
+      useCalendarEventActions({
+        hasWriteAccess: true,
+        promptForEditingUpgrade,
+        t,
+        loadCalendarData,
+        loadEvents,
+        onDeleteSuccess,
+        onUpdateSuccess,
+      }),
+    );
+
+    act(() => {
+      result.current.handleEventClick({
+        id: 'evt1',
+        calendarId: 'cal1',
+        summary: 'Original title',
+        reminders: existingReminders,
+      });
+      result.current.setEditTitle('Updated title');
+    });
+
+    await act(async () => {
+      await result.current.handleUpdate();
+    });
+
+    expect(updateEvent).toHaveBeenCalledWith('cal1', 'evt1', {
+      summary: 'Updated title',
+      description: '',
+    });
+    expect(onUpdateSuccess).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reminders: existingReminders,
+      }),
+    );
+  });
+
   it('applies recurring deletes to the selected scope', async () => {
     vi.mocked(deleteRecurringEventScope).mockResolvedValueOnce(true);
 
