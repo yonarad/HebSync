@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Download, Trash2, Calendar as CalendarIcon, Info, Moon, Sun, RefreshCw, Eye, CheckCircle, GripHorizontal, Bell, ExternalLink } from 'lucide-react';
 import LoginModal from '../components/LoginModal';
+import CreateCalendarDialog from '../components/CreateCalendarDialog';
 import { getMonthsForYear, getDaysInHebrewMonth, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
 import { authenticateWithGoogle, getAccessToken, createHebcalEvent, revokeAccess } from '../utils/googleApi';
@@ -10,7 +11,7 @@ import { buildGoogleCalendarSettingsUrl } from '../utils/googleCalendarLinks';
 import useAddEventCalendarData from '../hooks/useAddEventCalendarData';
 import useAddEventImport from '../hooks/useAddEventImport';
 import useAddEventPreviewSubmit from '../hooks/useAddEventPreviewSubmit';
-import type { AddEventPrefillDate, Calendar, EventReminderMode, EventReminderSettings, PreviewOccurrence, ScopeMode } from '../types/appTypes';
+import type { AddEventPrefillDate, Calendar, CreateCalendarFormValues, EventReminderMode, EventReminderSettings, PreviewOccurrence, ScopeMode } from '../types/appTypes';
 import type { FallbackChoice, ImportPreviewRow } from '../types/appTypes';
 
 import { useTranslation } from 'react-i18next';
@@ -92,6 +93,7 @@ export default function AddEvent({
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [feedbackTone, setFeedbackTone] = useState<'error' | 'success' | null>(null);
   const [createdEventLink, setCreatedEventLink] = useState<string | null>(null);
+  const [isCreateCalendarDialogOpen, setIsCreateCalendarDialogOpen] = useState(false);
   const {
     calendars,
     clearCalendarSession,
@@ -124,6 +126,24 @@ export default function AddEvent({
   const getCalendarColor = (calendarId: string) => {
     const calendar = calendars.find(c => c.id === calendarId);
     return calendar?.color || '#0038A8';
+  };
+
+  const handleOpenCreateCalendarDialog = (): void => {
+    if (!hasWriteAccess) {
+      void handleCreateCalendar();
+      return;
+    }
+
+    setIsCreateCalendarDialogOpen(true);
+  };
+
+  const handleCreateCalendarSubmit = async (
+    values: CreateCalendarFormValues,
+  ): Promise<void> => {
+    const didCreate = await handleCreateCalendar(values);
+    if (didCreate) {
+      setIsCreateCalendarDialogOpen(false);
+    }
   };
 
   const normalizeHebrewToken = (value: unknown) => String(value ?? '').replace(/\u00A0/g, ' ').trim();
@@ -375,6 +395,12 @@ export default function AddEvent({
     topFeedbackRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
   }, [calendarSelectionHasError, feedbackMessage, showInlineManualError, showPreview, t, titleHasError]);
 
+  useEffect(() => {
+    if (showLoginModal) {
+      setIsCreateCalendarDialogOpen(false);
+    }
+  }, [showLoginModal]);
+
   // When year changes, update available months and fallback month if current is no longer valid
   useEffect(() => {
     if (!isGregorianEntry) {
@@ -549,7 +575,7 @@ export default function AddEvent({
             <div className={`mt-4 flex flex-wrap gap-2 ${isRtl ? 'justify-end' : 'justify-start'}`}>
               <button
                 type="button"
-                onClick={handleCreateCalendar}
+                onClick={handleOpenCreateCalendarDialog}
                 disabled={isCreatingCalendar}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0038A8] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#002d86] disabled:cursor-wait disabled:opacity-70"
               >
@@ -1531,6 +1557,18 @@ export default function AddEvent({
           </div>
         </div>
       </div>
+      <CreateCalendarDialog
+        isOpen={isCreateCalendarDialogOpen}
+        isRtl={isRtl}
+        isSubmitting={isCreatingCalendar}
+        onClose={() => {
+          if (!isCreatingCalendar) {
+            setIsCreateCalendarDialogOpen(false);
+          }
+        }}
+        onSubmit={handleCreateCalendarSubmit}
+        t={t}
+      />
       <LoginModal 
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}

@@ -34,6 +34,7 @@ import {
   DayEventsPopover,
 } from '../components/MyCalendarViews';
 import MyCalendarSidebar from '../components/MyCalendarSidebar';
+import CreateCalendarDialog from '../components/CreateCalendarDialog';
 import EventReminderControls from '../components/EventReminderControls';
 import EventReminderSummary from '../components/EventReminderSummary';
 import useMyCalendarData from '../hooks/useMyCalendarData';
@@ -46,6 +47,7 @@ import type {
   HebcalDisplayDetail,
   OverflowDay,
   PendingCalendarCreateState,
+  CreateCalendarFormValues,
 } from '../types/appTypes';
 import { doesHebrewMonthExistInYear } from '../utils/hebcal';
 
@@ -263,6 +265,7 @@ export default function MyCalendar() {
   const [hasAutoPromptedLogin, setHasAutoPromptedLogin] = useState(false);
   const [recurringActionMode, setRecurringActionMode] = useState<'delete' | 'update' | null>(null);
   const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
+  const [isCreateCalendarDialogOpen, setIsCreateCalendarDialogOpen] = useState(false);
   const swipeGestureRef = useRef<{
     startX: number;
     startY: number;
@@ -411,6 +414,12 @@ export default function MyCalendar() {
     showLoginModal,
   ]);
 
+  useEffect(() => {
+    if (showLoginModal) {
+      setIsCreateCalendarDialogOpen(false);
+    }
+  }, [showLoginModal]);
+
   const handleRevoke = async (): Promise<void> => {
     if (!window.confirm(t('revokeAccessConfirm'))) return;
     await revokeAccess();
@@ -420,6 +429,24 @@ export default function MyCalendar() {
 
   const handleOpenLanding = (): void => {
     navigate('/?about=1');
+  };
+
+  const handleOpenCreateCalendarDialog = (): void => {
+    if (!hasWriteAccess) {
+      promptForEditingUpgrade();
+      return;
+    }
+
+    setIsCreateCalendarDialogOpen(true);
+  };
+
+  const handleCreateCalendarSubmit = async (
+    values: CreateCalendarFormValues,
+  ): Promise<void> => {
+    const didCreate = await handleCreateCalendar(values);
+    if (didCreate) {
+      setIsCreateCalendarDialogOpen(false);
+    }
   };
 
   const handleOverflowDayOpen = (
@@ -933,7 +960,7 @@ export default function MyCalendar() {
           isCreatingCalendar={isCreatingCalendar}
           refreshCalendarsLabel={refreshCalendarsLabel}
           handleRefreshCalendars={handleRefreshCalendars}
-          handleCreateCalendar={handleCreateCalendar}
+          handleCreateCalendar={handleOpenCreateCalendarDialog}
           allCalendarsGroupLabel={allCalendarsGroupLabel}
           selectAllCalendars={selectAllCalendars}
           deselectAllCalendars={deselectAllCalendars}
@@ -952,6 +979,19 @@ export default function MyCalendar() {
           deselectCalendarsByIds={deselectCalendarsByIds}
           toggleCalendar={toggleCalendar}
           handleOpenLanding={handleOpenLanding}
+        />
+
+        <CreateCalendarDialog
+          isOpen={isCreateCalendarDialogOpen}
+          isRtl={isRtl}
+          isSubmitting={isCreatingCalendar}
+          onClose={() => {
+            if (!isCreatingCalendar) {
+              setIsCreateCalendarDialogOpen(false);
+            }
+          }}
+          onSubmit={handleCreateCalendarSubmit}
+          t={t}
         />
 
         <main

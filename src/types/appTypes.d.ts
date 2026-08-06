@@ -109,6 +109,10 @@ export interface GoogleEventReminder {
   minutes: number;
 }
 
+export interface CreateCalendarFormValues {
+  summary: string;
+}
+
 export type EventReminderMode = 'calendar_default' | 'none' | 'custom';
 
 export interface EventReminderSettings {

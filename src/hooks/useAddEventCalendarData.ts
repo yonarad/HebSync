@@ -12,7 +12,7 @@ import {
   isAuthError,
 } from '../utils/googleApi';
 
-import type { Calendar, ScopeMode } from '../types/appTypes';
+import type { Calendar, CreateCalendarFormValues, ScopeMode } from '../types/appTypes';
 
 type AuthModalMode = 'upgrade' | 'reauthorize';
 
@@ -69,14 +69,16 @@ export default function useAddEventCalendarData({
     }
   };
 
-  const handleCreateCalendar = async () => {
+  const handleCreateCalendar = async (
+    values?: CreateCalendarFormValues,
+  ): Promise<boolean> => {
     if (!hasWriteAccess) {
       onAuthExpired?.('upgrade');
-      return;
+      return false;
     }
 
-    const name = window.prompt(t('newCalendarPrompt'));
-    if (!name) return;
+    const name = values?.summary.trim();
+    if (!name) return false;
 
     setIsCalendarLoading(true);
     setIsCreatingCalendar(true);
@@ -90,8 +92,10 @@ export default function useAddEventCalendarData({
       if (onCalendarsChanged) {
         await onCalendarsChanged();
       }
-    } catch (error) {
+      return true;
+    } catch {
       alert(t('createCalendarError'));
+      return false;
     } finally {
       setIsCalendarLoading(false);
       setIsCreatingCalendar(false);

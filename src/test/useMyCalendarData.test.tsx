@@ -160,8 +160,6 @@ describe('useMyCalendarData', () => {
   });
 
   it('creates a new calendar and reloads calendars', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('New Calendar');
-
     const { result } = renderHook(() => useMyCalendarData({ t }));
 
     await waitFor(() => {
@@ -169,7 +167,9 @@ describe('useMyCalendarData', () => {
     });
 
     await act(async () => {
-      await result.current.handleCreateCalendar();
+      await result.current.handleCreateCalendar({
+        summary: 'New Calendar',
+      });
     });
 
     expect(createNewCalendar).toHaveBeenCalledWith('New Calendar');

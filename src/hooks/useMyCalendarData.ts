@@ -24,6 +24,7 @@ import { resolveCalendarColor, resolveEventColor } from '../utils/googleCalendar
 import type {
   Calendar,
   CalendarViewMode,
+  CreateCalendarFormValues,
   GoogleCalendarColors,
   GoogleCalendarEvent,
   MyCalendarEventListItem,
@@ -458,9 +459,12 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
     authenticateWithGoogle(SCOPE_MODES.READ_ONLY);
   };
 
-  const handleCreateCalendar = async (): Promise<void> => {
-    const name = window.prompt(t('newCalendarPrompt'));
-    if (!name) return;
+  const handleCreateCalendar = async ({
+    summary,
+  }: CreateCalendarFormValues): Promise<boolean> => {
+    const name = summary.trim();
+    if (!name) return false;
+
     setIsCreatingCalendar(true);
     setCreatedCalendarSettingsUrl(null);
     try {
@@ -469,8 +473,10 @@ export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
         setCreatedCalendarSettingsUrl(buildGoogleCalendarSettingsUrl(createdCalendar.id));
       }
       await loadCalendars();
+      return true;
     } catch {
       alert(t('createCalendarError'));
+      return false;
     } finally {
       setIsCreatingCalendar(false);
     }

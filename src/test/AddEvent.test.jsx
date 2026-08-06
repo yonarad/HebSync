@@ -169,7 +169,6 @@ describe('AddEvent Component', () => {
   });
 
   it('should create a calendar from the empty state and refresh the list', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('New Calendar');
     vi.mocked(googleApi.fetchAllCalendars)
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
@@ -179,6 +178,10 @@ describe('AddEvent Component', () => {
     renderAddEvent();
 
     fireEvent.click(await screen.findByRole('button', { name: 'createCalendarToContinue' }));
+    fireEvent.change(await screen.findByLabelText('calendarNameLabel'), {
+      target: { value: 'New Calendar' },
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'createCalendarToContinue' }).at(-1));
 
     await waitFor(() => {
       expect(googleApi.createNewCalendar).toHaveBeenCalledWith('New Calendar');
@@ -188,7 +191,6 @@ describe('AddEvent Component', () => {
 
   it('should notify the parent when a calendar is created from the empty state', async () => {
     const onCalendarsChanged = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(window, 'prompt').mockReturnValue('New Calendar');
     vi.mocked(googleApi.fetchAllCalendars)
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
@@ -198,6 +200,10 @@ describe('AddEvent Component', () => {
     renderAddEvent({ onCalendarsChanged });
 
     fireEvent.click(await screen.findByRole('button', { name: 'createCalendarToContinue' }));
+    fireEvent.change(await screen.findByLabelText('calendarNameLabel'), {
+      target: { value: 'New Calendar' },
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'createCalendarToContinue' }).at(-1));
 
     await waitFor(() => {
       expect(onCalendarsChanged).toHaveBeenCalledTimes(1);

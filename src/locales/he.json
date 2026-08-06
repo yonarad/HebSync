@@ -337,6 +337,10 @@
     "creatingCalendar": "יוצר יומן...",
     "calendarCreatedReminderSettingsHint": "היומן נוצר. אפשר לשנות ברירות מחדל לתזכורות מתוך הגדרות Google Calendar.",
     "openCalendarSettingsInGoogle": "פתח הגדרות יומן ב-Google",
+    "createCalendarDialogTitle": "יצירת יומן חדש",
+    "createCalendarDialogSubtitle": "היומן ייווצר ב-Google Calendar וישויך ל-HebSync.",
+    "calendarNameLabel": "שם היומן",
+    "calendarNamePlaceholder": "למשל: ימי הולדת עבריים",
     "openCalendarSettingsFor": "פתח הגדרות עבור {{calendar}}",
     "deletingEvent": "מוחק..."
   }
