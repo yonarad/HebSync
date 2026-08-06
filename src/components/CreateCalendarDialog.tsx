@@ -117,16 +117,6 @@ export default function CreateCalendarDialog({
               })}
             />
           </div>
-
-          {isSubmitting ? (
-            <div
-              role="status"
-              className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-950 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-100"
-            >
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              {t('creatingCalendar')}
-            </div>
-          ) : null}
         </div>
 
         <div className="mt-6 flex flex-wrap justify-end gap-2">
