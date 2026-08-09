@@ -52,9 +52,9 @@ export function buildHebrewGreeting(
   const includeYears = options.includeYears && years !== null;
 
   if (category === 'memorial') {
-    if (includeName && includeYears) return `🕯️ נר זיכרון ל${name}, ${years} שנים לפטירתו`;
+    if (includeName && includeYears) return `🕯️ נר זיכרון ל${name}, במלאת ${years} שנים לפטירה`;
     if (includeName) return `🕯️ נר זיכרון ל${name}`;
-    if (includeYears) return `🕯️ נר זיכרון, ${years} שנים לפטירתו`;
+    if (includeYears) return `🕯️ נר זיכרון, במלאת ${years} שנים לפטירה`;
     return '🕯️ נר זיכרון';
   }
 

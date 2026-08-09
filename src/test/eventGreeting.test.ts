@@ -35,7 +35,7 @@ describe('eventGreeting', () => {
     expect(buildHebrewGreeting('anniversary', 'נעמה ודן', 5, { includeName: false, includeYears: false })).toBe('🥂 מזל טוב ליום נישואיכם');
     expect(buildHebrewGreeting('anniversary', 'נעמה ודן', 5, { includeName: true, includeYears: true })).toBe('🥂 מזל טוב לנעמה ודן ליום נישואין 5');
     expect(buildHebrewGreeting('anniversary', null, null, { includeName: true, includeYears: true })).toBe('🥂 מזל טוב ליום נישואיכם');
-    expect(buildHebrewGreeting('memorial', 'יעקב כהן', 12, { includeName: true, includeYears: true })).toBe('🕯️ נר זיכרון ליעקב כהן, 12 שנים לפטירתו');
+    expect(buildHebrewGreeting('memorial', 'יעקב כהן', 12, { includeName: true, includeYears: true })).toBe('🕯️ נר זיכרון ליעקב כהן, במלאת 12 שנים לפטירה');
   });
 
   it('calculates years and creates recipient-free sharing links', () => {
