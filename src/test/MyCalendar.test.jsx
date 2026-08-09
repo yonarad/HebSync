@@ -1368,7 +1368,7 @@ describe('My Calendar Component', () => {
 
     expect(await screen.findByRole('heading', { name: 'sendGreeting' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: 'includeGreetingName' }));
-    expect(screen.getByText(/מזל טוב לנעמה מילר ליום ההולדת/)).toBeInTheDocument();
+    expect(screen.getByText(/🎂 מזל טוב לנעמה מילר ליום ההולדת/)).toBeInTheDocument();
 
     const shareLink = screen.getByRole('link', { name: 'sendViaWhatsApp' });
     expect(shareLink).toHaveAttribute('href', expect.stringContaining('https://wa.me/?text='));

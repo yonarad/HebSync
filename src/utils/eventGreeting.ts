@@ -1,6 +1,6 @@
 import type { GoogleCalendarEvent } from '../types/appTypes';
 
-export type GreetingEventCategory = 'birthday' | 'anniversary';
+export type GreetingEventCategory = 'birthday' | 'anniversary' | 'memorial';
 
 export interface GreetingOptions {
   includeName: boolean;
@@ -10,13 +10,14 @@ export interface GreetingOptions {
 const HEBREW_TITLE_PREFIXES: Record<GreetingEventCategory, string> = {
   birthday: 'יום הולדת',
   anniversary: 'יום נישואין',
+  memorial: 'יום זיכרון',
 };
 
 export function getGreetingCategory(event: GoogleCalendarEvent): GreetingEventCategory | null {
   const properties = event.extendedProperties?.private;
   if (properties?.appIdentifier !== 'MyHebrewCalendar') return null;
 
-  return properties.category === 'birthday' || properties.category === 'anniversary'
+  return properties.category === 'birthday' || properties.category === 'anniversary' || properties.category === 'memorial'
     ? properties.category
     : null;
 }
@@ -50,17 +51,19 @@ export function buildHebrewGreeting(
   const includeName = options.includeName && Boolean(name);
   const includeYears = options.includeYears && years !== null;
 
+  if (category === 'memorial') return '🕯️ נר זיכרון';
+
   if (category === 'birthday') {
-    if (includeName && includeYears) return `מזל טוב ל${name} ליום הולדת ${years}`;
-    if (includeName) return `מזל טוב ל${name} ליום ההולדת`;
-    if (includeYears) return `מזל טוב ליום הולדתך ה-${years}`;
-    return 'מזל טוב ליום הולדתך';
+    if (includeName && includeYears) return `🎂 מזל טוב ל${name} ליום הולדת ${years}`;
+    if (includeName) return `🎂 מזל טוב ל${name} ליום ההולדת`;
+    if (includeYears) return `🎂 מזל טוב ליום הולדתך ה-${years}`;
+    return '🎂 מזל טוב ליום הולדתך';
   }
 
-  if (includeName && includeYears) return `מזל טוב ל${name} ליום נישואין ${years}`;
-  if (includeName) return `מזל טוב ל${name} ליום הנישואין`;
-  if (includeYears) return `מזל טוב ליום נישואיכם ה-${years}`;
-  return 'מזל טוב ליום נישואיכם';
+  if (includeName && includeYears) return `🎂 מזל טוב ל${name} ליום נישואין ${years}`;
+  if (includeName) return `🎂 מזל טוב ל${name} ליום הנישואין`;
+  if (includeYears) return `🎂 מזל טוב ליום נישואיכם ה-${years}`;
+  return '🎂 מזל טוב ליום נישואיכם';
 }
 
 export function buildWhatsAppGreetingUrl(message: string): string {
