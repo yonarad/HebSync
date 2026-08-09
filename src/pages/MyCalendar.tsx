@@ -1389,7 +1389,11 @@ export default function MyCalendar() {
                             onClick={() => setIsGreetingShareOpen(true)}
                             className="rounded-xl border border-[#0038A8] px-4 py-2 font-bold text-[#0038A8] transition-colors hover:bg-blue-50 dark:border-blue-400 dark:text-blue-300 dark:hover:bg-blue-950/40"
                           >
-                            {greetingCategory === 'memorial' ? t('sendMemorialCandle') : t('sendCongratulations')}
+                            {greetingCategory === 'memorial'
+                              ? t('sendMemorialCandle')
+                              : greetingCategory === 'anniversary'
+                                ? t('sendAnniversaryGreeting')
+                                : t('sendBirthdayGreeting')}
                           </button>
                         ) : null}
                       </>

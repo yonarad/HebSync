@@ -51,7 +51,12 @@ export function buildHebrewGreeting(
   const includeName = options.includeName && Boolean(name);
   const includeYears = options.includeYears && years !== null;
 
-  if (category === 'memorial') return '🕯️ נר זיכרון';
+  if (category === 'memorial') {
+    if (includeName && includeYears) return `🕯️ נר זיכרון ל${name}, ${years} שנים לפטירתו`;
+    if (includeName) return `🕯️ נר זיכרון ל${name}`;
+    if (includeYears) return `🕯️ נר זיכרון, ${years} שנים לפטירתו`;
+    return '🕯️ נר זיכרון';
+  }
 
   if (category === 'birthday') {
     if (includeName && includeYears) return `🎂 מזל טוב ל${name} ליום הולדת ${years}`;
@@ -60,10 +65,10 @@ export function buildHebrewGreeting(
     return '🎂 מזל טוב ליום הולדתך';
   }
 
-  if (includeName && includeYears) return `🎂 מזל טוב ל${name} ליום נישואין ${years}`;
-  if (includeName) return `🎂 מזל טוב ל${name} ליום הנישואין`;
-  if (includeYears) return `🎂 מזל טוב ליום נישואיכם ה-${years}`;
-  return '🎂 מזל טוב ליום נישואיכם';
+  if (includeName && includeYears) return `🥂 מזל טוב ל${name} ליום נישואין ${years}`;
+  if (includeName) return `🥂 מזל טוב ל${name} ליום הנישואין`;
+  if (includeYears) return `🥂 מזל טוב ליום נישואיכם ה-${years}`;
+  return '🥂 מזל טוב ליום נישואיכם';
 }
 
 export function buildWhatsAppGreetingUrl(message: string): string {
