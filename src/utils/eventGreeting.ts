@@ -68,5 +68,5 @@ export function buildWhatsAppGreetingUrl(message: string): string {
 }
 
 export function buildMailGreetingUrl(message: string): string {
-  return `mailto:?body=${encodeURIComponent(message)}`;
+  return `mailto:?subject=${encodeURIComponent(message)}`;
 }

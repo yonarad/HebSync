@@ -41,6 +41,6 @@ describe('eventGreeting', () => {
     expect(getGreetingYears({ extendedProperties: { private: { originalHebrewYear: 'not-a-year' } } }, 5784)).toBeNull();
 
     expect(buildWhatsAppGreetingUrl('מזל טוב!')).toBe(`https://wa.me/?text=${encodeURIComponent('מזל טוב!')}`);
-    expect(buildMailGreetingUrl('מזל טוב!')).toBe(`mailto:?body=${encodeURIComponent('מזל טוב!')}`);
+    expect(buildMailGreetingUrl('מזל טוב!')).toBe(`mailto:?subject=${encodeURIComponent('מזל טוב!')}`);
   });
 });
