@@ -1364,7 +1364,7 @@ describe('My Calendar Component', () => {
     renderDashboard();
     fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
     fireEvent.click(await screen.findByText((content) => content.includes('יום הולדת נעמה מילר')));
-    fireEvent.click(await screen.findByRole('button', { name: 'sendViaWhatsApp' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'sendCongratulations' }));
 
     expect(await screen.findByRole('heading', { name: 'sendGreeting' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: 'includeGreetingName' }));

@@ -7,7 +7,6 @@ const GREETING_PREFERENCES_KEY = 'hebsync.greeting-preferences.v1';
 
 interface GreetingShareDialogProps {
   category: GreetingEventCategory;
-  channel: 'whatsapp' | 'email';
   isOpen: boolean;
   isRtl: boolean;
   name: string | null;
@@ -29,7 +28,6 @@ function readPreferences(): GreetingOptions {
 
 export default function GreetingShareDialog({
   category,
-  channel,
   isOpen,
   isRtl,
   name,
@@ -86,15 +84,14 @@ export default function GreetingShareDialog({
           <p className="mt-2 text-lg font-bold text-[#0038A8] dark:text-blue-300">{message}</p>
         </div>
 
-        {channel === 'whatsapp' ? (
-          <a href={buildWhatsAppGreetingUrl(message)} onClick={savePreferences} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 font-bold text-white transition-colors hover:bg-[#1fb85a]">
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <a href={buildWhatsAppGreetingUrl(message)} onClick={savePreferences} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 font-bold text-white transition-colors hover:bg-[#1fb85a]">
             <MessageCircle className="h-5 w-5" /> {t('sendViaWhatsApp')}
           </a>
-        ) : (
-          <a href={buildMailGreetingUrl(message)} onClick={savePreferences} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0038A8] px-4 py-3 font-bold text-white transition-colors hover:bg-[#002d86]">
+          <a href={buildMailGreetingUrl(message)} onClick={savePreferences} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0038A8] px-4 py-3 font-bold text-white transition-colors hover:bg-[#002d86]">
             <Mail className="h-5 w-5" /> {t('sendViaEmail')}
           </a>
-        )}
+        </div>
       </section>
     </div>
   );
