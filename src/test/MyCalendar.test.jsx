@@ -1343,6 +1343,38 @@ describe('My Calendar Component', () => {
     expect(await screen.findByTestId('event-time-range')).toBeInTheDocument();
   });
 
+  it('opens a configurable recipient-free greeting link for birthday events', async () => {
+    const visibleEventDate = getVisibleDateInCurrentHebrewMonth();
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'birthday-1',
+        summary: 'יום הולדת נעמה מילר',
+        calendarId: 'cal1',
+        start: { date: visibleEventDate },
+        extendedProperties: {
+          private: {
+            appIdentifier: 'MyHebrewCalendar',
+            category: 'birthday',
+            originalHebrewYear: '5750',
+          },
+        },
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    fireEvent.click(await screen.findByText((content) => content.includes('יום הולדת נעמה מילר')));
+    fireEvent.click(await screen.findByRole('button', { name: 'sendViaWhatsApp' }));
+
+    expect(await screen.findByRole('heading', { name: 'sendGreeting' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'includeGreetingName' }));
+    expect(screen.getByText(/מזל טוב לנעמה מילר ליום ההולדת/)).toBeInTheDocument();
+
+    const shareLink = screen.getByRole('link', { name: 'sendViaWhatsApp' });
+    expect(shareLink).toHaveAttribute('href', expect.stringContaining('https://wa.me/?text='));
+    expect(shareLink).not.toHaveAttribute('href', expect.stringContaining('phone='));
+  });
+
   it('should show a deleting state after confirming event deletion', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([

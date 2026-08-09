@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search, ExternalLink } from 'lucide-react';
+import { Trash2, LogIn, LogOut, X, Menu, LoaderCircle, Download, Search, ExternalLink, Mail, MessageCircle } from 'lucide-react';
 import { HDate } from '@hebcal/core';
 import Logo from '../components/Logo';
 import LoginModal from '../components/LoginModal';
@@ -37,6 +37,7 @@ import MyCalendarSidebar from '../components/MyCalendarSidebar';
 import CreateCalendarDialog from '../components/CreateCalendarDialog';
 import EventReminderControls from '../components/EventReminderControls';
 import EventReminderSummary from '../components/EventReminderSummary';
+import GreetingShareDialog from '../components/GreetingShareDialog';
 import useMyCalendarData from '../hooks/useMyCalendarData';
 import useCalendarEventActions from '../hooks/useCalendarEventActions';
 import useInstallPrompt from '../hooks/useInstallPrompt';
@@ -50,6 +51,7 @@ import type {
   CreateCalendarFormValues,
 } from '../types/appTypes';
 import { doesHebrewMonthExistInYear } from '../utils/hebcal';
+import { getGreetingCategory, getGreetingName, getGreetingYears } from '../utils/eventGreeting';
 
 const PENDING_CREATE_EVENT_KEY = 'pending_calendar_create_event';
 const SWIPE_LOCK_THRESHOLD_PX = 16;
@@ -266,6 +268,8 @@ export default function MyCalendar() {
   const [recurringActionMode, setRecurringActionMode] = useState<'delete' | 'update' | null>(null);
   const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
   const [isCreateCalendarDialogOpen, setIsCreateCalendarDialogOpen] = useState(false);
+  const [isGreetingShareOpen, setIsGreetingShareOpen] = useState(false);
+  const [greetingChannel, setGreetingChannel] = useState<'whatsapp' | 'email'>('whatsapp');
   const swipeGestureRef = useRef<{
     startX: number;
     startY: number;
@@ -330,6 +334,11 @@ export default function MyCalendar() {
     const handleKeyDown = (event: globalThis.KeyboardEvent): void => {
       if (event.key !== 'Escape') return;
 
+      if (isGreetingShareOpen) {
+        setIsGreetingShareOpen(false);
+        return;
+      }
+
       if (selectedEvent) {
         setSelectedEvent(null);
         return;
@@ -363,7 +372,7 @@ export default function MyCalendar() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAddEventModalOpen, isDesktopSearchOpen, isMobileSearchOpen, isSidebarOpen, selectedEvent, selectedHebcalDetails, setSelectedEvent]);
+  }, [isAddEventModalOpen, isDesktopSearchOpen, isGreetingShareOpen, isMobileSearchOpen, isSidebarOpen, selectedEvent, selectedHebcalDetails, setSelectedEvent]);
 
   useEffect(() => {
     if (!isAuthenticated || !hasWriteAccess) return;
@@ -715,6 +724,14 @@ export default function MyCalendar() {
   const selectedEventCalendar = selectedEvent
     ? calendars.find((calendar) => calendar.id === selectedEvent.calendarId)
     : undefined;
+  const greetingCategory = selectedEvent ? getGreetingCategory(selectedEvent) : null;
+  const greetingOccurrenceYear = selectedEvent ? getEventOccurrenceHebrewYear(selectedEvent) : null;
+  const greetingName = selectedEvent && greetingCategory
+    ? getGreetingName(selectedEvent.summary, greetingCategory)
+    : null;
+  const greetingYears = selectedEvent && greetingCategory
+    ? getGreetingYears(selectedEvent, greetingOccurrenceYear)
+    : null;
   const emptyStateMessage =
     !isAuthenticated
       ? t('loginRequiredInCalendarView')
@@ -1367,6 +1384,34 @@ export default function MyCalendar() {
                           reminders={selectedEvent.reminders}
                           t={t}
                         />
+                        {greetingCategory ? (
+                          <div className="flex items-center gap-2" aria-label={t('sendGreeting')}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGreetingChannel('whatsapp');
+                                setIsGreetingShareOpen(true);
+                              }}
+                              aria-label={t('sendViaWhatsApp')}
+                              title={t('sendViaWhatsApp')}
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white transition-colors hover:bg-[#1fb85a]"
+                            >
+                              <MessageCircle className="h-5 w-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setGreetingChannel('email');
+                                setIsGreetingShareOpen(true);
+                              }}
+                              aria-label={t('sendViaEmail')}
+                              title={t('sendViaEmail')}
+                              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#0038A8] text-white transition-colors hover:bg-[#002d86]"
+                            >
+                              <Mail className="h-5 w-5" />
+                            </button>
+                          </div>
+                        ) : null}
                       </>
                     );
                   })()}
@@ -1398,6 +1443,19 @@ export default function MyCalendar() {
           </div>
         </div>
       )}
+
+      {greetingCategory ? (
+        <GreetingShareDialog
+          category={greetingCategory}
+          channel={greetingChannel}
+          isOpen={isGreetingShareOpen}
+          isRtl={isRtl}
+          name={greetingName}
+          years={greetingYears}
+          onClose={() => setIsGreetingShareOpen(false)}
+          t={t}
+        />
+      ) : null}
 
       {selectedEvent && recurringActionMode && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
