@@ -1397,6 +1397,7 @@ describe('My Calendar Component', () => {
     const yearsCheckbox = screen.getByRole('checkbox', { name: 'includeGreetingYears' });
     expect(yearsCheckbox).toBeDisabled();
     expect(yearsCheckbox.parentElement).toHaveAttribute('title', 'greetingYearsUnavailable');
+    expect(screen.getByText('greetingYearsUnavailable')).toBeVisible();
   });
 
   it('should show a deleting state after confirming event deletion', async () => {

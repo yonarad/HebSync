@@ -110,7 +110,7 @@ export default function GreetingShareDialog({
               <input type="checkbox" checked={options.includeYears} disabled={yearsUnavailable} onChange={() => toggleOption('includeYears')} aria-label={t('includeGreetingYears')} aria-describedby={yearsUnavailable ? 'greeting-years-unavailable' : undefined} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />
             </span>
           </label>
-          {yearsUnavailable ? <p id="greeting-years-unavailable" className="sr-only">{t('greetingYearsUnavailable')}</p> : null}
+          {yearsUnavailable ? <p id="greeting-years-unavailable" className="-mt-1 text-xs text-slate-500 dark:text-slate-400">{t('greetingYearsUnavailable')}</p> : null}
         </div>
 
         <div className="mt-5 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
