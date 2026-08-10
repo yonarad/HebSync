@@ -1377,6 +1377,26 @@ describe('My Calendar Component', () => {
     expect(shareLink).not.toHaveAttribute('href', expect.stringContaining('phone='));
   });
 
+  it('offers a birthday greeting for an external event without a year count', async () => {
+    const visibleEventDate = getVisibleDateInCurrentHebrewMonth();
+    vi.mocked(googleApi.fetchEventsInRange).mockResolvedValueOnce([
+      {
+        id: 'external-birthday-1',
+        summary: 'יום הולדת נעמה מילר',
+        calendarId: 'cal1',
+        start: { date: visibleEventDate },
+      },
+    ]);
+
+    renderDashboard();
+    fireEvent.click(await screen.findByRole('button', { name: 'Schedule' }));
+    fireEvent.click(await screen.findByText((content) => content.includes('יום הולדת נעמה מילר')));
+    fireEvent.click(await screen.findByRole('button', { name: 'sendBirthdayGreeting' }));
+
+    expect(await screen.findByRole('heading', { name: 'sendGreeting' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'includeGreetingYears' })).toBeDisabled();
+  });
+
   it('should show a deleting state after confirming event deletion', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([

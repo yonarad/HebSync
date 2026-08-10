@@ -10,11 +10,15 @@ import {
 } from '../utils/eventGreeting';
 
 describe('eventGreeting', () => {
-  it('recognizes supported HebSync celebration and memorial events', () => {
+  it('recognizes supported HebSync and external events by title', () => {
     expect(getGreetingCategory({ extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', category: 'birthday' } } })).toBe('birthday');
     expect(getGreetingCategory({ extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', category: 'anniversary' } } })).toBe('anniversary');
     expect(getGreetingCategory({ extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', category: 'memorial' } } })).toBe('memorial');
     expect(getGreetingCategory({ extendedProperties: { private: { appIdentifier: 'MyHebrewCalendar', category: 'other' } } })).toBeNull();
+    expect(getGreetingCategory({ summary: 'יום הולדת נעמה מילר' })).toBe('birthday');
+    expect(getGreetingCategory({ summary: 'יום נישואין נעמה ודן' })).toBe('anniversary');
+    expect(getGreetingCategory({ summary: 'יום זיכרון יעקב כהן' })).toBe('memorial');
+    expect(getGreetingCategory({ summary: 'פגישת צוות' })).toBeNull();
     expect(getGreetingCategory({ extendedProperties: { private: { category: 'birthday' } } })).toBeNull();
   });
 

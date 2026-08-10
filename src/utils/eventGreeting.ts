@@ -22,11 +22,16 @@ const HEBREW_TITLE_PREFIXES: Record<GreetingEventCategory, string> = {
 
 export function getGreetingCategory(event: GoogleCalendarEvent): GreetingEventCategory | null {
   const properties = event.extendedProperties?.private;
-  if (properties?.appIdentifier !== 'MyHebrewCalendar') return null;
+  if (
+    properties?.appIdentifier === 'MyHebrewCalendar' &&
+    (properties.category === 'birthday' || properties.category === 'anniversary' || properties.category === 'memorial')
+  ) {
+    return properties.category;
+  }
 
-  return properties.category === 'birthday' || properties.category === 'anniversary' || properties.category === 'memorial'
-    ? properties.category
-    : null;
+  const title = event.summary?.trim() || '';
+  return (Object.entries(HEBREW_TITLE_PREFIXES) as Array<[GreetingEventCategory, string]>)
+    .find(([, prefix]) => title.startsWith(prefix))?.[0] || null;
 }
 
 export function getGreetingName(
