@@ -1,7 +1,7 @@
 import { Mail, MessageCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { GreetingEventCategory, GreetingOptions } from '../utils/eventGreeting';
-import { buildHebrewGreeting, buildMailGreetingUrl, buildWhatsAppGreetingUrl } from '../utils/eventGreeting';
+import { buildHebrewGreeting, buildMailGreetingUrl, buildWhatsAppGreetingUrl, getGreetingNameParts } from '../utils/eventGreeting';
 
 const GREETING_PREFERENCES_KEY = 'hebsync.greeting-preferences.v1';
 
@@ -18,11 +18,16 @@ interface GreetingShareDialogProps {
 function readPreferences(): GreetingOptions {
   try {
     const rawValue = localStorage.getItem(GREETING_PREFERENCES_KEY);
-    if (!rawValue) return { includeName: false, includeYears: false };
+    if (!rawValue) return { includeName: false, includeFirstName: false, includeLastName: false, includeYears: false };
     const value = JSON.parse(rawValue) as Partial<GreetingOptions>;
-    return { includeName: Boolean(value.includeName), includeYears: Boolean(value.includeYears) };
+    return {
+      includeName: Boolean(value.includeName),
+      includeFirstName: Boolean(value.includeFirstName ?? value.includeName),
+      includeLastName: Boolean(value.includeLastName ?? value.includeName),
+      includeYears: Boolean(value.includeYears),
+    };
   } catch {
-    return { includeName: false, includeYears: false };
+    return { includeName: false, includeFirstName: false, includeLastName: false, includeYears: false };
   }
 }
 
@@ -43,7 +48,17 @@ export default function GreetingShareDialog({
 
   if (!isOpen) return null;
 
-  const message = buildHebrewGreeting(category, name, years, options);
+  const nameParts = getGreetingNameParts(name);
+  const selectedBirthdayName = [
+    options.includeFirstName ? nameParts.firstName : null,
+    options.includeLastName ? nameParts.lastName : null,
+  ].filter(Boolean).join(' ') || null;
+  const message = buildHebrewGreeting(
+    category,
+    category === 'birthday' ? selectedBirthdayName : name,
+    years,
+    options,
+  );
   const savePreferences = (): void => {
     try {
       localStorage.setItem(GREETING_PREFERENCES_KEY, JSON.stringify(options));
@@ -68,11 +83,26 @@ export default function GreetingShareDialog({
         </div>
 
         <div className="mt-5 space-y-3">
-          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-            <span className="font-semibold text-slate-800 dark:text-slate-100">{t('includeGreetingName')}</span>
-            <input type="checkbox" checked={options.includeName} disabled={!name} onChange={() => toggleOption('includeName')} aria-label={t('includeGreetingName')} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />
-          </label>
-          {!name ? <p className="-mt-1 text-xs text-slate-500 dark:text-slate-400">{t('greetingNameUnavailable')}</p> : null}
+          {category === 'birthday' ? (
+            <>
+              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">{t('includeGreetingFirstName')}</span>
+                <input type="checkbox" checked={options.includeFirstName} disabled={!nameParts.firstName} onChange={() => toggleOption('includeFirstName')} aria-label={t('includeGreetingFirstName')} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />
+              </label>
+              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">{t('includeGreetingLastName')}</span>
+                <input type="checkbox" checked={options.includeLastName} disabled={!nameParts.lastName} onChange={() => toggleOption('includeLastName')} aria-label={t('includeGreetingLastName')} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+                <span className="font-semibold text-slate-800 dark:text-slate-100">{t('includeGreetingName')}</span>
+                <input type="checkbox" checked={options.includeName} disabled={!name} onChange={() => toggleOption('includeName')} aria-label={t('includeGreetingName')} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />
+              </label>
+              {!name ? <p className="-mt-1 text-xs text-slate-500 dark:text-slate-400">{t('greetingNameUnavailable')}</p> : null}
+            </>
+          )}
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
             <span className="font-semibold text-slate-800 dark:text-slate-100">{t('includeGreetingYears')}</span>
             <input type="checkbox" checked={options.includeYears} disabled={years === null} onChange={() => toggleOption('includeYears')} aria-label={t('includeGreetingYears')} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />

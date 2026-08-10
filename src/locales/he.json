@@ -113,6 +113,8 @@
     "sendMemorialCandle": "🕯️ שלח נר זיכרון",
     "sendGreetingHint": "בחרו מה לכלול בברכה, ולאחר מכן בחרו את הנמען באפליקציה שתיפתח.",
     "includeGreetingName": "הוסף שם",
+    "includeGreetingFirstName": "הוסף שם פרטי",
+    "includeGreetingLastName": "הוסף שם משפחה",
     "includeGreetingYears": "הוסף מספר שנים",
     "greetingNameUnavailable": "לא נמצא שם בכותרת האירוע.",
     "greetingPreview": "תצוגה מקדימה",

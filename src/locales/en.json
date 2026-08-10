@@ -162,6 +162,8 @@
     "sendMemorialCandle": "🕯️ Send memorial candle",
     "sendGreetingHint": "Choose what to include, then select the recipient in the app that opens.",
     "includeGreetingName": "Include name",
+    "includeGreetingFirstName": "Include first name",
+    "includeGreetingLastName": "Include last name",
     "includeGreetingYears": "Include number of years",
     "greetingNameUnavailable": "No name was found in the event title.",
     "greetingPreview": "Preview",

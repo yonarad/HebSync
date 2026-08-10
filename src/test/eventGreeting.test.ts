@@ -5,6 +5,7 @@ import {
   buildWhatsAppGreetingUrl,
   getGreetingCategory,
   getGreetingName,
+  getGreetingNameParts,
   getGreetingYears,
 } from '../utils/eventGreeting';
 
@@ -22,6 +23,8 @@ describe('eventGreeting', () => {
     expect(getGreetingName('יום נישואין - נעמה ודן', 'anniversary')).toBe('נעמה ודן');
     expect(getGreetingName('יום הולדת', 'birthday')).toBeNull();
     expect(getGreetingName('נעמה מילר', 'birthday')).toBeNull();
+    expect(getGreetingNameParts('נעמה מילר')).toEqual({ firstName: 'נעמה', lastName: 'מילר' });
+    expect(getGreetingNameParts('נעמה בת שרה מילר')).toEqual({ firstName: 'נעמה', lastName: 'בת שרה מילר' });
   });
 
   it('builds all birthday greeting variants', () => {

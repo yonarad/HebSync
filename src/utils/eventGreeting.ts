@@ -4,7 +4,14 @@ export type GreetingEventCategory = 'birthday' | 'anniversary' | 'memorial';
 
 export interface GreetingOptions {
   includeName: boolean;
+  includeFirstName?: boolean;
+  includeLastName?: boolean;
   includeYears: boolean;
+}
+
+export interface GreetingNameParts {
+  firstName: string | null;
+  lastName: string | null;
 }
 
 const HEBREW_TITLE_PREFIXES: Record<GreetingEventCategory, string> = {
@@ -35,6 +42,14 @@ export function getGreetingName(
   return name || null;
 }
 
+export function getGreetingNameParts(name: string | null): GreetingNameParts {
+  const [firstName, ...lastNameParts] = name?.trim().split(/\s+/) || [];
+  return {
+    firstName: firstName || null,
+    lastName: lastNameParts.join(' ') || null,
+  };
+}
+
 export function getGreetingYears(event: GoogleCalendarEvent, occurrenceHebrewYear: number | null): number | null {
   const originalYear = Number(event.extendedProperties?.private?.originalHebrewYear);
   if (!Number.isFinite(originalYear) || !occurrenceHebrewYear) return null;
@@ -48,7 +63,9 @@ export function buildHebrewGreeting(
   years: number | null,
   options: GreetingOptions,
 ): string {
-  const includeName = options.includeName && Boolean(name);
+  const includeName = category === 'birthday'
+    ? (Boolean(options.includeFirstName ?? options.includeName) || Boolean(options.includeLastName ?? options.includeName)) && Boolean(name)
+    : options.includeName && Boolean(name);
   const includeYears = options.includeYears && years !== null;
 
   if (category === 'memorial') {
