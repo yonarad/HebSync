@@ -166,6 +166,7 @@
     "includeGreetingLastName": "Include last name",
     "includeGreetingYears": "Include number of years",
     "greetingNameUnavailable": "No name was found in the event title.",
+    "greetingYearsUnavailable": "This event was not created in HebSync, so the number of years is unavailable.",
     "greetingPreview": "Preview",
     "sendViaWhatsApp": "Send via WhatsApp",
     "sendViaEmail": "Send via email",

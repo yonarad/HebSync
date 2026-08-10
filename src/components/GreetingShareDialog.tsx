@@ -59,6 +59,7 @@ export default function GreetingShareDialog({
     years,
     options,
   );
+  const yearsUnavailable = years === null;
   const savePreferences = (): void => {
     try {
       localStorage.setItem(GREETING_PREFERENCES_KEY, JSON.stringify(options));
@@ -105,8 +106,11 @@ export default function GreetingShareDialog({
           )}
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
             <span className="font-semibold text-slate-800 dark:text-slate-100">{t('includeGreetingYears')}</span>
-            <input type="checkbox" checked={options.includeYears} disabled={years === null} onChange={() => toggleOption('includeYears')} aria-label={t('includeGreetingYears')} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />
+            <span title={yearsUnavailable ? t('greetingYearsUnavailable') : undefined}>
+              <input type="checkbox" checked={options.includeYears} disabled={yearsUnavailable} onChange={() => toggleOption('includeYears')} aria-label={t('includeGreetingYears')} aria-describedby={yearsUnavailable ? 'greeting-years-unavailable' : undefined} className="h-5 w-5 accent-[#0038A8] disabled:cursor-not-allowed" />
+            </span>
           </label>
+          {yearsUnavailable ? <p id="greeting-years-unavailable" className="sr-only">{t('greetingYearsUnavailable')}</p> : null}
         </div>
 
         <div className="mt-5 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">

@@ -1394,7 +1394,9 @@ describe('My Calendar Component', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'sendBirthdayGreeting' }));
 
     expect(await screen.findByRole('heading', { name: 'sendGreeting' })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'includeGreetingYears' })).toBeDisabled();
+    const yearsCheckbox = screen.getByRole('checkbox', { name: 'includeGreetingYears' });
+    expect(yearsCheckbox).toBeDisabled();
+    expect(yearsCheckbox.parentElement).toHaveAttribute('title', 'greetingYearsUnavailable');
   });
 
   it('should show a deleting state after confirming event deletion', async () => {

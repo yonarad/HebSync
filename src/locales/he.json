@@ -117,6 +117,7 @@
     "includeGreetingLastName": "הוסף שם משפחה",
     "includeGreetingYears": "הוסף מספר שנים",
     "greetingNameUnavailable": "לא נמצא שם בכותרת האירוע.",
+    "greetingYearsUnavailable": "האירוע לא נוצר ב-HebSync, ולכן חישוב השנים אינו זמין.",
     "greetingPreview": "תצוגה מקדימה",
     "sendViaWhatsApp": "שליחה ב-WhatsApp",
     "sendViaEmail": "שליחה באימייל",
