@@ -1,7 +1,8 @@
 import { createCsrfToken, getSessionTokenFromRequest, requireSession } from '../_lib/auth.js';
 import { json } from '../_lib/response.js';
+import { withRequestLogging } from '../_lib/observability.js';
 
-export async function GET(request) {
+async function getSession(request) {
   const sessionToken = getSessionTokenFromRequest(request);
 
   if (!sessionToken) {
@@ -21,3 +22,5 @@ export async function GET(request) {
     },
   });
 }
+
+export const GET = withRequestLogging('/api/auth/session', getSession);

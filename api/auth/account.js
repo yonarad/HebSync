@@ -5,8 +5,9 @@ import { getCookieOptions, getSessionCookieName } from '../_lib/env.js';
 import { deleteGoogleConnection, getConnectionById, revokeGoogleToken } from '../_lib/google.js';
 import { json } from '../_lib/response.js';
 import { deleteSessionByToken, deleteSessionsByConnectionId } from '../_lib/sessions.js';
+import { logRequestWarning, withRequestLogging } from '../_lib/observability.js';
 
-export async function DELETE(request) {
+async function deleteAccount(request) {
   const sessionCookieName = getSessionCookieName();
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
@@ -34,8 +35,8 @@ export async function DELETE(request) {
     } else if (connection?.access_token) {
       await revokeGoogleToken(connection.access_token);
     }
-  } catch (error) {
-    console.error('Failed to revoke Google grant during account deletion:', error);
+  } catch {
+    logRequestWarning('/api/auth/account', 'google.revocation.failed', request);
   } finally {
     await deleteSessionsByConnectionId(session.google_connection_id);
     await deleteSessionByToken(sessionToken);
@@ -51,3 +52,5 @@ export async function DELETE(request) {
     },
   );
 }
+
+export const DELETE = withRequestLogging('/api/auth/account', deleteAccount);

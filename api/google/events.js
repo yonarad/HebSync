@@ -1,8 +1,9 @@
 import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../_lib/auth.js';
 import { authorizedGoogleFetch, googleApiErrorResponse } from '../_lib/google-calendar.js';
 import { json } from '../_lib/response.js';
+import { withRequestLogging } from '../_lib/observability.js';
 
-export async function POST(request) {
+async function createEvent(request) {
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
   if (!session) {
@@ -36,7 +37,8 @@ export async function POST(request) {
 
     return json(await response.json(), { status: 201 });
   } catch (error) {
-    console.error('Failed to create event:', error);
     return googleApiErrorResponse(error, 'Failed to create event');
   }
 }
+
+export const POST = withRequestLogging('/api/google/events', createEvent);

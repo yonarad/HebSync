@@ -1,10 +1,11 @@
 import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../_lib/auth.js';
 import { authorizedGoogleFetch, googleApiErrorResponse, listCalendars } from '../_lib/google-calendar.js';
 import { json } from '../_lib/response.js';
+import { withRequestLogging } from '../_lib/observability.js';
 
 const APP_SIGNATURE = 'ID:hebcal-sync-app';
 
-export async function GET(request) {
+async function getCalendars(request) {
   const session = await requireSession(request);
   if (!session) {
     return json({ error: 'Not authenticated' }, { status: 401 });
@@ -14,12 +15,11 @@ export async function GET(request) {
     const calendars = await listCalendars(session);
     return json({ items: calendars, scopeMode: session.scope_mode });
   } catch (error) {
-    console.error('Failed to load calendars:', error);
     return googleApiErrorResponse(error, 'Failed to fetch calendars');
   }
 }
 
-export async function POST(request) {
+async function createCalendar(request) {
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
   if (!session) {
@@ -56,7 +56,9 @@ export async function POST(request) {
 
     return json(await response.json(), { status: 201 });
   } catch (error) {
-    console.error('Failed to create calendar:', error);
     return googleApiErrorResponse(error, 'Failed to create calendar');
   }
 }
+
+export const GET = withRequestLogging('/api/google/calendars', getCalendars);
+export const POST = withRequestLogging('/api/google/calendars', createCalendar);

@@ -1,12 +1,13 @@
 import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../_lib/auth.js';
 import { authorizedGoogleFetch, googleApiErrorResponse } from '../_lib/google-calendar.js';
 import { json } from '../_lib/response.js';
+import { withRequestLogging } from '../_lib/observability.js';
 
 function getEventUrl(calendarId, eventId) {
   return `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
 }
 
-export async function GET(request) {
+async function getEvent(request) {
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
   if (!session) {
@@ -31,12 +32,11 @@ export async function GET(request) {
 
     return json(await response.json());
   } catch (error) {
-    console.error('Failed to fetch event:', error);
     return googleApiErrorResponse(error, 'Failed to fetch event');
   }
 }
 
-export async function PATCH(request) {
+async function updateEvent(request) {
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
   if (!session) {
@@ -72,12 +72,11 @@ export async function PATCH(request) {
 
     return json(await response.json());
   } catch (error) {
-    console.error('Failed to update event:', error);
     return googleApiErrorResponse(error, 'Failed to update event');
   }
 }
 
-export async function DELETE(request) {
+async function deleteEvent(request) {
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
   if (!session) {
@@ -108,7 +107,10 @@ export async function DELETE(request) {
 
     return json({ success: true });
   } catch (error) {
-    console.error('Failed to delete event:', error);
     return googleApiErrorResponse(error, 'Failed to delete event');
   }
 }
+
+export const GET = withRequestLogging('/api/google/event', getEvent);
+export const PATCH = withRequestLogging('/api/google/event', updateEvent);
+export const DELETE = withRequestLogging('/api/google/event', deleteEvent);

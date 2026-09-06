@@ -3,8 +3,9 @@ import { createOpaqueToken } from '../../_lib/crypto.js';
 import { getCookieOptions, getOAuthStateCookieName, getGoogleRedirectUri, normalizeReturnTo } from '../../_lib/env.js';
 import { buildGoogleConsentUrl } from '../../_lib/google.js';
 import { redirect } from '../../_lib/response.js';
+import { withRequestLogging } from '../../_lib/observability.js';
 
-export async function GET(request) {
+async function startGoogleAuth(request) {
   if (!process.env.GOOGLE_CLIENT_ID) {
     return new Response('Missing GOOGLE_CLIENT_ID', { status: 500 });
   }
@@ -38,3 +39,5 @@ export async function GET(request) {
     },
   });
 }
+
+export const GET = withRequestLogging('/api/auth/google/start', startGoogleAuth);

@@ -33,6 +33,9 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Added GitHub Actions CI for typechecking, linting, unit tests, production builds, and Windows-based visual regression tests.
 - Protected `master`: both CI jobs are required, branches must be up to date, and force-pushes and deletion are disabled. The rule applies to administrators as well.
 - Added read-only production smoke tests for public pages, legal routes, unauthenticated API boundaries, and Google OAuth configuration. They run every six hours, after successful Vercel `Production` deployment events, and on manual request.
+- Added structured request lifecycle logs to all 15 server handlers. The records support route/status/duration/request-ID diagnosis while excluding request and user content.
+- Added Vercel Speed Insights to the React root; the project's free Speed Insights tier is enabled and begins collecting after deployment visits.
+- Updated the resolved React Router dependency from 7.14.2 to 7.18.3 after a production dependency audit.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -41,8 +44,8 @@ Verified locally on 2026-09-06:
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
-- `npm test -- --run`: passed — 26 files, 238 tests.
-- `npm run build`: passed with Vite 8.0.10.
+- `npm test -- --run`: passed — 27 files, 243 tests.
+- `npm run build`: passed with Vite 8.2.2.
 - `npm run test:visual`: passed — 26 tests, including authentication, accessibility, and screenshot coverage.
 - The visual-test command now exits normally after stopping its owned Vite server.
 - `.github/workflows/ci.yml` runs the full baseline automatically on pushes and pull requests to `master`.
@@ -69,9 +72,13 @@ The automated production smoke is intentionally unauthenticated. After authentic
 
 This is an operational regression check for the released service, not a launch blocker.
 
-### 2. Optional performance work
+### 2. Replace or isolate the `xlsx` dependency
 
-Consider lazy-loading or splitting the larger production chunks (`xlsx` is about 425 kB and the main index chunk about 335 kB before gzip). Measure user impact before optimizing.
+`npm audit --omit=dev` reports prototype-pollution and ReDoS advisories in `xlsx` 0.18.5, with no fixed npm release offered. Before changing the import implementation, evaluate a maintained compatible parser or the vendor's supported distribution, add malicious/oversized-file limits, and preserve the current spreadsheet-import tests.
+
+### 3. Review production performance data
+
+After Speed Insights has collected a representative seven-day sample, review field LCP, INP, CLS, FCP, and TTFB. Optimize only where real-user data identifies a problem; likely candidates include lazy-loading or splitting the larger production chunks (`xlsx` is about 425 kB and the main index chunk about 335 kB before gzip).
 
 ## Key files
 
@@ -81,6 +88,7 @@ Consider lazy-loading or splitting the larger production chunks (`xlsx` is about
 - `src/hooks/useMyCalendarData.ts`: calendar data orchestration.
 - `api/_lib/google.js`: OAuth exchange/refresh and encrypted token storage.
 - `api/_lib/google-calendar.js`: authorized Google API fetch helper.
+- `api/_lib/observability.js`: privacy-safe structured server request logging.
 - `api/auth/google/*`: OAuth routes.
 - `api/google/*`: Calendar API routes.
 - `scripts/run-visual-tests.mjs`: reliable visual-test server lifecycle.
@@ -88,6 +96,7 @@ Consider lazy-loading or splitting the larger production chunks (`xlsx` is about
 - `.github/workflows/production-smoke.yml`: read-only checks every six hours and after successful production deployments.
 - `playwright.smoke.config.ts` and `tests/smoke/*`: production smoke configuration and scenarios.
 - `tests/visual/*`: Playwright accessibility and screenshot coverage.
+- `src/App.tsx`: app routing root and Vercel Speed Insights integration.
 - `db/schema.sql`: Neon schema.
 
 ## Standard verification

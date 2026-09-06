@@ -9,6 +9,7 @@ import {
 } from '../../_lib/env.js';
 import { exchangeCodeForTokens, parseIdToken, upsertGoogleConnection } from '../../_lib/google.js';
 import { redirect } from '../../_lib/response.js';
+import { logRequestWarning, withRequestLogging } from '../../_lib/observability.js';
 
 function buildAuthErrorRedirect(request, authError, authErrorDetail) {
   const url = new URL('/', request.url);
@@ -19,7 +20,7 @@ function buildAuthErrorRedirect(request, authError, authErrorDetail) {
   return redirect(url.toString());
 }
 
-export async function GET(request) {
+async function completeGoogleAuth(request) {
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
@@ -27,10 +28,7 @@ export async function GET(request) {
     const error = url.searchParams.get('error');
 
     if (error) {
-      console.warn('OAuth callback returned provider error', {
-        error,
-        returnedStatePresent: Boolean(returnedState),
-      });
+      logRequestWarning('/api/auth/google/callback', 'oauth.callback.provider_rejected', request);
       return buildAuthErrorRedirect(request, 'google_oauth_error', error);
     }
 
@@ -39,13 +37,7 @@ export async function GET(request) {
     const statePayload = cookies[stateCookieName] ? JSON.parse(cookies[stateCookieName]) : null;
 
     if (!code || !returnedState || !statePayload || statePayload.state !== returnedState) {
-      console.warn('OAuth callback rejected invalid state', {
-        hasCode: Boolean(code),
-        returnedStatePresent: Boolean(returnedState),
-        stateCookiePresent: Boolean(cookies[stateCookieName]),
-        statePayloadPresent: Boolean(statePayload),
-        stateMatches: Boolean(statePayload?.state && statePayload.state === returnedState),
-      });
+      logRequestWarning('/api/auth/google/callback', 'oauth.callback.invalid_state', request);
       return buildAuthErrorRedirect(request, 'invalid_auth_state');
     }
 
@@ -87,11 +79,10 @@ export async function GET(request) {
     return redirect(statePayload.returnTo || getPostAuthRedirectPath(), {
       headers,
     });
-  } catch (error) {
-    console.error('OAuth callback failed', {
-      message: error?.message || 'Unknown error',
-      stack: error?.stack || null,
-    });
+  } catch {
+    logRequestWarning('/api/auth/google/callback', 'oauth.callback.failed', request);
     return buildAuthErrorRedirect(request, 'authentication_failed');
   }
 }
+
+export const GET = withRequestLogging('/api/auth/google/callback', completeGoogleAuth);
