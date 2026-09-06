@@ -17,7 +17,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-smoke
+  # Deployment events are emitted for both Preview and Production. Keep them in
+  # separate groups so a skipped Preview run cannot cancel a Production check.
+  group: production-smoke-${{ github.event_name }}-${{ github.event.deployment.environment || 'none' }}
   cancel-in-progress: true
 
 jobs:
