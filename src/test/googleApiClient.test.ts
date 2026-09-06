@@ -13,7 +13,7 @@ import {
   fetchMyAppEvents,
   fetchSession,
   searchEvents,
-  getAccessToken,
+  hasStoredAuthState,
   getScopeMode,
   logout,
   revokeAccess,
@@ -35,7 +35,7 @@ describe('googleApi client utilities', () => {
     });
   });
 
-  it('stores authenticated session state and exposes a server-session token marker', async () => {
+  it('stores authenticated session state for synchronous UI checks', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -59,7 +59,7 @@ describe('googleApi client utilities', () => {
       csrfToken: 'csrf-token',
     });
     expect(localStorage.getItem(AUTH_STATE_STORAGE_KEY)).toContain('all_events');
-    expect(getAccessToken()).toBe('server-session');
+    expect(hasStoredAuthState()).toBe(true);
   });
 
   it('filters calendar results when the backend reports app-created scope', async () => {

@@ -1,61 +1,96 @@
 # HebSync Handoff
 
-Date: 2026-08-05
+Last updated: 2026-09-06
 
-## Current State
+Production status: released and in use (confirmed by the project owner)
 
-HebSync is a Vite + React app for syncing Hebrew-date events with Google Calendar. The app has moved from browser-held Google tokens to a server-backed OAuth model.
+Branch: `master`
 
-Current auth/data flow:
+## Current state
 
-- Google OAuth starts at `/api/auth/google/start` and returns through `/api/auth/google/callback`.
-- Sessions are stored server-side and referenced by `HttpOnly` cookies.
-- Google refresh tokens are encrypted before database storage.
-- Frontend Google Calendar operations call `/api/google/*` routes.
-- Non-read server calls use CSRF protection through `authorizedFetch()`.
+HebSync is a production Vite + React + TypeScript application for creating and managing Hebrew-date events in Google Calendar.
 
-## Verified Baseline
+Google integration uses server-backed OAuth:
 
-Last verified locally:
+- Sessions are stored in Neon and referenced by `HttpOnly` cookies.
+- Google refresh tokens are encrypted at rest.
+- Calendar operations go through `/api/google/*` routes.
+- Non-read requests use CSRF protection.
+- The browser stores only a minimal authentication-state hint, not Google tokens.
 
-- `npm run typecheck` passed.
-- `npm test` passed with 25 test files and 231 tests.
-- `git status --short` was clean before this documentation update.
+The main calendar, event, import, reminder, greeting, recurring-event, accessibility, and responsive-layout flows have automated coverage.
 
-## Important Files
+## Maintenance completed on 2026-09-06
 
-- `src/utils/googleApiCore.ts`: auth/session helpers and `authorizedFetch()`.
-- `src/utils/googleApiEvents.ts`: frontend calendar/event API wrapper functions.
-- `api/_lib/google.js`: token exchange, token refresh, encrypted token storage.
+- Reviewed and refreshed five stale visual baselines for the current production UI:
+  - desktop and narrow schedule views now reflect scrolling to "Today";
+  - desktop and mobile search results reflect the current controls;
+  - advanced search reflects the current month/year selectors.
+- Added `scripts/run-visual-tests.mjs` so visual tests start and stop Vite reliably on Windows instead of hanging during Playwright web-server teardown.
+- Replaced the misleading `getAccessToken()` client helper with `hasStoredAuthState()`.
+- Removed the remaining legacy `gcal_token` cleanup and test setup.
+- Updated README terminology for the server-session architecture.
+
+## Verified baseline
+
+Verified locally on 2026-09-06:
+
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm test -- --run`: passed — 26 files, 238 tests.
+- `npm run build`: passed with Vite 8.0.10.
+- `npm run test:visual`: passed — 22 tests, including accessibility and screenshot coverage.
+- The visual-test command now exits normally after stopping its owned Vite server.
+
+## Recent product changes
+
+- Replaced the calendar-creation prompt with a dialog and removed duplicate status messaging.
+- Added event greeting sharing, including external events and memorial-candle content.
+- Refined birthday-name choices, memorial wording, email subjects, and unavailable-year explanations.
+- Fixed repeated "Today" navigation in schedule view using local calendar dates.
+
+## Next steps
+
+### 1. Add mocked end-to-end authentication coverage
+
+Add a Playwright flow for logged-out state, login redirect/callback, session restoration, authorization expiry, and logout. Mock Google and the backend session boundary; do not place real credentials in fixtures.
+
+### 2. Keep a production smoke checklist
+
+After authentication, permission, Google API, database, or deployment configuration changes, verify:
+
+1. Sign in and restore an existing session.
+2. Load calendars and create a HebSync calendar.
+3. Create, search, edit, and delete an event.
+4. Exercise recurring-event behavior and greeting sharing.
+5. Disconnect, revoke access, and delete account data.
+
+This is an operational regression check for the released service, not a launch blocker.
+
+### 3. Optional performance work
+
+Consider lazy-loading or splitting the larger production chunks (`xlsx` is about 425 kB and the main index chunk about 335 kB before gzip). Measure user impact before optimizing.
+
+## Key files
+
+- `src/utils/googleApiCore.ts`: session state, CSRF-aware requests, OAuth entry, and logout.
+- `src/utils/googleApiEvents.ts`: frontend Calendar API wrappers.
+- `src/components/ScheduleCalendarView.tsx`: schedule rendering and today navigation.
+- `src/hooks/useMyCalendarData.ts`: calendar data orchestration.
+- `api/_lib/google.js`: OAuth exchange/refresh and encrypted token storage.
 - `api/_lib/google-calendar.js`: authorized Google API fetch helper.
-- `api/auth/google/start.js`: OAuth start route.
-- `api/auth/google/callback.js`: OAuth callback route.
-- `api/auth/session.js`: session read route.
-- `api/auth/logout.js`: logout/revoke route.
-- `api/google/*.js`: Google Calendar server routes.
+- `api/auth/google/*`: OAuth routes.
+- `api/google/*`: Calendar API routes.
+- `scripts/run-visual-tests.mjs`: reliable visual-test server lifecycle.
+- `tests/visual/*`: Playwright accessibility and screenshot coverage.
 - `db/schema.sql`: Neon schema.
 
-## Next Step
+## Standard verification
 
-Do an end-to-end OAuth and Google Calendar smoke test with real credentials before adding new product features.
-
-Recommended local test:
-
-1. Confirm `.env` has real `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `APP_BASE_URL`, and `APP_ENCRYPTION_KEY`.
-2. Run `npm run dev`.
-3. Open `http://localhost:3000`.
-4. Sign in with Google.
-5. Confirm a server session exists and the browser has an `HttpOnly` session cookie.
-6. Load calendars.
-7. Create a HebSync calendar.
-8. Create, search, edit, and delete a Hebrew-date event.
-9. Logout and confirm access is revoked/cleared.
-
-After the local smoke test passes, deploy to Vercel and repeat the same flow with production OAuth redirect URIs.
-
-## Cleanup Candidates
-
-- Rename `getAccessToken()` because it now returns a server-session marker, not a Google access token.
-- Update or remove legacy test references to `gcal_token` once fallback cleanup behavior is no longer needed.
-- Keep privacy/legal copy aligned with the server-side token model.
-- Add a small Playwright smoke test for the logged-out-to-login flow if credentials can be mocked safely.
+```bash
+npm run typecheck
+npm run lint
+npm test -- --run
+npm run build
+npm run test:visual
+```

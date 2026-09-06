@@ -17,7 +17,7 @@ import useInstallPrompt from '../hooks/useInstallPrompt';
 import {
   authenticateWithGoogle,
   fetchSession,
-  getAccessToken,
+  hasStoredAuthState,
   SCOPE_MODES,
   usesAllCalendarsMode,
 } from '../utils/googleApi';
@@ -60,7 +60,7 @@ export default function Home() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
-  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getAccessToken()));
+  const [isAuthenticated, setIsAuthenticated] = useState(hasStoredAuthState());
   const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [selectedMode, setSelectedMode] = useState<ScopeMode>(SCOPE_MODES.APP_CREATED);
   const [activeMode, setActiveMode] = useState<ScopeMode | null>(null);

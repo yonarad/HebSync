@@ -12,7 +12,7 @@ import {
   fetchMyAppEvents,
   fetchSession,
   GCAL_AUTH_EXPIRED_EVENT,
-  getAccessToken,
+  hasStoredAuthState,
   getScopeMode,
   isAuthError,
   isHebSyncCalendar,
@@ -153,7 +153,7 @@ function readSavedSelectedCalendarIds(): string[] | null {
 
 export default function useMyCalendarData({ t }: UseMyCalendarDataParams) {
   const initialDisplayOptions = readDisplayOptions();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!getAccessToken());
+  const [isAuthenticated, setIsAuthenticated] = useState(hasStoredAuthState());
   const [hasResolvedSession, setHasResolvedSession] = useState(false);
   const [myEvents, setMyEvents] = useState<MyCalendarEventListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);

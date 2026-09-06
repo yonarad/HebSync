@@ -696,7 +696,6 @@ export default function useAddEventImport({
         errorMessage.includes('authentication') ||
         errorMessage.includes('Not authenticated')
       ) {
-        localStorage.removeItem('gcal_token');
         openLoginModal('reauthorize');
       } else {
         window.alert(

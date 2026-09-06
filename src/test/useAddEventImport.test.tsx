@@ -243,8 +243,6 @@ describe('useAddEventImport', () => {
     };
 
     vi.spyOn(window, 'alert').mockImplementation(() => {});
-    localStorage.setItem('gcal_token', 'token');
-
     const xlsx = await params.loadXlsx();
     vi.mocked(xlsx.utils.sheet_to_json).mockReturnValue([
       bulkImportColumns,
@@ -285,7 +283,6 @@ describe('useAddEventImport', () => {
     });
 
     expect(params.openLoginModal).toHaveBeenCalledWith('reauthorize');
-    expect(localStorage.getItem('gcal_token')).toBeNull();
   });
 
   it('imports Gregorian rows using the converted Hebrew date parts', async () => {

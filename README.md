@@ -156,13 +156,11 @@ The security migration is mostly complete:
 - Session checks use `/api/auth/session` through `fetchSession()`.
 - Calendar list, color, creation, event creation, event fetch, event update, event delete, app-event loading, range loading, and search calls all go through `/api/google/*`.
 - CSRF headers are attached by `authorizedFetch()` for non-read requests.
-- `getAccessToken()` is now a compatibility marker for an active server session, not a real Google access token.
+- `hasStoredAuthState()` provides a synchronous UI hint while the authoritative server session is being fetched.
 
 Known cleanup:
 
-- Rename or replace `getAccessToken()` to avoid implying that the browser has a Google token.
 - Keep the privacy/legal copy aligned with the server-side token model.
-- Remove any old test setup references to legacy `gcal_token` only when the related fallback behavior is no longer needed.
 
 ## Recommended next step
 

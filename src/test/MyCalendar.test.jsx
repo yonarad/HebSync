@@ -21,7 +21,7 @@ vi.mock('react-router-dom', async () => {
 // Mock the API utilities
 vi.mock('../utils/googleApi', () => ({
   GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
-  getAccessToken: vi.fn(() => 'mock-token'),
+  hasStoredAuthState: vi.fn(() => true),
   getScopeMode: vi.fn(() => 'all_events'),
   fetchSession: vi.fn(() => Promise.resolve({ scopeMode: 'all_events' })),
   fetchGoogleCalendarColors: vi.fn(() => Promise.resolve({ calendar: {} })),
@@ -318,7 +318,7 @@ describe('My Calendar Component', () => {
     window.innerHeight = 768;
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-05-18T12:00:00Z'));
-    vi.mocked(googleApi.getAccessToken).mockReturnValue('mock-token');
+    vi.mocked(googleApi.hasStoredAuthState).mockReturnValue(true);
     vi.mocked(googleApi.getScopeMode).mockReturnValue('all_events');
     vi.mocked(googleApi.fetchSession).mockResolvedValue({ scopeMode: 'all_events' });
     vi.mocked(googleApi.fetchAllCalendars).mockResolvedValue([
@@ -1805,7 +1805,7 @@ describe('My Calendar Component', () => {
   });
 
   it('should auto-open the login modal and explain auth is required for unauthenticated calendar visits', async () => {
-    vi.mocked(googleApi.getAccessToken).mockReturnValueOnce(null);
+    vi.mocked(googleApi.hasStoredAuthState).mockReturnValueOnce(false);
     vi.mocked(googleApi.fetchSession).mockResolvedValueOnce(null);
 
     render(
@@ -1820,7 +1820,7 @@ describe('My Calendar Component', () => {
   });
 
   it('should open the login modal in connect mode when unauthenticated user clicks login', async () => {
-    vi.mocked(googleApi.getAccessToken).mockReturnValueOnce(null);
+    vi.mocked(googleApi.hasStoredAuthState).mockReturnValueOnce(false);
     vi.mocked(googleApi.fetchSession).mockResolvedValueOnce(null);
     render(
       <BrowserRouter>

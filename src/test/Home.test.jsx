@@ -16,7 +16,7 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../utils/googleApi', () => ({
   authenticateWithGoogle: vi.fn(),
   fetchSession: vi.fn(() => Promise.resolve(null)),
-  getAccessToken: vi.fn(() => null),
+  hasStoredAuthState: vi.fn(() => false),
   SCOPE_MODES: {
     APP_CREATED: 'app_created',
     READ_ONLY: 'read_only',

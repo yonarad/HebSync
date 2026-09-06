@@ -19,7 +19,7 @@ vi.mock('xlsx', () => ({
 
 vi.mock('../utils/googleApi', () => ({
   GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
-  getAccessToken: vi.fn(() => 'mock-token'),
+  hasStoredAuthState: vi.fn(() => true),
   getScopeMode: vi.fn(() => 'all_events'),
   canEditCalendars: vi.fn((scopeMode) => scopeMode === 'app_created' || scopeMode === 'all_events'),
   SCOPE_MODES: {

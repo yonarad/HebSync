@@ -5,7 +5,7 @@ import LoginModal from '../components/LoginModal';
 import CreateCalendarDialog from '../components/CreateCalendarDialog';
 import { getMonthsForYear, getDaysInHebrewMonth, generateRdates, getPreviewDates, formatHebrewYear, requires30thFallbackDecision, validateHebrewDateForYear } from '../utils/hebcal';
 import { HDate, gematriya } from '@hebcal/core';
-import { authenticateWithGoogle, getAccessToken, createHebcalEvent, revokeAccess } from '../utils/googleApi';
+import { authenticateWithGoogle, hasStoredAuthState, createHebcalEvent, revokeAccess } from '../utils/googleApi';
 import { DEFAULT_REMINDER_HOUR } from '../utils/googleCalendarReminders';
 import { buildGoogleCalendarSettingsUrl } from '../utils/googleCalendarLinks';
 import useAddEventCalendarData from '../hooks/useAddEventCalendarData';
@@ -428,7 +428,7 @@ export default function AddEvent({
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     if (e) e.preventDefault();
     
-    if (!getAccessToken()) {
+    if (!hasStoredAuthState()) {
       openLoginModal('connect');
     } else {
       submitEvent();

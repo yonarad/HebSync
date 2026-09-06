@@ -6,7 +6,7 @@ export {
   deleteAccountData,
   fetchSession,
   GCAL_AUTH_EXPIRED_EVENT,
-  getAccessToken,
+  hasStoredAuthState,
   getScopeMode,
   isAuthError,
   isHebSyncCalendar,

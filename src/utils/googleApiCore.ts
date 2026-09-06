@@ -184,8 +184,8 @@ export function canEditCalendars(scopeMode: ScopeMode = getScopeMode()): boolean
   return scopeMode === SCOPE_MODES.APP_CREATED || scopeMode === SCOPE_MODES.ALL_EVENTS;
 }
 
-export function getAccessToken(): 'server-session' | null {
-  return getStoredAuthState()?.authenticated ? 'server-session' : null;
+export function hasStoredAuthState(): boolean {
+  return Boolean(getStoredAuthState()?.authenticated);
 }
 
 export async function fetchSession(): Promise<SessionUser | null> {

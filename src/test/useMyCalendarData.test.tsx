@@ -28,7 +28,7 @@ vi.mock('../utils/googleCalendarColors', () => ({
 
 vi.mock('../utils/googleApi', () => ({
   GCAL_AUTH_EXPIRED_EVENT: 'gcal-auth-expired',
-  getAccessToken: vi.fn(() => 'mock-token'),
+  hasStoredAuthState: vi.fn(() => true),
   getScopeMode: vi.fn(() => 'all_events'),
   fetchSession: vi.fn(async () => ({ scopeMode: 'all_events' })),
   fetchAllCalendars: vi.fn(async () => [

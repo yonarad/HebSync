@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LegalPageLayout from '../components/LegalPageLayout';
 import { LEGAL_DETAILS, hasPlaceholderLegalDetails } from '../config/legal';
-import { deleteAccountData, getAccessToken } from '../utils/googleApi';
+import { deleteAccountData, hasStoredAuthState } from '../utils/googleApi';
 
 interface SectionContent {
   title: string;
@@ -45,7 +45,7 @@ export default function PrivacyPolicy() {
   const isHebrew = i18n.language === 'he';
   const placeholderWarning = hasPlaceholderLegalDetails();
   const [isDeletingAccountData, setIsDeletingAccountData] = useState(false);
-  const isAuthenticated = Boolean(getAccessToken());
+  const isAuthenticated = hasStoredAuthState();
 
   const content: PageContent = isHebrew
     ? {

@@ -163,8 +163,6 @@ describe('useAddEventPreviewSubmit', () => {
   it('opens the reauthorize flow on authentication failures', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     vi.spyOn(window, 'alert').mockImplementation(() => {});
-    localStorage.setItem('gcal_token', 'old-token');
-
     const params = {
       ...buildParams(),
       createHebcalEvent: vi.fn(async () => {
