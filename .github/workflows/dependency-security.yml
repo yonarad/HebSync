@@ -1,0 +1,40 @@
+name: Dependency security
+
+on:
+  schedule:
+    # Run away from the production smoke cadence and report through normal Actions notifications.
+    - cron: '7 9 * * 1'
+      timezone: Asia/Jerusalem
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-security
+  cancel-in-progress: true
+
+jobs:
+  production-audit:
+    name: Audit production dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Record SheetJS release
+        run: npm ls xlsx --depth=0
