@@ -106,14 +106,21 @@ In Vercel:
 
 1. Connect the repo.
 2. Add the environment variables from `.env.example`.
-3. Redeploy after saving them.
+3. Enable Speed Insights for the project (the Hobby plan includes the basic tier).
+4. Redeploy after saving them.
 
 The app will expose these endpoints automatically:
 
 - `GET /api/auth/google/start?scopeMode=app_created`
 - `GET /api/auth/google/callback`
 - `GET /api/auth/session`
-- `GET /api/auth/logout`
+- `POST /api/auth/logout`
+
+## Production observability
+
+Every server route emits structured JSON lifecycle logs to Vercel Runtime Logs. Records include only the fixed route name, HTTP method, Vercel request ID, response status, duration, and error class when a handler throws. Request URLs, query strings, headers, cookies, bodies, Google tokens, user details, and calendar/event content are intentionally excluded.
+
+The React root includes Vercel Speed Insights. Once deployed and visited, field performance data is available in the project's **Speed Insights** dashboard. The free Hobby tier retains a rolling seven-day view with up to 10,000 data points per month.
 
 ## Local development
 
@@ -161,7 +168,7 @@ As of 2026-09-06, the current local baseline passes:
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test` with 26 test files and 238 tests passing
+- `npm test` with 27 test files and 243 tests passing
 - `npm run build`
 - `npm run test:visual` with 26 browser tests passing, including mocked authentication lifecycle coverage
 - `npm run test:smoke` with 2 read-only production checks passing against `https://hebsync.org`

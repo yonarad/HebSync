@@ -20,6 +20,7 @@
   "dependencies": {
     "@hebcal/core": "^6.3.3",
     "@neondatabase/serverless": "^1.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "i18next": "^26.0.8",
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.12.0",

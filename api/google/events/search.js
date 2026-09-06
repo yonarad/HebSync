@@ -1,6 +1,7 @@
 import { getSessionTokenFromRequest, requireSession, verifyCsrf } from '../../_lib/auth.js';
 import { authorizedGoogleFetch, googleApiErrorResponse } from '../../_lib/google-calendar.js';
 import { json } from '../../_lib/response.js';
+import { withRequestLogging } from '../../_lib/observability.js';
 
 function normalizeSearchValue(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -44,7 +45,7 @@ function matchesClientSideFilters(event, locationQuery, excludeQuery) {
   return true;
 }
 
-export async function POST(request) {
+async function searchEvents(request) {
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
   if (!session) {
@@ -107,7 +108,8 @@ export async function POST(request) {
 
     return json({ items: sortedItems });
   } catch (error) {
-    console.error('Failed to search calendar events:', error);
     return googleApiErrorResponse(error, 'Failed to search calendar events');
   }
 }
+
+export const POST = withRequestLogging('/api/google/events/search', searchEvents);

@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Route, Routes, useLocation, type Location } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const Home = lazy(() => import('./pages/Home'));
 const MyCalendar = lazy(() => import('./pages/MyCalendar'));
@@ -54,10 +55,13 @@ export default function App() {
   const direction = i18n.language === 'he' ? 'rtl' : 'ltr';
 
   return (
-    <div dir={direction} className="h-full min-h-0 font-sans text-slate-900 antialiased">
-      <Router>
-        <AppRoutes />
-      </Router>
-    </div>
+    <>
+      <div dir={direction} className="h-full min-h-0 font-sans text-slate-900 antialiased">
+        <Router>
+          <AppRoutes />
+        </Router>
+      </div>
+      <SpeedInsights />
+    </>
   );
 }

@@ -5,8 +5,9 @@ import { getCookieOptions, getLogoutRedirectPath, getSessionCookieName } from '.
 import { clearGoogleConnectionAuth, getConnectionById, revokeGoogleToken } from '../_lib/google.js';
 import { json } from '../_lib/response.js';
 import { deleteSessionsByConnectionId, deleteSessionByToken } from '../_lib/sessions.js';
+import { logRequestWarning, withRequestLogging } from '../_lib/observability.js';
 
-export async function POST(request) {
+async function logout(request) {
   const sessionCookieName = getSessionCookieName();
   const sessionToken = getSessionTokenFromRequest(request);
   const session = sessionToken ? await requireSession(request) : null;
@@ -34,8 +35,8 @@ export async function POST(request) {
     } else if (connection?.access_token) {
       await revokeGoogleToken(connection.access_token);
     }
-  } catch (error) {
-    console.error('Failed to revoke Google grant during logout:', error);
+  } catch {
+    logRequestWarning('/api/auth/logout', 'google.revocation.failed', request);
   } finally {
     await clearGoogleConnectionAuth(session.google_connection_id);
     await deleteSessionsByConnectionId(session.google_connection_id);
@@ -51,3 +52,5 @@ export async function POST(request) {
     },
   );
 }
+
+export const POST = withRequestLogging('/api/auth/logout', logout);
