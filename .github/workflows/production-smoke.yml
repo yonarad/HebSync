@@ -2,6 +2,10 @@ name: Production smoke
 
 on:
   deployment_status:
+  schedule:
+    # Offset from the top of the hour to reduce GitHub Actions scheduling congestion.
+    - cron: '17 */6 * * *'
+      timezone: Asia/Jerusalem
   workflow_dispatch:
     inputs:
       base_url:
@@ -21,6 +25,7 @@ jobs:
     name: Production smoke
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
       (github.event.deployment_status.state == 'success' &&
       github.event.deployment.environment == 'Production')
     runs-on: ubuntu-latest

@@ -32,7 +32,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Added mocked browser coverage for OAuth redirect/callback, session restoration, session expiry and reauthorization, logout, account deletion, and CSRF headers.
 - Added GitHub Actions CI for typechecking, linting, unit tests, production builds, and Windows-based visual regression tests.
 - Protected `master`: both CI jobs are required, branches must be up to date, and force-pushes and deletion are disabled. The rule applies to administrators as well.
-- Added read-only production smoke tests for public pages, legal routes, unauthenticated API boundaries, and Google OAuth configuration. They run after successful Vercel `Production` deployment events and can be triggered manually.
+- Added read-only production smoke tests for public pages, legal routes, unauthenticated API boundaries, and Google OAuth configuration. They run every six hours, after successful Vercel `Production` deployment events, and on manual request.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -85,7 +85,7 @@ Consider lazy-loading or splitting the larger production chunks (`xlsx` is about
 - `api/google/*`: Calendar API routes.
 - `scripts/run-visual-tests.mjs`: reliable visual-test server lifecycle.
 - `.github/workflows/ci.yml`: automated verification for pushes and pull requests.
-- `.github/workflows/production-smoke.yml`: read-only checks after successful production deployments.
+- `.github/workflows/production-smoke.yml`: read-only checks every six hours and after successful production deployments.
 - `playwright.smoke.config.ts` and `tests/smoke/*`: production smoke configuration and scenarios.
 - `tests/visual/*`: Playwright accessibility and screenshot coverage.
 - `db/schema.sql`: Neon schema.
