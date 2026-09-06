@@ -39,6 +39,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Replaced the stale npm-registry `xlsx` 0.18.5 package with the vendor's maintained 0.20.3 CDN release, which contains the security fixes missing from the registry package.
 - Hardened spreadsheet imports with a 5 MB file limit, a 1,000-event-row parse limit, dense worksheet parsing, and a real-template compatibility test.
 - Enabled GitHub dependency alerts and automatic security updates, added grouped weekly Dependabot updates for npm and GitHub Actions, and added a standalone weekly production dependency audit.
+- Isolated production-smoke concurrency by event and deployment environment so Vercel Preview events cannot cancel an active Production check.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
