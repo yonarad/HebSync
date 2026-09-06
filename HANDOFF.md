@@ -41,6 +41,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Enabled GitHub dependency alerts and automatic security updates, added grouped weekly Dependabot updates for npm and GitHub Actions, and added a standalone weekly production dependency audit.
 - Isolated production-smoke concurrency by event and deployment environment so Vercel Preview events cannot cancel an active Production check.
 - Added CodeQL scanning for JavaScript and TypeScript on pull requests, `master` pushes, manual requests, and a weekly schedule using the extended security query suite.
+- Restricted service-worker control messages to the application's own origin after the initial CodeQL scan identified the missing origin check.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
