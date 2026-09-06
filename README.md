@@ -165,6 +165,8 @@ $env:SMOKE_BASE_URL='https://hebsync.org'
 npm run test:smoke
 ```
 
+Dependency maintenance is automated through weekly grouped Dependabot pull requests for npm packages and GitHub Actions. A separate Monday workflow installs the locked dependency tree, runs `npm audit --omit=dev`, and records the resolved SheetJS version. SheetJS itself uses the vendor CDN tarball, so new vendor releases still require an explicit review of the official release feed before changing the pinned URL.
+
 As of 2026-09-06, the current local baseline passes:
 
 - `npm run typecheck`

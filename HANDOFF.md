@@ -38,6 +38,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Updated the resolved React Router dependency from 7.14.2 to 7.18.3 after a production dependency audit.
 - Replaced the stale npm-registry `xlsx` 0.18.5 package with the vendor's maintained 0.20.3 CDN release, which contains the security fixes missing from the registry package.
 - Hardened spreadsheet imports with a 5 MB file limit, a 1,000-event-row parse limit, dense worksheet parsing, and a real-template compatibility test.
+- Enabled GitHub dependency alerts and automatic security updates, added grouped weekly Dependabot updates for npm and GitHub Actions, and added a standalone weekly production dependency audit.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -93,6 +94,8 @@ After Speed Insights has collected a representative seven-day sample, review fie
 - `scripts/run-visual-tests.mjs`: reliable visual-test server lifecycle.
 - `.github/workflows/ci.yml`: automated verification for pushes and pull requests.
 - `.github/workflows/production-smoke.yml`: read-only checks every six hours and after successful production deployments.
+- `.github/workflows/dependency-security.yml`: weekly locked-tree production dependency audit.
+- `.github/dependabot.yml`: grouped weekly npm and GitHub Actions update policy.
 - `playwright.smoke.config.ts` and `tests/smoke/*`: production smoke configuration and scenarios.
 - `tests/visual/*`: Playwright accessibility and screenshot coverage.
 - `src/App.tsx`: app routing root and Vercel Speed Insights integration.
