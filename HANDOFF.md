@@ -31,6 +31,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Removed the remaining legacy `gcal_token` cleanup and test setup.
 - Added mocked browser coverage for OAuth redirect/callback, session restoration, session expiry and reauthorization, logout, account deletion, and CSRF headers.
 - Added GitHub Actions CI for typechecking, linting, unit tests, production builds, and Windows-based visual regression tests.
+- Protected `master`: both CI jobs are required, branches must be up to date, and force-pushes and deletion are disabled. The rule applies to administrators as well.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -54,11 +55,7 @@ Verified locally on 2026-09-06:
 
 ## Next steps
 
-### 1. Require CI before merging
-
-Once the first GitHub Actions run is green, consider enabling branch protection for `master` and requiring both CI jobs before merge.
-
-### 2. Keep a production smoke checklist
+### 1. Keep a production smoke checklist
 
 After authentication, permission, Google API, database, or deployment configuration changes, verify:
 
@@ -70,7 +67,7 @@ After authentication, permission, Google API, database, or deployment configurat
 
 This is an operational regression check for the released service, not a launch blocker.
 
-### 3. Optional performance work
+### 2. Optional performance work
 
 Consider lazy-loading or splitting the larger production chunks (`xlsx` is about 425 kB and the main index chunk about 335 kB before gzip). Measure user impact before optimizing.
 
