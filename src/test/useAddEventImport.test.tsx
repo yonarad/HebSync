@@ -64,6 +64,64 @@ describe('useAddEventImport', () => {
     localStorage.clear();
   });
 
+  it('rejects oversized workbooks before parsing them', async () => {
+    const params = baseParams();
+    const arrayBuffer = vi.fn(async () => new ArrayBuffer(8));
+    const file = {
+      name: 'oversized.xlsx',
+      size: 5 * 1024 * 1024 + 1,
+      arrayBuffer,
+    } as unknown as File;
+    const { result } = renderHook(() => useAddEventImport(params));
+
+    act(() => {
+      result.current.handleImportFileChange({
+        target: { files: [file] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    await act(async () => {
+      await result.current.parseImportWorkbook();
+    });
+
+    expect(arrayBuffer).not.toHaveBeenCalled();
+    expect(result.current.importPreviewError).toBe('Excel files must be 5 MB or smaller.');
+  });
+
+  it('caps parsing and rejects workbooks with more than 1,000 event rows', async () => {
+    const params = baseParams();
+    const xlsx = await params.loadXlsx();
+    vi.mocked(xlsx.utils.sheet_to_json).mockReturnValue([
+      bulkImportColumns,
+      ...Array.from({ length: 1001 }, () => ['Event', 'Birthday', '', '5786', 'Cheshvan', '1', '1']),
+    ]);
+    const file = {
+      name: 'too-many-events.xlsx',
+      size: 1024,
+      arrayBuffer: vi.fn(async () => new ArrayBuffer(8)),
+    } as unknown as File;
+    const { result } = renderHook(() => useAddEventImport(params));
+
+    act(() => {
+      result.current.handleImportFileChange({
+        target: { files: [file] },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    await act(async () => {
+      await result.current.parseImportWorkbook();
+    });
+
+    expect(xlsx.read).toHaveBeenCalledWith(expect.any(ArrayBuffer), {
+      type: 'array',
+      dense: true,
+      sheetRows: 1008,
+    });
+    expect(result.current.importPreviewError).toBe(
+      'Excel files may contain up to 1,000 event rows.',
+    );
+  });
+
   it('parses import rows that need a fallback decision and enables confirmation after selection', async () => {
     const params = baseParams();
     const xlsx = await params.loadXlsx();

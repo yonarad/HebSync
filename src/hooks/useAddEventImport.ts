@@ -32,6 +32,10 @@ type CreateHebcalEventFn = (
 type SheetCell = string | number | null | undefined;
 type SheetRow = SheetCell[];
 
+const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
+const MAX_IMPORT_ROWS = 1000;
+const MAX_PARSED_SHEET_ROWS = MAX_IMPORT_ROWS + 8;
+
 interface XlsxSheet {
   __mock?: boolean;
   [key: string]: unknown;
@@ -242,9 +246,21 @@ export default function useAddEventImport({
     setImportPreviewError('');
 
     try {
+      if (selectedImportFile.size > MAX_IMPORT_FILE_BYTES) {
+        throw new Error(
+          isRtl
+            ? '\u05e7\u05d5\u05d1\u05e5 Excel \u05d7\u05d9\u05d9\u05d1 \u05dc\u05d4\u05d9\u05d5\u05ea \u05d1\u05d2\u05d5\u05d3\u05dc 5 MB \u05dc\u05db\u05dc \u05d4\u05d9\u05d5\u05ea.'
+            : 'Excel files must be 5 MB or smaller.',
+        );
+      }
+
       const buffer = await selectedImportFile.arrayBuffer();
       const xlsx = await loadXlsx();
-      const workbook = xlsx.read(buffer, { type: 'array' });
+      const workbook = xlsx.read(buffer, {
+        type: 'array',
+        dense: true,
+        sheetRows: MAX_PARSED_SHEET_ROWS,
+      });
       const firstSheetName = workbook.SheetNames[0];
       const firstSheet = workbook.Sheets[firstSheetName];
 
@@ -289,6 +305,15 @@ export default function useAddEventImport({
           isRtl
             ? `\u05d7\u05e1\u05e8\u05d5\u05ea \u05e2\u05de\u05d5\u05d3\u05d5\u05ea \u05d7\u05d5\u05d1\u05d4 \u05d1\u05d2\u05d9\u05dc\u05d9\u05d5\u05df Events: ${missingColumns.join(', ')}`
             : `Missing required columns in Events sheet: ${missingColumns.join(', ')}`,
+        );
+      }
+
+      const dataRows = rows.slice(headerRowIndex + 1);
+      if (dataRows.length > MAX_IMPORT_ROWS) {
+        throw new Error(
+          isRtl
+            ? '\u05e7\u05d5\u05d1\u05e5 Excel \u05d9\u05db\u05d5\u05dc \u05dc\u05d4\u05db\u05d9\u05dc \u05e2\u05d3 1,000 \u05e9\u05d5\u05e8\u05d5\u05ea \u05d0\u05d9\u05e8\u05d5\u05e2\u05d9\u05dd.'
+            : 'Excel files may contain up to 1,000 event rows.',
         );
       }
 
@@ -396,8 +421,7 @@ export default function useAddEventImport({
         return { afterSunset: false, label: normalizeHebrewToken(value), isValid: false };
       };
 
-      const parsedRows = rows
-        .slice(headerRowIndex + 1)
+      const parsedRows = dataRows
         .map((row, rowIndex): ImportPreviewRow | null => {
           const titleValue = normalizeHebrewToken(row[headerIndexMap[titleColumn]]);
           const categoryLabel = normalizeHebrewToken(

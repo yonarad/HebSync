@@ -36,6 +36,8 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Added structured request lifecycle logs to all 15 server handlers. The records support route/status/duration/request-ID diagnosis while excluding request and user content.
 - Added Vercel Speed Insights to the React root; the project's free Speed Insights tier is enabled and begins collecting after deployment visits.
 - Updated the resolved React Router dependency from 7.14.2 to 7.18.3 after a production dependency audit.
+- Replaced the stale npm-registry `xlsx` 0.18.5 package with the vendor's maintained 0.20.3 CDN release, which contains the security fixes missing from the registry package.
+- Hardened spreadsheet imports with a 5 MB file limit, a 1,000-event-row parse limit, dense worksheet parsing, and a real-template compatibility test.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -44,12 +46,13 @@ Verified locally on 2026-09-06:
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
-- `npm test -- --run`: passed — 27 files, 243 tests.
+- `npm test -- --run`: passed — 28 files, 246 tests.
 - `npm run build`: passed with Vite 8.2.2.
 - `npm run test:visual`: passed — 26 tests, including authentication, accessibility, and screenshot coverage.
 - The visual-test command now exits normally after stopping its owned Vite server.
 - `.github/workflows/ci.yml` runs the full baseline automatically on pushes and pull requests to `master`.
 - `npm run test:smoke`: passed against `https://hebsync.org` — 2 production checks, with no authentication or data mutation.
+- `npm audit --omit=dev`: passed — 0 production dependency vulnerabilities.
 
 ## Recent product changes
 
@@ -72,13 +75,9 @@ The automated production smoke is intentionally unauthenticated. After authentic
 
 This is an operational regression check for the released service, not a launch blocker.
 
-### 2. Replace or isolate the `xlsx` dependency
+### 2. Review production performance data
 
-`npm audit --omit=dev` reports prototype-pollution and ReDoS advisories in `xlsx` 0.18.5, with no fixed npm release offered. Before changing the import implementation, evaluate a maintained compatible parser or the vendor's supported distribution, add malicious/oversized-file limits, and preserve the current spreadsheet-import tests.
-
-### 3. Review production performance data
-
-After Speed Insights has collected a representative seven-day sample, review field LCP, INP, CLS, FCP, and TTFB. Optimize only where real-user data identifies a problem; likely candidates include lazy-loading or splitting the larger production chunks (`xlsx` is about 425 kB and the main index chunk about 335 kB before gzip).
+After Speed Insights has collected a representative seven-day sample, review field LCP, INP, CLS, FCP, and TTFB. Optimize only where real-user data identifies a problem; likely candidates include lazy-loading or splitting the larger production chunks (`xlsx` is about 492 kB and the main index chunk about 335 kB before gzip).
 
 ## Key files
 

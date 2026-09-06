@@ -98,6 +98,7 @@ npm install
 This project now requires:
 
 - `@neondatabase/serverless`
+- SheetJS `xlsx` 0.20.3 from the vendor's authoritative CDN tarball (the public npm registry release is stale)
 - `typescript`
 
 ## 5. Vercel deployment
@@ -168,10 +169,12 @@ As of 2026-09-06, the current local baseline passes:
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test` with 27 test files and 243 tests passing
+- `npm test` with 28 test files and 246 tests passing
 - `npm run build`
 - `npm run test:visual` with 26 browser tests passing, including mocked authentication lifecycle coverage
 - `npm run test:smoke` with 2 read-only production checks passing against `https://hebsync.org`
+
+`npm audit --omit=dev` reports zero production dependency vulnerabilities. Spreadsheet imports reject files larger than 5 MB and sheets with more than 1,000 event rows before processing the full payload.
 
 ## Implementation status
 
