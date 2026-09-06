@@ -81,7 +81,16 @@ The isolated Neon recovery drill passed, but the Free plan retains only six hour
 
 ### 2. Keep an authenticated production smoke checklist
 
-The automated production smoke is intentionally unauthenticated. After authentication, permission, Google API, or database changes, verify manually with a real account:
+The scheduled production smoke is intentionally unauthenticated. A local authenticated smoke runner is available for checks after authentication, permission, Google API, or database changes:
+
+```powershell
+$env:SMOKE_BASE_URL='https://hebsync.org'
+npm run test:smoke:authenticated
+```
+
+The command opens a temporary Chrome window for manual Google sign-in, keeps the captured session in a temporary local file, and removes it after the run. Its default test restores the session and loads calendars without mutation. To additionally create, find, update, and delete one uniquely named temporary event in a writable HebSync-created calendar, explicitly set `AUTHENTICATED_SMOKE_MUTATION_ACK=temporary-event` for that run.
+
+The remaining manual checklist is useful for broader product changes:
 
 1. Sign in and restore an existing session.
 2. Load calendars and create a HebSync calendar.
