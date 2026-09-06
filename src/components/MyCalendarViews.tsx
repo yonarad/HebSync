@@ -40,7 +40,7 @@ interface CalendarToolbarProps {
   setShowGregorian: React.Dispatch<React.SetStateAction<boolean>>;
   handleNextMonth: () => void;
   handlePrevMonth: () => void;
-  setViewHDate: React.Dispatch<React.SetStateAction<HDate>>;
+  handleToday: () => void;
   isSearchActive: boolean;
 }
 
@@ -71,7 +71,7 @@ export function CalendarToolbar({
   setShowGregorian,
   handleNextMonth,
   handlePrevMonth,
-  setViewHDate,
+  handleToday,
   isSearchActive,
 }: CalendarToolbarProps) {
   const [isDisplayMenuOpen, setIsDisplayMenuOpen] = useState(false);
@@ -146,7 +146,7 @@ export function CalendarToolbar({
         <div className="flex w-full items-center justify-start gap-1.5 md:w-auto md:gap-2.5">
           <button
             type="button"
-            onClick={() => setViewHDate(new HDate())}
+            onClick={handleToday}
             className="inline-flex h-10 items-center justify-center rounded-full border border-slate-300 bg-white px-5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
           >
             {t('today')}

@@ -40,6 +40,18 @@ export interface ScheduleCalendarViewProps {
   handleCreateFromDay: (dayObj: OverflowDay) => void;
   emptyStateMessage: string;
   emptyStateAction?: React.ReactNode;
+  scrollToTodayRequest?: number;
+}
+
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalDayNumber(date: Date): number {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 export function ScheduleCalendarView({
@@ -62,32 +74,26 @@ export function ScheduleCalendarView({
   handleCreateFromDay,
   emptyStateMessage,
   emptyStateAction,
+  scrollToTodayRequest = 0,
 }: ScheduleCalendarViewProps) {
   const daySectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const getDayDateKey = (date: Date): string => date.toISOString().slice(0, 10);
   const initialScrollTargetKey = useMemo(() => {
     if (scheduleDays.length === 0) {
       return null;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayTime = today.getTime();
+    const todayDayNumber = getLocalDayNumber(new Date());
 
     const todayMatch = scheduleDays.find((dayObj) => {
-      const dayDate = new Date(dayObj.gDate);
-      dayDate.setHours(0, 0, 0, 0);
-      return dayDate.getTime() === todayTime;
+      return dayObj.isToday || getLocalDayNumber(dayObj.gDate) === todayDayNumber;
     });
 
     if (todayMatch) {
-      return getDayDateKey(todayMatch.gDate);
+      return getLocalDateKey(todayMatch.gDate);
     }
 
     const nearestDay = scheduleDays.reduce((closest, dayObj) => {
-      const dayDate = new Date(dayObj.gDate);
-      dayDate.setHours(0, 0, 0, 0);
-      const diff = dayDate.getTime() - todayTime;
+      const diff = getLocalDayNumber(dayObj.gDate) - todayDayNumber;
 
       if (!closest) {
         return { dayObj, diff };
@@ -107,7 +113,7 @@ export function ScheduleCalendarView({
       return closest;
     }, null as { dayObj: CalendarDay; diff: number } | null);
 
-    return nearestDay ? getDayDateKey(nearestDay.dayObj.gDate) : null;
+    return nearestDay ? getLocalDateKey(nearestDay.dayObj.gDate) : null;
   }, [scheduleDays]);
 
   useEffect(() => {
@@ -117,7 +123,7 @@ export function ScheduleCalendarView({
 
     const targetSection = daySectionRefs.current[initialScrollTargetKey];
     targetSection?.scrollIntoView?.({ block: 'start' });
-  }, [initialScrollTargetKey]);
+  }, [initialScrollTargetKey, scrollToTodayRequest]);
 
   return (
     <div
@@ -155,9 +161,9 @@ export function ScheduleCalendarView({
                 <section
                   key={dayObj.gDate.toISOString()}
                   ref={(node) => {
-                    daySectionRefs.current[getDayDateKey(dayObj.gDate)] = node;
+                    daySectionRefs.current[getLocalDateKey(dayObj.gDate)] = node;
                   }}
-                  data-schedule-date={getDayDateKey(dayObj.gDate)}
+                  data-schedule-date={getLocalDateKey(dayObj.gDate)}
                   className="grid grid-cols-[44px_minmax(0,1fr)] gap-0.5 border-b border-slate-100 pb-3 last:border-b-0 dark:border-slate-800 md:grid-cols-[60px_minmax(0,1fr)] md:gap-1"
                 >
                   <div

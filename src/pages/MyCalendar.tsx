@@ -269,6 +269,7 @@ export default function MyCalendar() {
   const [recurringActionScope, setRecurringActionScope] = useState<RecurringEventActionScope>('series');
   const [isCreateCalendarDialogOpen, setIsCreateCalendarDialogOpen] = useState(false);
   const [isGreetingShareOpen, setIsGreetingShareOpen] = useState(false);
+  const [scheduleScrollToTodayRequest, setScheduleScrollToTodayRequest] = useState(0);
   const swipeGestureRef = useRef<{
     startX: number;
     startY: number;
@@ -720,6 +721,11 @@ export default function MyCalendar() {
     (isAuthenticated &&
       (isCalendarLoading || isFetchingGoogle || !hasLoadedCalendarData));
   const isMonthLoading = isScheduleLoading;
+
+  const handleToday = (): void => {
+    setViewHDate(new HDate());
+    setScheduleScrollToTodayRequest((request) => request + 1);
+  };
   const selectedEventCalendar = selectedEvent
     ? calendars.find((calendar) => calendar.id === selectedEvent.calendarId)
     : undefined;
@@ -1042,7 +1048,7 @@ export default function MyCalendar() {
               setShowGregorian={setShowGregorian}
               handleNextMonth={handleNextMonth}
               handlePrevMonth={handlePrevMonth}
-              setViewHDate={setViewHDate}
+              handleToday={handleToday}
               isSearchActive={isSearchActive}
             />
 
@@ -1144,6 +1150,7 @@ export default function MyCalendar() {
                   handleCreateFromDay={handleCreateFromDay}
                   emptyStateMessage={emptyStateMessage}
                   emptyStateAction={emptyStateAction}
+                  scrollToTodayRequest={scheduleScrollToTodayRequest}
                 />
               )}
             </div>

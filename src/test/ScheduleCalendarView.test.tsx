@@ -1,3 +1,4 @@
+import { cloneElement } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScheduleCalendarView } from '../components/MyCalendarViews';
@@ -87,7 +88,7 @@ describe('ScheduleCalendarView', () => {
   });
 
   it('scrolls to today when today has content in schedule view', () => {
-    render(
+    const scheduleView = (
       <ScheduleCalendarView
         t={(key, options) => {
           if (key === 'createEventOnDay') {
@@ -144,10 +145,18 @@ describe('ScheduleCalendarView', () => {
         isCalendarLoading={false}
         handleCreateFromDay={vi.fn()}
         emptyStateMessage=""
-      />,
+        scrollToTodayRequest={0}
+      />
     );
+    const { rerender } = render(scheduleView);
 
     const todaySection = document.querySelector('[data-schedule-date="2026-05-25"]');
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+    expect(scrollIntoViewMock.mock.instances[0]).toBe(todaySection);
+
+    scrollIntoViewMock.mockClear();
+    rerender(cloneElement(scheduleView, { scrollToTodayRequest: 1 }));
+
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
     expect(scrollIntoViewMock.mock.instances[0]).toBe(todaySection);
   });
