@@ -37,6 +37,7 @@ test.describe('mocked authentication lifecycle', () => {
     await page.goto('/calendar');
     const refreshButton = page.getByRole('button', { name: /^(Refresh calendars|רענן יומנים)$/ });
     await expect(refreshButton).toBeVisible({ timeout: 15_000 });
+    await expect(refreshButton).toBeEnabled();
 
     api.expireNextCalendarRequest();
     await refreshButton.click();
