@@ -63,7 +63,8 @@ Verified locally on 2026-09-06:
 - GitHub secret scanning: enabled — 0 open alerts after the initial repository scan.
 - CodeQL: required on pull requests — 0 open code-scanning alerts.
 - Production database inventory: read-only baseline captured — 159 connections, 159 encrypted refresh tokens, 335 sessions, and 23 unexpired sessions; no identities or token values were read.
-- Recovery drill preparation: runbook and verification command completed; isolated Neon branch restore remains pending local Neon authentication.
+- Neon recovery drill: passed using an isolated branch created from a point 60 minutes in the past. Schema, constraints, index, and aggregate counts matched the baseline; validation completed in under 2 minutes without inspecting identities or token values.
+- Confirmed Neon recovery configuration: Free plan, 6-hour history window, no snapshots, and no snapshot schedule.
 
 ## Recent product changes
 
@@ -74,9 +75,9 @@ Verified locally on 2026-09-06:
 
 ## Next steps
 
-### 1. Complete the isolated Neon recovery drill
+### 1. Decide whether the current recovery retention is sufficient
 
-Authenticate to Neon on this workstation, create a temporary point-in-time recovery branch, and follow `RECOVERY.md`. Record observed RPO/RTO and delete the temporary branch only after explicit approval. Also confirm the project's actual plan, restore window, and snapshot schedule; the repository does not assume paid features are enabled.
+The isolated Neon recovery drill passed, but the Free plan retains only six hours of history and has no scheduled snapshots. Decide whether this is acceptable for production. If incidents may be discovered later, evaluate a paid plan with daily scheduled snapshots and document the approved retention and cost.
 
 ### 2. Keep an authenticated production smoke checklist
 
