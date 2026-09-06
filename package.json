@@ -15,6 +15,7 @@
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "test:visual": "node scripts/run-visual-tests.mjs",
     "test:visual:update": "node scripts/run-visual-tests.mjs --update-snapshots",
+    "db:verify-recovery": "node scripts/verify-database-recovery.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
