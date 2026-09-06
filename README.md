@@ -150,7 +150,7 @@ npm run test:visual
 
 The same checks run automatically in GitHub Actions on pushes and pull requests to `master`. Visual tests run on Windows to match the committed Playwright snapshots.
 
-Public production smoke tests run automatically after successful Vercel `Production` deployments. They verify `https://hebsync.org`, its public and legal pages, unauthenticated API boundaries, and the Google OAuth entry configuration without signing in or changing user data. Run them manually with:
+Public production smoke tests run automatically after successful Vercel `Production` deployments and every six hours between deployments. They verify `https://hebsync.org`, its public and legal pages, unauthenticated API boundaries, and the Google OAuth entry configuration without signing in or changing user data. GitHub Actions reports failures through the repository's normal workflow notifications. Run them manually with:
 
 ```powershell
 $env:SMOKE_BASE_URL='https://hebsync.org'
