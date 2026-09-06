@@ -146,7 +146,8 @@ npm test
 As of 2026-08-05, the current local baseline passes:
 
 - `npm run typecheck`
-- `npm test` with 25 test files and 231 tests passing
+- `npm test` with 26 test files and 238 tests passing
+- `npm run test:visual` with 26 browser tests passing, including mocked authentication lifecycle coverage
 
 ## Implementation status
 

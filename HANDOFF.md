@@ -29,6 +29,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Added `scripts/run-visual-tests.mjs` so visual tests start and stop Vite reliably on Windows instead of hanging during Playwright web-server teardown.
 - Replaced the misleading `getAccessToken()` client helper with `hasStoredAuthState()`.
 - Removed the remaining legacy `gcal_token` cleanup and test setup.
+- Added mocked browser coverage for OAuth redirect/callback, session restoration, session expiry and reauthorization, logout, account deletion, and CSRF headers.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -39,7 +40,7 @@ Verified locally on 2026-09-06:
 - `npm run lint`: passed.
 - `npm test -- --run`: passed — 26 files, 238 tests.
 - `npm run build`: passed with Vite 8.0.10.
-- `npm run test:visual`: passed — 22 tests, including accessibility and screenshot coverage.
+- `npm run test:visual`: passed — 26 tests, including authentication, accessibility, and screenshot coverage.
 - The visual-test command now exits normally after stopping its owned Vite server.
 
 ## Recent product changes
@@ -51,11 +52,7 @@ Verified locally on 2026-09-06:
 
 ## Next steps
 
-### 1. Add mocked end-to-end authentication coverage
-
-Add a Playwright flow for logged-out state, login redirect/callback, session restoration, authorization expiry, and logout. Mock Google and the backend session boundary; do not place real credentials in fixtures.
-
-### 2. Keep a production smoke checklist
+### 1. Keep a production smoke checklist
 
 After authentication, permission, Google API, database, or deployment configuration changes, verify:
 
@@ -67,7 +64,7 @@ After authentication, permission, Google API, database, or deployment configurat
 
 This is an operational regression check for the released service, not a launch blocker.
 
-### 3. Optional performance work
+### 2. Optional performance work
 
 Consider lazy-loading or splitting the larger production chunks (`xlsx` is about 425 kB and the main index chunk about 335 kB before gzip). Measure user impact before optimizing.
 
