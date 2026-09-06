@@ -40,6 +40,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Hardened spreadsheet imports with a 5 MB file limit, a 1,000-event-row parse limit, dense worksheet parsing, and a real-template compatibility test.
 - Enabled GitHub dependency alerts and automatic security updates, added grouped weekly Dependabot updates for npm and GitHub Actions, and added a standalone weekly production dependency audit.
 - Isolated production-smoke concurrency by event and deployment environment so Vercel Preview events cannot cancel an active Production check.
+- Added CodeQL scanning for JavaScript and TypeScript on pull requests, `master` pushes, manual requests, and a weekly schedule using the extended security query suite.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -96,6 +97,7 @@ After Speed Insights has collected a representative seven-day sample, review fie
 - `.github/workflows/ci.yml`: automated verification for pushes and pull requests.
 - `.github/workflows/production-smoke.yml`: read-only checks every six hours and after successful production deployments.
 - `.github/workflows/dependency-security.yml`: weekly locked-tree production dependency audit.
+- `.github/workflows/codeql.yml`: JavaScript and TypeScript static security analysis.
 - `.github/dependabot.yml`: grouped weekly npm and GitHub Actions update policy.
 - `playwright.smoke.config.ts` and `tests/smoke/*`: production smoke configuration and scenarios.
 - `tests/visual/*`: Playwright accessibility and screenshot coverage.
