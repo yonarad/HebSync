@@ -42,6 +42,8 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Isolated production-smoke concurrency by event and deployment environment so Vercel Preview events cannot cancel an active Production check.
 - Added CodeQL scanning for JavaScript and TypeScript on pull requests, `master` pushes, manual requests, and a weekly schedule using the extended security query suite.
 - Restricted service-worker control messages to the application's own origin after the initial CodeQL scan identified the missing origin check.
+- Enabled GitHub secret scanning and push protection for the public repository.
+- Required both the CodeQL analysis job and its security result before pull requests can merge into `master`.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -57,6 +59,8 @@ Verified locally on 2026-09-06:
 - `.github/workflows/ci.yml` runs the full baseline automatically on pushes and pull requests to `master`.
 - `npm run test:smoke`: passed against `https://hebsync.org` — 2 production checks, with no authentication or data mutation.
 - `npm audit --omit=dev`: passed — 0 production dependency vulnerabilities.
+- GitHub secret scanning: enabled — 0 open alerts after the initial repository scan.
+- CodeQL: required on pull requests — 0 open code-scanning alerts.
 
 ## Recent product changes
 
