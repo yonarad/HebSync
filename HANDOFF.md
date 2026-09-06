@@ -32,6 +32,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Added mocked browser coverage for OAuth redirect/callback, session restoration, session expiry and reauthorization, logout, account deletion, and CSRF headers.
 - Added GitHub Actions CI for typechecking, linting, unit tests, production builds, and Windows-based visual regression tests.
 - Protected `master`: both CI jobs are required, branches must be up to date, and force-pushes and deletion are disabled. The rule applies to administrators as well.
+- Added read-only production smoke tests for public pages, legal routes, unauthenticated API boundaries, and Google OAuth configuration. They run after successful Vercel `Production` deployment events and can be triggered manually.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -45,6 +46,7 @@ Verified locally on 2026-09-06:
 - `npm run test:visual`: passed — 26 tests, including authentication, accessibility, and screenshot coverage.
 - The visual-test command now exits normally after stopping its owned Vite server.
 - `.github/workflows/ci.yml` runs the full baseline automatically on pushes and pull requests to `master`.
+- `npm run test:smoke`: passed against `https://hebsync.org` — 2 production checks, with no authentication or data mutation.
 
 ## Recent product changes
 
@@ -55,9 +57,9 @@ Verified locally on 2026-09-06:
 
 ## Next steps
 
-### 1. Keep a production smoke checklist
+### 1. Keep an authenticated production smoke checklist
 
-After authentication, permission, Google API, database, or deployment configuration changes, verify:
+The automated production smoke is intentionally unauthenticated. After authentication, permission, Google API, or database changes, verify manually with a real account:
 
 1. Sign in and restore an existing session.
 2. Load calendars and create a HebSync calendar.
@@ -83,15 +85,19 @@ Consider lazy-loading or splitting the larger production chunks (`xlsx` is about
 - `api/google/*`: Calendar API routes.
 - `scripts/run-visual-tests.mjs`: reliable visual-test server lifecycle.
 - `.github/workflows/ci.yml`: automated verification for pushes and pull requests.
+- `.github/workflows/production-smoke.yml`: read-only checks after successful production deployments.
+- `playwright.smoke.config.ts` and `tests/smoke/*`: production smoke configuration and scenarios.
 - `tests/visual/*`: Playwright accessibility and screenshot coverage.
 - `db/schema.sql`: Neon schema.
 
 ## Standard verification
 
-```bash
+```powershell
 npm run typecheck
 npm run lint
 npm test -- --run
 npm run build
 npm run test:visual
+$env:SMOKE_BASE_URL='https://hebsync.org'
+npm run test:smoke
 ```

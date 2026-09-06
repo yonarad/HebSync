@@ -1,0 +1,57 @@
+name: Production smoke
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Optional URL override; defaults to the repository production URL
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Production smoke
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SMOKE_BASE_URL: ${{ inputs.base_url || vars.PRODUCTION_BASE_URL }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run production smoke tests
+        run: npm run test:smoke
+
+      - name: Upload failure details
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-results
+          path: test-results/smoke/
+          if-no-files-found: ignore
+          retention-days: 7
