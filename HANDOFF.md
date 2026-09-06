@@ -45,6 +45,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Enabled GitHub secret scanning and push protection for the public repository.
 - Required both the CodeQL analysis job and its security result before pull requests can merge into `master`.
 - Updated README terminology for the server-session architecture.
+- Added a database recovery runbook and a guarded, read-only verifier for isolated Neon recovery branches.
 
 ## Verified baseline
 
@@ -61,6 +62,8 @@ Verified locally on 2026-09-06:
 - `npm audit --omit=dev`: passed — 0 production dependency vulnerabilities.
 - GitHub secret scanning: enabled — 0 open alerts after the initial repository scan.
 - CodeQL: required on pull requests — 0 open code-scanning alerts.
+- Production database inventory: read-only baseline captured — 159 connections, 159 encrypted refresh tokens, 335 sessions, and 23 unexpired sessions; no identities or token values were read.
+- Recovery drill preparation: runbook and verification command completed; isolated Neon branch restore remains pending local Neon authentication.
 
 ## Recent product changes
 
@@ -71,7 +74,11 @@ Verified locally on 2026-09-06:
 
 ## Next steps
 
-### 1. Keep an authenticated production smoke checklist
+### 1. Complete the isolated Neon recovery drill
+
+Authenticate to Neon on this workstation, create a temporary point-in-time recovery branch, and follow `RECOVERY.md`. Record observed RPO/RTO and delete the temporary branch only after explicit approval. Also confirm the project's actual plan, restore window, and snapshot schedule; the repository does not assume paid features are enabled.
+
+### 2. Keep an authenticated production smoke checklist
 
 The automated production smoke is intentionally unauthenticated. After authentication, permission, Google API, or database changes, verify manually with a real account:
 
@@ -83,7 +90,7 @@ The automated production smoke is intentionally unauthenticated. After authentic
 
 This is an operational regression check for the released service, not a launch blocker.
 
-### 2. Review production performance data
+### 3. Review production performance data
 
 After Speed Insights has collected a representative seven-day sample, review field LCP, INP, CLS, FCP, and TTFB. Optimize only where real-user data identifies a problem; likely candidates include lazy-loading or splitting the larger production chunks (`xlsx` is about 492 kB and the main index chunk about 335 kB before gzip).
 
@@ -108,6 +115,8 @@ After Speed Insights has collected a representative seven-day sample, review fie
 - `tests/visual/*`: Playwright accessibility and screenshot coverage.
 - `src/App.tsx`: app routing root and Vercel Speed Insights integration.
 - `db/schema.sql`: Neon schema.
+- `RECOVERY.md`: database recovery objectives, safety rules, drill, incident, and rollback procedures.
+- `scripts/verify-database-recovery.mjs`: guarded read-only schema and aggregate verification for an isolated Neon branch.
 
 ## Standard verification
 
