@@ -8,7 +8,7 @@ This runbook covers recovery of HebSync's Neon Postgres data. It is deliberately
 
 - Target RPO: at most 15 minutes for an incident discovered inside the configured Neon restore window.
 - Target RTO: at most 2 hours from the decision to restore until database validation and application reconnection are complete.
-- Current guarantee: not yet confirmed. The Neon plan, configured restore window, and snapshot schedule still need to be checked in the Neon Console.
+- Confirmed configuration: Neon Free plan, 6-hour history window, no snapshots, and no snapshot schedule as of 2026-09-06.
 
 Neon's current plan limits differ: the Free plan advertises up to a 6-hour instant-restore window, Launch up to 7 days, and Scale up to 30 days. New projects default to 6 hours on Free and 1 day on paid plans. Treat the Console's project setting—not these maxima—as authoritative.
 
@@ -77,7 +77,7 @@ If the recovered state is wrong, reconnect to the preserved pre-restore state or
 
 | Date | Recovery point | Schema/count verification | Observed RPO | Observed RTO | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 2026-09-06 | Current production baseline only | Production read-only baseline passed; isolated restore pending Neon authentication | Not measured | Not measured | 159 connections, 159 encrypted refresh tokens, 335 sessions, 23 active sessions; no values or identities inspected |
+| 2026-09-06 | 2026-09-06 20:35 Asia/Jerusalem (60 minutes before branch creation) | Passed on isolated `recovery-drill-2026-09-06`: both tables, 16 expected columns, expiry index, cascade FK, and aggregate counts | Historical recovery point 60 minutes old verified within the 6-hour window | Under 2 minutes from branch creation to validated result | Free plan; no snapshots or schedule. Counts: 159 connections, 159 encrypted refresh tokens, 335 sessions, 23 active sessions. No identities or token values inspected. Branch configured to auto-delete after 24 hours. |
 
 ## References
 
