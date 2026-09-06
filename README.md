@@ -1,5 +1,7 @@
 # HebSync
 
+[![CI](https://github.com/yonarad/HebSync/actions/workflows/ci.yml/badge.svg)](https://github.com/yonarad/HebSync/actions/workflows/ci.yml)
+
 HebSync is a Vite + React app for syncing Hebrew-date events with Google Calendar.
 
 The frontend source now uses TypeScript across `src`, with Vitest coverage for the main calendar and event flows.
@@ -140,13 +142,20 @@ Run the main verification commands before shipping changes:
 
 ```bash
 npm run typecheck
-npm test
+npm run lint
+npm test -- --run
+npm run build
+npm run test:visual
 ```
 
-As of 2026-08-05, the current local baseline passes:
+The same checks run automatically in GitHub Actions on pushes and pull requests to `master`. Visual tests run on Windows to match the committed Playwright snapshots.
+
+As of 2026-09-06, the current local baseline passes:
 
 - `npm run typecheck`
+- `npm run lint`
 - `npm test` with 26 test files and 238 tests passing
+- `npm run build`
 - `npm run test:visual` with 26 browser tests passing, including mocked authentication lifecycle coverage
 
 ## Implementation status

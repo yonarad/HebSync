@@ -30,6 +30,7 @@ The main calendar, event, import, reminder, greeting, recurring-event, accessibi
 - Replaced the misleading `getAccessToken()` client helper with `hasStoredAuthState()`.
 - Removed the remaining legacy `gcal_token` cleanup and test setup.
 - Added mocked browser coverage for OAuth redirect/callback, session restoration, session expiry and reauthorization, logout, account deletion, and CSRF headers.
+- Added GitHub Actions CI for typechecking, linting, unit tests, production builds, and Windows-based visual regression tests.
 - Updated README terminology for the server-session architecture.
 
 ## Verified baseline
@@ -42,6 +43,7 @@ Verified locally on 2026-09-06:
 - `npm run build`: passed with Vite 8.0.10.
 - `npm run test:visual`: passed — 26 tests, including authentication, accessibility, and screenshot coverage.
 - The visual-test command now exits normally after stopping its owned Vite server.
+- `.github/workflows/ci.yml` runs the full baseline automatically on pushes and pull requests to `master`.
 
 ## Recent product changes
 
@@ -52,7 +54,11 @@ Verified locally on 2026-09-06:
 
 ## Next steps
 
-### 1. Keep a production smoke checklist
+### 1. Require CI before merging
+
+Once the first GitHub Actions run is green, consider enabling branch protection for `master` and requiring both CI jobs before merge.
+
+### 2. Keep a production smoke checklist
 
 After authentication, permission, Google API, database, or deployment configuration changes, verify:
 
@@ -64,7 +70,7 @@ After authentication, permission, Google API, database, or deployment configurat
 
 This is an operational regression check for the released service, not a launch blocker.
 
-### 2. Optional performance work
+### 3. Optional performance work
 
 Consider lazy-loading or splitting the larger production chunks (`xlsx` is about 425 kB and the main index chunk about 335 kB before gzip). Measure user impact before optimizing.
 
@@ -79,6 +85,7 @@ Consider lazy-loading or splitting the larger production chunks (`xlsx` is about
 - `api/auth/google/*`: OAuth routes.
 - `api/google/*`: Calendar API routes.
 - `scripts/run-visual-tests.mjs`: reliable visual-test server lifecycle.
+- `.github/workflows/ci.yml`: automated verification for pushes and pull requests.
 - `tests/visual/*`: Playwright accessibility and screenshot coverage.
 - `db/schema.sql`: Neon schema.
 
