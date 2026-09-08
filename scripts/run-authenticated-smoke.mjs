@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { chromium } from '@playwright/test';
 
-const AUTH_TIMEOUT_MS = 10 * 60 * 1000;
+const AUTH_TIMEOUT_MS = 30 * 60 * 1000;
 const POLL_INTERVAL_MS = 2_000;
 
 function getBaseUrl() {
