@@ -1,7 +1,9 @@
+import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
 import { chromium } from '@playwright/test';
 
 const AUTH_TIMEOUT_MS = 10 * 60 * 1000;
@@ -23,6 +25,103 @@ function getBaseUrl() {
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
+}
+
+function findChromeExecutable() {
+  const candidates =
+    process.platform === 'win32'
+      ? [
+          process.env.CHROME_PATH,
+          process.env.PROGRAMFILES &&
+            join(process.env.PROGRAMFILES, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+          process.env['PROGRAMFILES(X86)'] &&
+            join(process.env['PROGRAMFILES(X86)'], 'Google', 'Chrome', 'Application', 'chrome.exe'),
+          process.env.LOCALAPPDATA &&
+            join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+        ]
+      : process.platform === 'darwin'
+        ? [
+            process.env.CHROME_PATH,
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          ]
+        : [
+            process.env.CHROME_PATH,
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+          ];
+
+  const executable = candidates.find((candidate) => candidate && existsSync(candidate));
+  if (!executable) {
+    throw new Error('Google Chrome was not found. Set CHROME_PATH to its executable.');
+  }
+  return executable;
+}
+
+async function getFreeLoopbackPort() {
+  const server = createServer();
+  await new Promise((resolveListen, rejectListen) => {
+    server.once('error', rejectListen);
+    server.listen(0, '127.0.0.1', resolveListen);
+  });
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : null;
+  await new Promise((resolveClose, rejectClose) => {
+    server.close((error) => (error ? rejectClose(error) : resolveClose()));
+  });
+  if (!port) throw new Error('Could not reserve a local Chrome debugging port.');
+  return port;
+}
+
+async function connectToRegularChrome(profileDirectory, baseURL) {
+  const chromeExecutable = findChromeExecutable();
+  const debuggingPort = await getFreeLoopbackPort();
+  const chromeProcess = spawn(
+    chromeExecutable,
+    [
+      `--remote-debugging-port=${debuggingPort}`,
+      '--remote-debugging-address=127.0.0.1',
+      `--user-data-dir=${profileDirectory}`,
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--new-window',
+      `${baseURL}/calendar`,
+    ],
+    { stdio: 'ignore', windowsHide: false },
+  );
+
+  const endpoint = `http://127.0.0.1:${debuggingPort}`;
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (chromeProcess.exitCode !== null) {
+      throw new Error(`Google Chrome exited before the test runner connected (${chromeProcess.exitCode}).`);
+    }
+    try {
+      const response = await fetch(`${endpoint}/json/version`, {
+        signal: AbortSignal.timeout(1_000),
+      });
+      if (response.ok) {
+        return { browser: await chromium.connectOverCDP(endpoint), chromeProcess };
+      }
+    } catch {
+      // Chrome has not opened its local debugging endpoint yet.
+    }
+    await delay(250);
+  }
+
+  chromeProcess.kill();
+  throw new Error('Timed out connecting to the temporary Google Chrome profile.');
+}
+
+async function stopChrome(chromeProcess) {
+  if (!chromeProcess || chromeProcess.exitCode !== null || chromeProcess.signalCode !== null) return;
+  chromeProcess.kill();
+  await Promise.race([
+    new Promise((resolveExit) => chromeProcess.once('exit', resolveExit)),
+    delay(5_000),
+  ]);
+  if (chromeProcess.exitCode === null && chromeProcess.signalCode === null) {
+    chromeProcess.kill('SIGKILL');
+  }
 }
 
 async function waitForAuthenticatedSession(context, baseURL) {
@@ -99,18 +198,17 @@ function runPlaywright(storageState, baseURL) {
 async function main() {
   const baseURL = getBaseUrl();
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'hebsync-auth-smoke-'));
+  const chromeProfileDirectory = resolve(temporaryDirectory, 'chrome-profile');
   const storageState = resolve(temporaryDirectory, 'storage-state.json');
   let browser;
+  let chromeProcess;
 
   try {
-    browser = await chromium.launch({ channel: 'chrome', headless: false });
-    const context = await browser.newContext({
-      locale: 'en-US',
-      timezoneId: 'Asia/Jerusalem',
-    });
-    const page = await context.newPage();
+    ({ browser, chromeProcess } = await connectToRegularChrome(chromeProfileDirectory, baseURL));
+    const context = browser.contexts()[0];
+    const page = context.pages()[0] || (await context.newPage());
 
-    console.log('A temporary Chrome window is open at HebSync.');
+    console.log('A regular Chrome window with a temporary profile is open at HebSync.');
     console.log('Complete Google sign-in there. Do not share passwords or verification codes.');
     console.log('The runner will continue automatically when HebSync reports an authenticated session.');
 
@@ -119,12 +217,15 @@ async function main() {
     await writeAppOnlyStorageState(context, baseURL, storageState);
     await browser.close();
     browser = undefined;
+    await stopChrome(chromeProcess);
+    chromeProcess = undefined;
 
     console.log('Authenticated session captured in a temporary local file. Running smoke tests...');
     const exitCode = await runPlaywright(storageState, baseURL);
     process.exitCode = exitCode;
   } finally {
     await browser?.close().catch(() => {});
+    await stopChrome(chromeProcess);
     await rm(temporaryDirectory, { recursive: true, force: true });
     console.log('Temporary authenticated browser state removed.');
   }
