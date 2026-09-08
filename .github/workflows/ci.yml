@@ -72,8 +72,8 @@ jobs:
       - name: Run visual tests
         run: npm run test:visual
 
-      - name: Upload failure details
-        if: failure()
+      - name: Upload Playwright diagnostics
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-test-results

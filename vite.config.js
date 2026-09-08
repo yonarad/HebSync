@@ -34,7 +34,13 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: './src/test/setup.js',
       testTimeout: 15000,
-      exclude: ['tests/visual/**', 'tests/smoke/**', 'node_modules/**', 'dist/**'],
+      exclude: [
+        'tests/visual/**',
+        'tests/smoke/**',
+        'tests/authenticated-smoke/**',
+        'node_modules/**',
+        'dist/**',
+      ],
     },
   }
 })

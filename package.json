@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
+    "test:smoke:authenticated": "node scripts/run-authenticated-smoke.mjs",
     "test:visual": "node scripts/run-visual-tests.mjs",
     "test:visual:update": "node scripts/run-visual-tests.mjs --update-snapshots",
     "db:verify-recovery": "node scripts/verify-database-recovery.mjs",

@@ -19,6 +19,7 @@ dist-ssr
 
 coverage
 test-results/smoke/
+test-results/authenticated-smoke/
 
 .codex-remote-attachments/
 
