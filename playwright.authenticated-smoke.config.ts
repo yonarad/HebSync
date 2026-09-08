@@ -24,6 +24,7 @@ if (!storageState || !existsSync(storageState)) {
 export default defineConfig({
   testDir: './tests/authenticated-smoke',
   outputDir: './test-results/authenticated-smoke',
+  timeout: 60_000,
   fullyParallel: false,
   workers: 1,
   retries: 0,

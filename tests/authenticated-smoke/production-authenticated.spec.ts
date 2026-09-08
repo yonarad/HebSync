@@ -83,7 +83,7 @@ test.describe('authenticated production smoke', () => {
     const errors = monitorProductionErrors(page);
     await getSession(request);
 
-    await page.goto('/calendar', { waitUntil: 'networkidle' });
+    await page.goto('/calendar', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('login-modal-panel')).toBeHidden();
     await expect(page.getByTestId('calendar-main')).toBeVisible({ timeout: 20_000 });
     await expect(

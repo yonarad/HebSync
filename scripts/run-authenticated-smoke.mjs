@@ -8,6 +8,8 @@ import { chromium } from '@playwright/test';
 
 const AUTH_TIMEOUT_MS = 30 * 60 * 1000;
 const POLL_INTERVAL_MS = 2_000;
+const WRITE_ACKNOWLEDGEMENT = 'temporary-event';
+const WRITE_SCOPE_MODES = new Set(['app_created', 'all_events']);
 
 function getBaseUrl() {
   const value = process.env.SMOKE_BASE_URL?.replace(/\/+$/, '');
@@ -124,8 +126,9 @@ async function stopChrome(chromeProcess) {
   }
 }
 
-async function waitForAuthenticatedSession(context, baseURL) {
+async function waitForAuthenticatedSession(context, baseURL, requireWriteAccess) {
   const deadline = Date.now() + AUTH_TIMEOUT_MS;
+  let reportedReadOnlySession = false;
 
   while (Date.now() < deadline) {
     const response = await context.request.get(`${baseURL}/api/auth/session`, {
@@ -135,7 +138,15 @@ async function waitForAuthenticatedSession(context, baseURL) {
     if (response.status() === 200) {
       const body = await response.json().catch(() => null);
       if (body?.authenticated === true) {
-        return;
+        if (!requireWriteAccess || WRITE_SCOPE_MODES.has(body.user?.scopeMode)) {
+          return;
+        }
+        if (!reportedReadOnlySession) {
+          console.log(
+            'HebSync is connected with read-only access. Use "Enable editing" in the open window and complete Google consent.',
+          );
+          reportedReadOnlySession = true;
+        }
       }
     }
 
@@ -197,6 +208,8 @@ function runPlaywright(storageState, baseURL) {
 
 async function main() {
   const baseURL = getBaseUrl();
+  const requireWriteAccess =
+    process.env.AUTHENTICATED_SMOKE_MUTATION_ACK === WRITE_ACKNOWLEDGEMENT;
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'hebsync-auth-smoke-'));
   const chromeProfileDirectory = resolve(temporaryDirectory, 'chrome-profile');
   const storageState = resolve(temporaryDirectory, 'storage-state.json');
@@ -211,9 +224,12 @@ async function main() {
     console.log('A regular Chrome window with a temporary profile is open at HebSync.');
     console.log('Complete Google sign-in there. Do not share passwords or verification codes.');
     console.log('The runner will continue automatically when HebSync reports an authenticated session.');
+    if (requireWriteAccess) {
+      console.log('This run requires editing access. If HebSync shows read-only mode, select "Enable editing".');
+    }
 
     await page.goto(`${baseURL}/calendar`, { waitUntil: 'domcontentloaded' });
-    await waitForAuthenticatedSession(context, baseURL);
+    await waitForAuthenticatedSession(context, baseURL, requireWriteAccess);
     await writeAppOnlyStorageState(context, baseURL, storageState);
     await browser.close();
     browser = undefined;
