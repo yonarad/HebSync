@@ -226,7 +226,12 @@ async function main() {
   } finally {
     await browser?.close().catch(() => {});
     await stopChrome(chromeProcess);
-    await rm(temporaryDirectory, { recursive: true, force: true });
+    await rm(temporaryDirectory, {
+      recursive: true,
+      force: true,
+      maxRetries: 8,
+      retryDelay: 250,
+    });
     console.log('Temporary authenticated browser state removed.');
   }
 }
